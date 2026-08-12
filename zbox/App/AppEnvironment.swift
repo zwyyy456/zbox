@@ -89,6 +89,7 @@ final class AppEnvironment {
                 )
                 applicationURLs[ApplicationCommands.id(for: application)] = application.url
             }
+            try WindowCommands.registerAll(in: registry, controller: windowController)
             commandRegistry = registry
             applicationURLsByCommandID = applicationURLs
             statusMessage = "Loaded \(applications.count) applications"
@@ -155,13 +156,8 @@ final class AppEnvironment {
         return applicationIconProvider.icon(for: applicationURL)
     }
 
-    func performWindowAction(_ action: WindowAction) {
-        do {
-            try windowController.perform(action, targetPID: targetApplicationPID)
-            statusMessage = "Window action completed"
-        } catch {
-            statusMessage = error.localizedDescription
-        }
+    func systemImage(for commandID: CommandID) -> String? {
+        WindowCommands.systemImage(for: commandID)
     }
 
     func requestAccessibilityPermission() {

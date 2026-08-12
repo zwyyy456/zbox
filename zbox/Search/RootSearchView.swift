@@ -23,6 +23,7 @@ struct RootSearchView: View {
                         CommandResultRow(
                             match: match,
                             icon: environment.applicationIcon(for: match.id),
+                            systemImage: environment.systemImage(for: match.id),
                             isSelected: environment.isSelected(match.id)
                         )
                         .contentShape(.rect)
@@ -60,6 +61,7 @@ struct RootSearchView: View {
 private struct CommandResultRow: View {
     let match: SearchMatch
     let icon: NSImage?
+    let systemImage: String?
     let isSelected: Bool
 
     var body: some View {
@@ -69,7 +71,7 @@ private struct CommandResultRow: View {
                     Image(nsImage: icon)
                         .resizable()
                 } else {
-                    Image(systemName: "command")
+                    Image(systemName: systemImage ?? "command")
                         .resizable()
                         .padding(5)
                 }

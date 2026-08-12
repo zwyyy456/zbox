@@ -19,16 +19,19 @@ nonisolated enum WindowGeometry {
         )
     }
 
-    @MainActor
-    static func screen(containing windowFrame: CGRect, screens: [NSScreen]) -> NSScreen? {
+    static func screenIndex(containing windowFrame: CGRect, screenFrames: [CGRect]) -> Int? {
         let center = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
-        if let containing = screens.first(where: { $0.frame.contains(center) }) {
-            return containing
+        if let containingIndex = screenFrames.firstIndex(where: { $0.contains(center) }) {
+            return containingIndex
         }
 
-        return screens.max { lhs, rhs in
-            lhs.frame.intersection(windowFrame).area < rhs.frame.intersection(windowFrame).area
+        let intersections = screenFrames.enumerated().map { index, screenFrame in
+            (index: index, area: area(of: screenFrame.intersection(windowFrame)))
         }
+        guard let best = intersections.max(by: { $0.area < $1.area }), best.area > 0 else {
+            return nil
+        }
+        return best.index
     }
 
     static func targetRect(for action: WindowAction, in visibleFrame: CGRect) -> CGRect {
@@ -51,11 +54,9 @@ nonisolated enum WindowGeometry {
             visibleFrame
         }
     }
-}
 
-private extension CGRect {
-    var area: CGFloat {
-        guard !isNull, !isInfinite else { return 0 }
-        return width * height
+    private static func area(of rect: CGRect) -> CGFloat {
+        guard !rect.isNull, !rect.isInfinite else { return 0 }
+        return rect.width * rect.height
     }
 }

@@ -1,7 +1,7 @@
 import AppKit
 import ApplicationServices
 
-enum WindowAction: Sendable {
+nonisolated enum WindowAction: Sendable {
     case leftHalf
     case rightHalf
     case maximize
@@ -65,9 +65,14 @@ final class AccessibilityWindowController {
             fromAXRect: currentAXFrame,
             primaryScreenMaxY: primaryMaxY
         )
-        guard let screen = WindowGeometry.screen(containing: currentCocoaFrame, screens: NSScreen.screens) else {
+        let screens = NSScreen.screens
+        guard let screenIndex = WindowGeometry.screenIndex(
+            containing: currentCocoaFrame,
+            screenFrames: screens.map(\.frame)
+        ), screens.indices.contains(screenIndex) else {
             throw AccessibilityWindowError.noScreen
         }
+        let screen = screens[screenIndex]
 
         let targetCocoaFrame = WindowGeometry.targetRect(for: action, in: screen.visibleFrame)
         let targetAXFrame = WindowGeometry.axRect(
