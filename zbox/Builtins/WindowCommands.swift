@@ -1,9 +1,19 @@
 import Foundation
 
-enum WindowCommands {
+nonisolated struct CommandShortcutTarget: Identifiable, Sendable {
+    let id: CommandID
+    let title: String
+}
+
+nonisolated enum WindowCommands {
     static let leftHalfID = CommandID("window.left-half")
     static let rightHalfID = CommandID("window.right-half")
     static let maximizeID = CommandID("window.maximize")
+    static let shortcutTargets = [
+        CommandShortcutTarget(id: leftHalfID, title: "Left Half"),
+        CommandShortcutTarget(id: rightHalfID, title: "Right Half"),
+        CommandShortcutTarget(id: maximizeID, title: "Maximize"),
+    ]
 
     @MainActor
     static func registerAll(
@@ -36,7 +46,7 @@ enum WindowCommands {
         )
     }
 
-    static func systemImage(for commandID: CommandID) -> String? {
+    nonisolated static func systemImage(for commandID: CommandID) -> String? {
         switch commandID {
         case leftHalfID:
             "rectangle.lefthalf.inset.filled"

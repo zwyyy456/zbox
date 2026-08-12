@@ -33,3 +33,16 @@
 - 通过：13 个 Swift Testing 单元测试全部通过，签名构建与进程启动通过。
 - 通过：当前开发环境的 Accessibility 授权状态为已授权。
 - 跳过：常见应用窗口和外接显示器的人工操作验证；当前自动化无法可靠触发 Root Search action，且没有外接显示器条件。
+
+## Slice 3：Direct Hotkey 与 Settings
+
+- 通过：Root Search 快捷键可在四个常见 Space 组合中修改；默认使用不与当前 Raycast 冲突的 Control-Option-Space。
+- 通过：Left Half、Right Half 和 Maximize 可选择快捷键预设，也可设为 None 立即注销。
+- 通过：zbox 内部重复快捷键会被拒绝；系统注册失败时恢复上一组仍可用配置并显示错误。
+- 通过：命令快捷键以 `CommandID.rawValue` 作为 UserDefaults key 的一部分保存，不使用 SwiftData。
+- 通过：直接快捷键执行时重新读取当前前台应用 PID，并和 Root Search 共用 Registry 与窗口命令执行路径。
+- 通过：Settings 提供开机启动开关，使用系统 `SMAppService.mainApp` 注册和注销。
+- 通过：快捷键默认值、保存、移除、内部冲突和不同快捷键组合测试通过；总计 16 个 Swift Testing 测试通过。
+- 通过：签名构建与进程启动通过。
+- 跳过：未实际切换系统登录项，避免验证过程改变用户当前登录配置。
+- 跳过：合成键盘事件无法可靠验证 Carbon 全局热键回调，保留代码、冲突回滚和运行构建验证结果。
