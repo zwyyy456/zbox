@@ -10,7 +10,7 @@ enum GlobalHotkeyError: LocalizedError {
         case .eventHandlerInstallationFailed(let status):
             "Unable to install the global hotkey handler (\(status))."
         case .registrationFailed(let status):
-            "Option-Space is already in use or could not be registered (\(status))."
+            "Control-Option-Space is already in use or could not be registered (\(status))."
         }
     }
 }
@@ -61,7 +61,7 @@ final class GlobalHotkeyRegistrar {
         )
         let registrationStatus = RegisterEventHotKey(
             UInt32(kVK_Space),
-            UInt32(optionKey),
+            UInt32(controlKey | optionKey),
             hotKeyID,
             GetApplicationEventTarget(),
             0,

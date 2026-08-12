@@ -6,7 +6,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Root Search") {
-                LabeledContent("Global Hotkey", value: "⌥ Space")
+                LabeledContent("Global Hotkey", value: "⌃⌥ Space")
                 LabeledContent("Applications", value: "\(environment.applications.count)")
 
                 Button("Reload Applications") {

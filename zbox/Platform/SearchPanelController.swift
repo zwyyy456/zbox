@@ -13,7 +13,7 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
     init(environment: AppEnvironment) {
         self.environment = environment
 
-        let content = M0CheckView(environment: environment)
+        let content = RootSearchView(environment: environment)
         let hostingView = NSHostingView(rootView: content)
         hostingView.frame = NSRect(x: 0, y: 0, width: 640, height: 420)
 
@@ -28,14 +28,16 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
 
         panel.contentView = hostingView
         panel.onReturn = { [weak self] in
-            self?.launchFirstMatchingApplication()
+            self?.executeSelectedCommand()
+        }
+        panel.onMoveSelection = { [weak self] offset in
+            self?.moveSelection(by: offset)
         }
         panel.onEscape = { [weak environment] in
             environment?.hideRootSearch()
         }
         panel.delegate = self
         panel.isFloatingPanel = true
-        panel.hidesOnDeactivate = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
         panel.animationBehavior = .utilityWindow
@@ -79,13 +81,24 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
         panel.setFrameOrigin(origin)
     }
 
-    private func launchFirstMatchingApplication() {
+    private func executeSelectedCommand() {
         guard let environment else { return }
+        synchronizeSearchQuery(with: environment)
+        environment.executeSelectedCommand()
+    }
 
-        if let searchField = firstTextField(in: panel.contentView) {
-            environment.searchQuery = searchField.stringValue
+    private func moveSelection(by offset: Int) {
+        guard let environment else { return }
+        synchronizeSearchQuery(with: environment)
+        environment.moveSelection(by: offset)
+    }
+
+    private func synchronizeSearchQuery(with environment: AppEnvironment) {
+        guard let searchField = firstTextField(in: panel.contentView),
+              searchField.stringValue != environment.searchQuery else {
+            return
         }
-        environment.launchFirstMatchingApplication()
+        environment.searchQuery = searchField.stringValue
     }
 
     private func firstTextField(in view: NSView?) -> NSTextField? {
@@ -106,12 +119,22 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
 private final class SearchPanel: NSPanel {
     var onReturn: (() -> Void)?
     var onEscape: (() -> Void)?
+    var onMoveSelection: ((Int) -> Void)?
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown {
+            if event.specialKey == .upArrow {
+                onMoveSelection?(-1)
+                return
+            }
+            if event.specialKey == .downArrow {
+                onMoveSelection?(1)
+                return
+            }
+
             switch event.charactersIgnoringModifiers {
             case "\r":
                 onReturn?()

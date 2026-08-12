@@ -11,5 +11,15 @@
 - 通过：扫描 `/Applications`、`/System/Applications` 和用户 Applications 目录，当前环境读取到 128 个应用。
 - 通过：应用启动链路实际打开目标应用；回车执行前显式同步 AppKit 输入框文本，避免 SwiftUI 绑定尚未提交时误选首项。
 - 通过：当前开发环境已授予辅助功能权限，窗口半屏与最大化命令已实现基于可见屏幕区域的坐标换算。
-- 跳过：重启应用后的第二轮系统键盘注入未能再次触发 Option-Space；未继续等待人工输入验证。
+- 发现：当前机器运行中的 Raycast 已占用 Option-Space；M1 临时默认键改用 Control-Option-Space，快捷键配置与冲突提示留到 Slice 3。
 - 跳过：外接显示器、不同 Space 和全屏应用上的人工验证，当前运行环境不具备稳定自动化条件。
+
+## Slice 1：统一 Command 路径的 App Search
+
+- 通过：应用使用 Swift 6、macOS 15 deployment target 完成签名构建并启动进程。
+- 通过：应用目录当前读取到 128 个应用，并全部注册为最小 `CommandDescriptor`；应用执行只经过 `CommandRegistry.execute`。
+- 通过：Registry 的注册顺序、重复 ID、未知 ID 和执行上下文测试通过。
+- 通过：SearchEngine 的大小写与变音符号归一化、关键词、简单模糊匹配、限制数量和固定排序测试通过。
+- 通过：8 个 Swift Testing 单元测试全部通过。
+- 通过：应用图标按搜索结果所需读取，并只在当前进程内复用。
+- 跳过：合成全局按键和辅助功能菜单点击未触发 SwiftUI action；达到本项验证时间限制后停止，保留 M0 已完成的真实面板与应用启动验证结果。

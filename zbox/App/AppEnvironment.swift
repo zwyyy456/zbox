@@ -6,13 +6,32 @@ import Observation
 final class AppEnvironment {
     private let applicationCatalog = ApplicationCatalog()
     private let applicationLauncher = ApplicationLauncher()
+    private let applicationIconProvider = ApplicationIconProvider()
+    private let searchEngine = SearchEngine()
     private let hotkeyRegistrar = GlobalHotkeyRegistrar()
     private let windowController = AccessibilityWindowController()
 
+    private var commandRegistry = CommandRegistry()
+    private var applicationURLsByCommandID: [CommandID: URL] = [:]
     private(set) var applications: [ApplicationInfo] = []
     private(set) var targetApplicationPID: pid_t?
-    var searchQuery = ""
+    private(set) var selectedCommandID: CommandID?
+    var searchQuery = "" {
+        didSet {
+            if searchQuery != oldValue {
+                selectedCommandID = nil
+            }
+        }
+    }
     var statusMessage = "Ready"
+
+    var searchResults: [SearchMatch] {
+        searchEngine.search(
+            query: searchQuery,
+            in: commandRegistry.descriptors,
+            limit: 8
+        )
+    }
 
     @ObservationIgnored
     private lazy var searchPanelController = SearchPanelController(environment: self)
@@ -48,6 +67,7 @@ final class AppEnvironment {
 
         targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         searchQuery = ""
+        selectedCommandID = nil
         searchPanelController.show()
     }
 
@@ -57,16 +77,69 @@ final class AppEnvironment {
 
     func reloadApplications() {
         applications = applicationCatalog.loadApplications()
-        statusMessage = "Loaded \(applications.count) applications"
+        let registry = CommandRegistry()
+        var applicationURLs: [CommandID: URL] = [:]
+
+        do {
+            for application in applications {
+                try ApplicationCommands.register(
+                    application,
+                    in: registry,
+                    launcher: applicationLauncher
+                )
+                applicationURLs[ApplicationCommands.id(for: application)] = application.url
+            }
+            commandRegistry = registry
+            applicationURLsByCommandID = applicationURLs
+            statusMessage = "Loaded \(applications.count) applications"
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
-    func launch(_ application: ApplicationInfo) {
+    func select(_ commandID: CommandID) {
+        selectedCommandID = commandID
+    }
+
+    func isSelected(_ commandID: CommandID) -> Bool {
+        selectedCommandID == commandID
+            || (selectedCommandID == nil && searchResults.first?.id == commandID)
+    }
+
+    func moveSelection(by offset: Int) {
+        let results = searchResults
+        guard !results.isEmpty else {
+            selectedCommandID = nil
+            return
+        }
+
+        let currentIndex = selectedCommandID
+            .flatMap { selectedID in results.firstIndex { $0.id == selectedID } }
+            ?? 0
+        let nextIndex = min(max(currentIndex + offset, 0), results.count - 1)
+        selectedCommandID = results[nextIndex].id
+    }
+
+    func executeSelectedCommand() {
+        let results = searchResults
+        guard let commandID = selectedCommandID ?? results.first?.id,
+              let descriptor = results.first(where: { $0.id == commandID })?.descriptor else {
+            return
+        }
+
+        let registry = commandRegistry
+        let context = CommandContext(
+            source: .rootSearch,
+            frontmostApplicationPID: targetApplicationPID
+        )
+
         launchTask?.cancel()
         launchTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await applicationLauncher.launch(application)
-                statusMessage = "Opened \(application.name)"
+                try await registry.execute(commandID, context: context)
+                statusMessage = "Ran \(descriptor.title)"
+                hideRootSearch()
             } catch is CancellationError {
                 return
             } catch {
@@ -75,12 +148,11 @@ final class AppEnvironment {
         }
     }
 
-    func launchFirstMatchingApplication() {
-        let application = applications.first {
-            searchQuery.isEmpty || $0.name.localizedCaseInsensitiveContains(searchQuery)
+    func applicationIcon(for commandID: CommandID) -> NSImage? {
+        guard let applicationURL = applicationURLsByCommandID[commandID] else {
+            return nil
         }
-        guard let application else { return }
-        launch(application)
+        return applicationIconProvider.icon(for: applicationURL)
     }
 
     func performWindowAction(_ action: WindowAction) {

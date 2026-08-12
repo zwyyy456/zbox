@@ -1,0 +1,98 @@
+import SwiftUI
+
+struct RootSearchView: View {
+    let environment: AppEnvironment
+
+    @FocusState private var isSearchFocused: Bool
+
+    var body: some View {
+        @Bindable var environment = environment
+
+        VStack(spacing: 0) {
+            TextField("Search applications", text: $environment.searchQuery)
+                .textFieldStyle(.plain)
+                .font(.title2)
+                .focused($isSearchFocused)
+                .padding(18)
+
+            Divider()
+
+            ScrollView {
+                LazyVStack(spacing: 4) {
+                    ForEach(environment.searchResults) { match in
+                        CommandResultRow(
+                            match: match,
+                            icon: environment.applicationIcon(for: match.id),
+                            isSelected: environment.isSelected(match.id)
+                        )
+                        .contentShape(.rect)
+                        .onTapGesture {
+                            environment.select(match.id)
+                            environment.executeSelectedCommand()
+                        }
+                    }
+                }
+                .padding(8)
+            }
+
+            Divider()
+
+            HStack {
+                Text(environment.statusMessage)
+                Spacer()
+                Text("↑↓ Select   ↩ Run   esc Close")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .frame(width: 640, height: 420)
+        .background(.regularMaterial)
+        .onAppear {
+            isSearchFocused = true
+        }
+        .onExitCommand {
+            environment.hideRootSearch()
+        }
+    }
+}
+private struct CommandResultRow: View {
+    let match: SearchMatch
+    let icon: NSImage?
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Group {
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                } else {
+                    Image(systemName: "command")
+                        .resizable()
+                        .padding(5)
+                }
+            }
+            .scaledToFit()
+            .frame(width: 32, height: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(match.descriptor.title)
+                    .lineLimit(1)
+                if let subtitle = match.descriptor.subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+        .clipShape(.rect(cornerRadius: 8))
+    }
+}
