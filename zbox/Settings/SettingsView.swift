@@ -53,7 +53,7 @@ struct SettingsView: View {
             }
 
             Section("Window Management") {
-                Text("Accessibility permission is needed to move other applications’ windows.")
+                Text("Accessibility access lets ZBox move and resize the frontmost application window. Window contents are not read or stored.")
                     .foregroundStyle(.secondary)
 
                 HStack {

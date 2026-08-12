@@ -17,31 +17,48 @@ struct RootSearchView: View {
 
             Divider()
 
-            ScrollView {
-                LazyVStack(spacing: 4) {
-                    ForEach(environment.searchResults) { match in
-                        CommandResultRow(
-                            match: match,
-                            icon: environment.applicationIcon(for: match.id),
-                            systemImage: environment.systemImage(for: match.id),
-                            isSelected: environment.isSelected(match.id)
-                        )
-                        .contentShape(.rect)
-                        .onTapGesture {
-                            environment.select(match.id)
-                            environment.executeSelectedCommand()
+            if environment.searchResults.isEmpty {
+                ContentUnavailableView(
+                    "No Commands Found",
+                    systemImage: "magnifyingglass",
+                    description: Text("Try a different application or command name.")
+                )
+                .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(environment.searchResults) { match in
+                            CommandResultRow(
+                                match: match,
+                                icon: environment.applicationIcon(for: match.id),
+                                systemImage: environment.systemImage(for: match.id),
+                                isSelected: environment.isSelected(match.id)
+                            )
+                            .contentShape(.rect)
+                            .onTapGesture {
+                                environment.select(match.id)
+                                environment.executeSelectedCommand()
+                            }
                         }
                     }
+                    .padding(8)
                 }
-                .padding(8)
             }
 
             Divider()
 
             HStack {
                 Text(environment.statusMessage)
+                    .lineLimit(1)
                 Spacer()
-                Text("↑↓ Select   ↩ Run   esc Close")
+                if environment.shouldOfferAccessibilitySettings {
+                    Button("Open Accessibility Settings") {
+                        environment.openAccessibilitySettings()
+                    }
+                    .buttonStyle(.link)
+                } else {
+                    Text("↑↓ Select   ↩ Run   esc Close")
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -96,5 +113,8 @@ private struct CommandResultRow: View {
         .padding(.vertical, 7)
         .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
         .clipShape(.rect(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(match.descriptor.title)
+        .accessibilityValue(isSelected ? "Selected" : "")
     }
 }

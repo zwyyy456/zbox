@@ -21,6 +21,7 @@ final class AppEnvironment {
     private(set) var rootSearchHotkey: HotkeyPreset
     private(set) var commandHotkeys: [CommandID: HotkeyPreset]
     private(set) var isLaunchAtLoginEnabled = false
+    private(set) var shouldOfferAccessibilitySettings = false
     var searchQuery = "" {
         didSet {
             if searchQuery != oldValue {
@@ -83,6 +84,7 @@ final class AppEnvironment {
         targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         searchQuery = ""
         selectedCommandID = nil
+        shouldOfferAccessibilitySettings = false
         searchPanelController.show()
     }
 
@@ -96,6 +98,7 @@ final class AppEnvironment {
         var applicationURLs: [CommandID: URL] = [:]
 
         do {
+            try WindowCommands.registerAll(in: registry, controller: windowController)
             for application in applications {
                 try ApplicationCommands.register(
                     application,
@@ -104,7 +107,6 @@ final class AppEnvironment {
                 )
                 applicationURLs[ApplicationCommands.id(for: application)] = application.url
             }
-            try WindowCommands.registerAll(in: registry, controller: windowController)
             commandRegistry = registry
             applicationURLsByCommandID = applicationURLs
             statusMessage = "Loaded \(applications.count) applications"
@@ -167,6 +169,7 @@ final class AppEnvironment {
             guard let self else { return }
             do {
                 try await registry.execute(commandID, context: context)
+                shouldOfferAccessibilitySettings = false
                 statusMessage = "Ran \(descriptor.title)"
                 if hidePanelOnSuccess {
                     hideRootSearch()
@@ -174,6 +177,7 @@ final class AppEnvironment {
             } catch is CancellationError {
                 return
             } catch {
+                shouldOfferAccessibilitySettings = error as? AccessibilityWindowError == .permissionRequired
                 statusMessage = error.localizedDescription
             }
         }

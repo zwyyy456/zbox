@@ -7,7 +7,7 @@ nonisolated enum WindowAction: Sendable {
     case maximize
 }
 
-enum AccessibilityWindowError: LocalizedError {
+nonisolated enum AccessibilityWindowError: LocalizedError, Equatable {
     case permissionRequired
     case noTargetApplication
     case noFocusedWindow

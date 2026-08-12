@@ -9,6 +9,9 @@ struct MenuBarView: View {
             environment.toggleRootSearch()
         }
 
+        Text("Root Search: \(environment.rootSearchHotkey.label)")
+            .foregroundStyle(.secondary)
+
         SettingsLink {
             Text("Settings…")
         }
