@@ -59,3 +59,16 @@
 - 通过：最终签名 Debug 构建启用 Hardened Runtime、关闭 App Sandbox；开发签名仅包含 Xcode 注入的 `get-task-allow`。
 - 说明：`codesign --strict` 在当前机器返回开发证书链不受信任；签名元数据与 Apple Development 证书链可读取，应用仍可构建和启动。Developer ID 分发签名与公证不在本次 MVP 实施范围内。
 - 跳过：UI 冒烟测试运行超过 4 分钟且不再输出，已主动终止；不阻塞最终签名构建和交付。
+
+## Text Lookup Slice 0：系统能力探针
+
+- 通过：当前基线完成签名 Debug 构建、启动和进程验证。
+- 通过：真实 zbox 进程具备 Accessibility、全局事件监听和事件发送授权。
+- 通过：从 TextEdit 的前台应用 AX 对象取得 `AXTextArea` 焦点元素，并读取完整选区、选区范围、范围文本和范围屏幕矩形；位置命中、位置到字符范围和范围到字符串均返回有效结果。
+- 发现：直接从 system-wide AX 对象读取焦点元素时只得到 `AXWindow`；正式实现必须先取得前台应用 PID，再从该应用 AX 对象读取焦点文本元素。
+- 通过：临时 `.nonactivatingPanel` 显示后没有改变前台应用，zbox 保持非激活，面板可见且不成为 key window。
+- 通过：Carbon 可成功注册不带修饰键的 Escape 全局热键；真实关闭交互随 Slice 3 面板实现验证。
+- 通过：以 macOS 15 deployment target 编译包含 SwiftUI `.translationTask` 和 `TranslationSession.translate` 的最小调用；真实语言模型下载和翻译结果随 Slice 5 验证。
+- 通过：相邻 zdict 的 `FlashDictIntegrationKit` 可独立构建，8 个契约测试全部通过。
+- 延后：FlashDict App Group 的真实跨进程往返随 Slice 4 接入验证；Safari、Chrome、Xcode、VS Code 和 Preview 的完整兼容矩阵随 Slice 6 验证。
+- 说明：一次性探针代码已从产品源代码移除，不作为运行时诊断设施保留。
