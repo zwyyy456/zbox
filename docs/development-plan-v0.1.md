@@ -1,23 +1,25 @@
 # zbox 开发方案 v0.1
 
-> 状态：Draft  
-> 日期：2026-08-13  
-> 输入约束：《zbox 产品设计文档 v0.1》  
-> 文档职责：定义 M0/M1 的代码形状、实现顺序和完成证据。
+> 状态：Implemented（M1 代码基线）
+> 初始日期：2026-08-13
+> 最后校正：2026-08-14
+> 输入约束：《zbox 产品设计文档 v0.1》
+> 文档职责：记录 M0/M1 已实施的代码形状和实现顺序；实际完成证据以《zbox 实施验证记录》为准。
 
-## 1. 当前起点
+## 1. M1 实施基线
 
-仓库目前是 Xcode 生成的 SwiftUI + SwiftData 模板：
+仓库已经完成 M0 与 M1 的四个功能切片：
 
-- 一个 macOS App target、一个测试 target 和一个 UI 测试 target；
-- `ContentView` 仍是 Item 列表模板；
-- `zboxApp` 仍会创建普通 `WindowGroup`；
-- 没有 Search Panel、Command、Hotkey、App 枚举或窗口操作实现；
+- 一个 macOS App target、一个 Swift Testing 单元测试 target 和一个最小 UI 冒烟测试 target；
+- 使用 `MenuBarExtra`、独立 `Settings` scene 和由 `NSPanel` 承载的 Root Search，不创建普通 `WindowGroup`；
+- App Launch、Window Command、Root Search 和 Direct Hotkey 共用 Command Registry；
+- 已实现应用枚举/启动、三种窗口操作、快捷键配置、开机启动设置和 Accessibility 恢复入口；
+- 配置使用 UserDefaults，不使用模板 SwiftData 持久化；
 - 最低系统设为 macOS 15；
 - Swift Language Mode 设为 Swift 6；
 - App Sandbox 关闭，Hardened Runtime 开启。
 
-M0 只验证几个真正依赖 macOS 行为的部分；M1 按可运行的纵向功能逐步替换模板。
+本文件保留 M0/M1 的实施设计，后续能力不得把其中的阶段描述误当作当前待办；通过、跳过和受环境限制的检查统一记录在 `docs/validation-log.md`。
 
 ## 2. 已确定的技术选择
 
@@ -314,8 +316,10 @@ App Launch
 | DEC-003 | 后台常驻、无 Dock、固定菜单栏入口、临时 Root Search Panel、独立 Settings 窗口 |
 | DEC-004 | Slice 1 即使用最小 Command Registry |
 | DEC-005 | 应用列表内存保存；图标只做按需进程内复用 |
+| DEC-006 | Global Hotkey 使用 Carbon `RegisterEventHotKey`，注册与回调状态保持 MainActor 隔离 |
+| DEC-007 | 窗口所属显示器优先按中心点判断，必要时以最大交叠面积回退 |
 
-仍需在实现中选择的只有 Global Hotkey API 和窗口所属显示器的具体判断规则。实现能满足 macOS 15 和当前需求即可，不为未来键盘引擎或 Display 管理预留额外层次。
+以上选择构成当前 M1 基线。后续实现继续以满足 macOS 15 和真实产品需求为准，不为未来键盘引擎或 Display 管理预留额外层次。
 
 ## 14. 主要风险
 
@@ -328,4 +332,4 @@ App Launch
 | 应用重复或无法启动 | Catalog 去重；Launcher 返回明确错误 |
 | 提前抽象导致代码变散 | 保持单 target；只为 Hotkey、App Launch 和 AX 等真实系统边界设置替换点 |
 
-M1 完成前不讨论插件 Runtime、跨进程通信、独立索引、公共 SDK 或 Package 拆分。出现真实复用和隔离需求后再单独设计。
+M2 开始后仍不默认引入插件 Runtime、跨进程通信、独立索引、公共 SDK 或 Package 拆分；只有真实复用和隔离需求出现后再单独设计。
