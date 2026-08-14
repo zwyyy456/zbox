@@ -159,3 +159,12 @@
 
 - 限制：当前没有外接显示器，普通/全屏/多 Space 的 nonactivating panel 行为已有 Slice 0 探针证据，但外接双屏仍只有定位纯函数验证。
 - 未闭环：完整人工应用矩阵、Apple 已安装模型成功翻译/取消下载、Developer ID 分发签名，以及新 FlashDict 服务端的跨进程资源/音频/建卡仍受当前环境或外部签名条件限制；不将这些项目标记为已通过。
+
+## Text Lookup v0.1：最终合并验证
+
+- 通过：zbox 27 个 Swift Testing 测试全部通过。
+- 通过：相邻 FlashDictIntegrationKit 8 个合同测试全部通过。
+- 通过：zbox Release 配置完成签名构建，Hardened Runtime、App Group entitlement、FlashDict Info key 和简体中文资源均存在。
+- 通过：工作区无未提交实现改动；需求、探针、Slice 1～6 和最终验证均按阶段形成独立提交。
+- 限制：当前 Release 产物使用 Apple Development 证书并包含 `get-task-allow`，不是最终 Developer ID 分发签名；Developer ID、公证和 Gatekeeper 分发验证尚未完成。
+- 结论：代码实施与可在当前环境完成的自动验证已经完成，但需求完成定义第 3～5 项仍有外部验收缺口，因此不把 Text Lookup v0.1 整体标记为完全验收通过。
