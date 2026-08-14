@@ -108,3 +108,17 @@
 - 通过：25 个 Swift Testing 测试全部通过，其中新增 2 个必要测试覆盖上下定位/边界夹紧与新 session 拒绝旧 ID。
 - 通过：签名 Debug 构建通过；不抢焦点的 panel、当前 Space/全屏辅助行为和 Escape 注册已在 Text Lookup Slice 0 的真实签名探针验证。
 - 跳过：当前环境没有外接显示器，双屏定位仅验证纯函数边界，留待 Slice 6 兼容矩阵人工复验。
+
+## Text Lookup Slice 4：FlashDict 主词典与带原句建卡
+
+- 通过：zbox target 直接依赖相邻 `../zdict/Packages/FlashDictIntegrationKit`，没有引入 MDX/MDD、索引、extractor 或多词典抽象。
+- 通过：Debug/Release 均配置 `group.tech.hyperseek.flashdict.integration` App Group entitlement；显式 Info.plist 写入 `FlashDictIntegrationAppGroupIdentifier`，签名产物复查两项均存在。
+- 通过：每次新 capture 立即取消旧查词和建卡任务，以独立 request ID 调用主词典 lookup，并在提交 `LookupDocument` 前校验 capture session ID。
+- 通过：成功结果直接渲染 IntegrationKit 的 `FlashDictLookupSurface`，资源、音频、词条内跳转和义项点击继续走共享合同；zbox 不解析或改写词典 HTML。
+- 通过：FlashDict 未运行、未配置主词典、无结果、协议不兼容和请求失败映射为独立 UI；只为可恢复失败提供手动重试，未运行状态另提供用户主动启动 FlashDict 的按钮。
+- 通过：义项点击直接使用 surface 返回的冻结 `cardSeed`，每次生成新的 delivery ID；建卡上下文只附加原句和 source URL，`userNote` 固定为 nil，翻译不进入闪卡。
+- 通过：建卡的 adding、added、rejectedQuota 和 failed 状态按 selection ID 回传给共享 surface；新会话或插件停止时取消未完成任务，晚到结果由 session ID gate 丢弃。
+- 通过：26 个 Swift Testing 测试全部通过，其中新增 1 个必要 fake 合同测试验证冻结义项及原句/source URL 建卡上下文；IntegrationKit 自身 8 个合同测试已在 Slice 0 通过。
+- 通过：移除一次性探针后的 zbox 签名 Debug 干净构建通过；产物保留 Hardened Runtime、关闭 App Sandbox，并带正确 App Group/Info 配置。
+- 阻塞：当前运行的 `/Users/zwyyy/Downloads/vm-mount/FlashDict.app` 是旧协议构建，只监听旧沙箱 socket，签名不含 App Group；真实请求因此按合同超时。
+- 阻塞：相邻 zdict 当前源码的 FlashDict 因本机 Xcode 账号凭据缺失，且现有 `tech.hyperseek.flashdict.dev` provisioning profile 未授权 App Groups，无法签名启动新服务端。未通过关闭 sandbox 或替换 entitlement 绕过安全边界；真实查词、资源、音频和建卡跨进程闭环需在 FlashDict 签名条件修复后复验。

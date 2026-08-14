@@ -1,4 +1,6 @@
 import CoreGraphics
+import FlashDictIntegrationContracts
+import FlashDictIntegrationKit
 import Foundation
 import Testing
 @testable import zbox
@@ -38,6 +40,43 @@ struct TextLookupPresentationTests {
         #expect(model.capture?.term == "second")
     }
 
+    @Test @MainActor
+    func createsFlashcardFromFrozenSelectionWithOriginalContext() async throws {
+        let flashDict = FlashDictServiceSpy()
+        let model = TextLookupSessionModel(flashDict: flashDict)
+        let sourceURL = try #require(URL(string: "https://example.com/article"))
+        let capture = TextLookupCapture(
+            id: UUID(),
+            term: "swift",
+            sentence: "Swift keeps the original sentence.",
+            sourceURL: sourceURL,
+            anchorRect: nil,
+            sourceApplicationBundleIdentifier: nil
+        )
+        model.beginLookup(with: capture)
+
+        let seed = FlashcardSeed(
+            dictionaryStableID: "primary",
+            dictionaryName: "Main",
+            term: "swift",
+            headerHTML: nil,
+            subHeaderHTML: nil,
+            phraseHeaderHTML: nil,
+            senseHTML: "<p>moving quickly</p>",
+            senseIndex: 0,
+            subsenseSelector: nil,
+            resourceTagsVersion: 1,
+            cssTagsHTML: nil,
+            scriptTagsHTML: nil
+        )
+        model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
+
+        let context = try await waitForCreatedContext(in: flashDict)
+        #expect(context.sentence == capture.sentence)
+        #expect(context.sourceURL == sourceURL)
+        #expect(context.userNote == nil)
+    }
+
     @MainActor
     private func capture(id: UUID, term: String) -> TextLookupCapture {
         TextLookupCapture(
@@ -48,5 +87,43 @@ struct TextLookupPresentationTests {
             anchorRect: nil,
             sourceApplicationBundleIdentifier: nil
         )
+    }
+
+    private func waitForCreatedContext(
+        in flashDict: FlashDictServiceSpy
+    ) async throws -> FlashcardCreationContext {
+        for _ in 0..<20 {
+            if let context = await flashDict.createdContext { return context }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        Issue.record("Expected a FlashDict create-card request")
+        throw CancellationError()
+    }
+}
+
+private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
+    private(set) var createdContext: FlashcardCreationContext?
+
+    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
+        LookupDocument(
+            requestID: requestID,
+            dictionaryStableID: "primary",
+            dictionaryName: "Main",
+            term: term,
+            htmlDocument: "<html></html>"
+        )
+    }
+
+    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
+        LookupResource(data: Data(), mimeType: "application/octet-stream")
+    }
+
+    func createFlashcard(
+        deliveryID: UUID,
+        seed: FlashcardSeed,
+        context: FlashcardCreationContext
+    ) async throws -> FlashcardCreationResult {
+        createdContext = context
+        return .added(cardID: UUID())
     }
 }

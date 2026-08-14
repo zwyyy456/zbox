@@ -1,4 +1,5 @@
 import AppKit
+import FlashDictIntegrationKit
 import Observation
 
 @MainActor
@@ -13,7 +14,7 @@ final class TextLookupPlugin: BuiltinPlugin {
     private let capturer: any TextCapturing
     private let clipboardCapturer = ClipboardSelectionCapturer()
     private let triggerMonitor = TextLookupTriggerMonitor()
-    private let session = TextLookupSessionModel()
+    private let session: TextLookupSessionModel
 
     @ObservationIgnored
     private lazy var panelController = TextLookupPanelController(
@@ -43,6 +44,9 @@ final class TextLookupPlugin: BuiltinPlugin {
         self.settings = settings
         self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer
+        session = TextLookupSessionModel(
+            flashDict: try? FlashDictBridgeClient.production()
+        )
         triggerMonitor.onMouseDown = { [weak self] in
             self?.panelController.hide()
             self?.clearCandidate()

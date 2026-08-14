@@ -1,3 +1,4 @@
+import FlashDictIntegrationKit
 import SwiftUI
 
 struct TextLookupPanelView: View {
@@ -33,8 +34,9 @@ struct TextLookupPanelView: View {
                 }
 
                 Divider()
-                pendingRow("Definition", detail: "Looking up in FlashDict…")
+                dictionaryContent
                 if capture.sentence != nil {
+                    Divider()
                     pendingRow("Translation", detail: "Preparing translation…")
                 }
             } else if let error = model.captureError {
@@ -46,7 +48,13 @@ struct TextLookupPanelView: View {
             }
         }
         .padding(18)
-        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
+        .frame(
+            minWidth: 300,
+            maxWidth: .infinity,
+            minHeight: 180,
+            maxHeight: .infinity,
+            alignment: .topLeading
+        )
         .background(.regularMaterial)
         .clipShape(.rect(cornerRadius: 12))
     }
@@ -76,6 +84,50 @@ struct TextLookupPanelView: View {
     private var languageName: String {
         languageChoices.first { $0.0 == settings.targetLanguageIdentifier }?.1
             ?? settings.targetLanguageIdentifier
+    }
+
+    @ViewBuilder
+    private var dictionaryContent: some View {
+        switch model.dictionaryState {
+        case .idle, .loading:
+            pendingRow("Definition", detail: "Looking up in FlashDict…")
+        case .loaded(let document):
+            if let resourceProvider = model.resourceProvider {
+                FlashDictLookupSurface(
+                    document: document,
+                    resourceProvider: resourceProvider,
+                    selectionStates: model.selectionStates,
+                    onEvent: model.handle
+                )
+                .frame(maxWidth: .infinity, minHeight: 260, maxHeight: .infinity)
+            }
+            if let surfaceMessage = model.surfaceMessage {
+                Text(surfaceMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .failed(let failure):
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Definition unavailable", systemImage: "exclamationmark.triangle")
+                    .font(.headline)
+                Text(failure.message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if failure.canRetry {
+                    HStack {
+                        if failure == .flashDictNotRunning {
+                            Button("Open FlashDict") {
+                                model.openFlashDict()
+                            }
+                        }
+                        Button("Retry") {
+                            model.retryDictionaryLookup()
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func pendingRow(_ title: String, detail: String) -> some View {

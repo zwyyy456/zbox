@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000030000000000000003 /* FlashDictIntegrationKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		36529F75302CCB26006E45F7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +33,22 @@
 		36529F7E302CCB26006E45F7 /* zboxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = zboxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000040000000000000004 /* Exceptions for "zbox" folder in "zbox" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 36529F64302CCB25006E45F7 /* zbox */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		36529F67302CCB25006E45F7 /* zbox */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A10000040000000000000004 /* Exceptions for "zbox" folder in "zbox" target */,
+			);
 			path = zbox;
 			sourceTree = "<group>";
 		};
@@ -52,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +130,7 @@
 			);
 			name = zbox;
 			packageProductDependencies = (
+				A10000030000000000000003 /* FlashDictIntegrationKit */,
 			);
 			productName = zbox;
 			productReference = 36529F65302CCB25006E45F7 /* zbox.app */;
@@ -197,6 +216,9 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 36529F66302CCB25006E45F7 /* Products */;
+			packageReferences = (
+				A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -395,6 +417,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = zbox/zbox.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G38CM6VNCC;
@@ -402,6 +425,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = zbox/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -426,6 +450,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = zbox/zbox.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G38CM6VNCC;
@@ -433,6 +458,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = zbox/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -571,6 +597,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../zdict/Packages/FlashDictIntegrationKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10000030000000000000003 /* FlashDictIntegrationKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */;
+			productName = FlashDictIntegrationKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 36529F5D302CCB25006E45F7 /* Project object */;
 }

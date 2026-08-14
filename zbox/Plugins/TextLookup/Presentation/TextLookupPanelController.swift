@@ -19,7 +19,7 @@ final class TextLookupPanelController {
         let hostingView = NSHostingView(
             rootView: TextLookupPanelView(model: model, settings: settings)
         )
-        hostingView.frame = NSRect(x: 0, y: 0, width: 520, height: 260)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 520, height: 560)
 
         panel = TextLookupPanel(
             contentRect: hostingView.frame,
@@ -51,7 +51,10 @@ final class TextLookupPanelController {
         guard let screen else { return }
 
         let width = min(520, screen.visibleFrame.width - 24)
-        let size = CGSize(width: width, height: 260)
+        let size = CGSize(
+            width: width,
+            height: min(560, screen.visibleFrame.height - 24)
+        )
         let origin = TextLookupPanelPlacement.origin(
             anchor: resolvedAnchor,
             panelSize: size,
