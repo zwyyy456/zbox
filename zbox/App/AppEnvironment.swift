@@ -12,7 +12,7 @@ final class AppEnvironment {
     private let accessibilityAuthorization: AccessibilityAuthorization
     private let windowController: AccessibilityWindowController
     private let launchAtLoginController = LaunchAtLoginController()
-    private let translationCredentialVault = TranslationCredentialVault()
+    private let translationCredentialVault: any TranslationCredentialStoring
     private let hotkeyStore: HotkeyConfigurationStore
     let textLookupSettings: TextLookupSettingsStore
 
@@ -57,7 +57,10 @@ final class AppEnvironment {
     var textLookupStatusMessage: String? { textLookupPlugin.statusMessage }
     var isAccessibilityTrusted: Bool { accessibilityAuthorization.isTrusted }
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        translationCredentialVault: any TranslationCredentialStoring = TranslationCredentialVault()
+    ) {
         let hotkeyRegistrar = GlobalHotkeyRegistrar()
         let accessibilityAuthorization = AccessibilityAuthorization()
         let hotkeyStore = HotkeyConfigurationStore(defaults: defaults)
@@ -71,6 +74,7 @@ final class AppEnvironment {
         self.accessibilityAuthorization = accessibilityAuthorization
         windowController = AccessibilityWindowController(authorization: accessibilityAuthorization)
         self.hotkeyStore = hotkeyStore
+        self.translationCredentialVault = translationCredentialVault
         self.textLookupSettings = textLookupSettings
         self.textLookupPlugin = textLookupPlugin
         builtinPluginHost = BuiltinPluginHost(plugins: [textLookupPlugin])

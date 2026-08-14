@@ -78,4 +78,34 @@ struct TextLookupCaptureTests {
         #expect(!interruptedSecondDown)
         #expect(!interruptedSecondUp)
     }
+
+    @Test
+    func selectionCandidateExpiresAndRejectsAnotherApplicationProcess() {
+        let createdAt = Date(timeIntervalSinceReferenceDate: 100)
+        let candidate = TextLookupSelectionCandidate(
+            capture: TextLookupCapture(
+                id: UUID(),
+                term: "swift",
+                sentence: nil,
+                sourceURL: nil,
+                anchorRect: nil,
+                sourceApplicationBundleIdentifier: "com.example.Reader"
+            ),
+            targetApplicationPID: 42,
+            createdAt: createdAt
+        )
+
+        #expect(candidate.isValid(
+            at: createdAt.addingTimeInterval(2.9),
+            frontmostApplicationPID: 42
+        ))
+        #expect(!candidate.isValid(
+            at: createdAt.addingTimeInterval(3.1),
+            frontmostApplicationPID: 42
+        ))
+        #expect(!candidate.isValid(
+            at: createdAt.addingTimeInterval(1),
+            frontmostApplicationPID: 43
+        ))
+    }
 }

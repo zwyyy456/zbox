@@ -83,6 +83,8 @@ final class TextLookupSessionModel {
     @ObservationIgnored
     private var activeDictionaryRequestID: UUID?
     @ObservationIgnored
+    private var activeDictionaryTerm: String?
+    @ObservationIgnored
     private var cardTasks: [String: Task<Void, Never>] = [:]
 
     private(set) var capture: TextLookupCapture?
@@ -148,8 +150,8 @@ final class TextLookupSessionModel {
     }
 
     func retryDictionaryLookup() {
-        guard let capture else { return }
-        startDictionaryLookup(term: capture.term, sessionID: capture.id)
+        guard let capture, let activeDictionaryTerm else { return }
+        startDictionaryLookup(term: activeDictionaryTerm, sessionID: capture.id)
     }
 
     func requestTranslation(targetLanguageIdentifier: String) {
@@ -196,6 +198,7 @@ final class TextLookupSessionModel {
     private func startDictionaryLookup(term: String, sessionID: UUID) {
         lookupTask?.cancel()
         activeDictionaryRequestID = nil
+        activeDictionaryTerm = term
         guard let flashDict else {
             dictionaryState = .failed(.integrationUnavailable)
             return
@@ -274,6 +277,7 @@ final class TextLookupSessionModel {
         lookupTask?.cancel()
         lookupTask = nil
         activeDictionaryRequestID = nil
+        activeDictionaryTerm = nil
         cancelCardWork()
     }
 

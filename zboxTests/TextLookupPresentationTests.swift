@@ -134,6 +134,24 @@ struct TextLookupPresentationTests {
         #expect(document.term == "new")
     }
 
+    @Test @MainActor
+    func retryUsesTheCurrentDictionaryEntry() async {
+        let flashDict = FlashDictServiceSpy(failOnceFor: "linked")
+        let model = TextLookupSessionModel(flashDict: flashDict)
+        model.beginLookup(
+            with: capture(id: UUID(), term: "original"),
+            targetLanguageIdentifier: "zh-Hans"
+        )
+        await waitUntilLoaded(term: "original", in: model)
+
+        model.handle(.entryRequested(term: "linked", anchor: nil))
+        await waitUntilDictionaryFails(in: model)
+        model.retryDictionaryLookup()
+        await waitUntilLoaded(term: "linked", in: model)
+
+        #expect(await flashDict.lookupTerms == ["original", "linked", "linked"])
+    }
+
     @MainActor
     private func waitUntilLoaded(term: String, in model: TextLookupSessionModel) async {
         for _ in 0..<100 {
@@ -141,6 +159,15 @@ struct TextLookupPresentationTests {
             await Task.yield()
         }
         Issue.record("Expected dictionary entry \(term) to load")
+    }
+
+    @MainActor
+    private func waitUntilDictionaryFails(in model: TextLookupSessionModel) async {
+        for _ in 0..<100 {
+            if case .failed = model.dictionaryState { return }
+            await Task.yield()
+        }
+        Issue.record("Expected dictionary lookup to fail")
     }
 
     @MainActor
@@ -229,9 +256,20 @@ private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
 
 private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
     private(set) var createdContext: FlashcardCreationContext?
+    private(set) var lookupTerms: [String] = []
+    private var termToFailOnce: String?
+
+    init(failOnceFor term: String? = nil) {
+        termToFailOnce = term
+    }
 
     func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
-        LookupDocument(
+        lookupTerms.append(term)
+        if termToFailOnce == term {
+            termToFailOnce = nil
+            throw FlashDictIntegrationError.requestFailed(message: nil)
+        }
+        return LookupDocument(
             requestID: requestID,
             dictionaryStableID: "primary",
             dictionaryName: "Main",

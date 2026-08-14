@@ -20,19 +20,18 @@ struct TextLookupPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let capture = model.capture {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(capture.term)
-                        .font(.title2.weight(.semibold))
-                        .textSelection(.enabled)
-                    Spacer(minLength: 16)
-                    languageMenu
-                }
+                Text(capture.term)
+                    .font(.title2.weight(.semibold))
+                    .textSelection(.enabled)
 
                 if let sentence = capture.sentence {
-                    Text(sentence)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .lineLimit(4)
+                    ScrollView(.vertical) {
+                        Text(sentence)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 88)
                 }
 
                 Divider()
@@ -99,24 +98,38 @@ struct TextLookupPanelView: View {
 
     @ViewBuilder
     private var translationContent: some View {
-        switch model.translationState {
-        case .sentenceUnavailable:
-            Text("No sentence is available to translate.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        case .loading:
-            pendingRow("Translation", detail: "Preparing Apple Translation…")
-        case .translated(let result):
-            Text(result.translatedText)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        case .failed(let failure):
-            VStack(alignment: .leading, spacing: 6) {
-                Text(failure.message)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Translation")
+                    .font(.headline)
+                Spacer(minLength: 16)
+                languageMenu
+            }
+            switch model.translationState {
+            case .sentenceUnavailable:
+                Text("No sentence is available to translate.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Button("Retry Translation") {
-                    model.retryTranslation()
+            case .loading:
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Preparing Apple Translation…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            case .translated(let result):
+                Text(result.translatedText)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            case .failed(let failure):
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(failure.message)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Button("Retry Translation") {
+                        model.retryTranslation()
+                    }
                 }
             }
         }

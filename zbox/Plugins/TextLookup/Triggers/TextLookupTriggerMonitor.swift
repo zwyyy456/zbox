@@ -12,7 +12,14 @@ final class TextLookupTriggerMonitor {
     func start() {
         guard eventMonitor == nil else { return }
         eventMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseDown, .leftMouseUp, .flagsChanged, .keyDown]
+            matching: [
+                .leftMouseDown,
+                .rightMouseDown,
+                .otherMouseDown,
+                .leftMouseUp,
+                .flagsChanged,
+                .keyDown,
+            ]
         ) { [weak self] event in
             self?.handle(event)
         }
@@ -28,7 +35,7 @@ final class TextLookupTriggerMonitor {
 
     private func handle(_ event: NSEvent) {
         switch event.type {
-        case .leftMouseDown:
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             onMouseDown?()
         case .leftMouseUp:
             onMouseUp?(NSEvent.mouseLocation)

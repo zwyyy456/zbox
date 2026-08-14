@@ -24,13 +24,7 @@ final class TextLookupPlugin: BuiltinPlugin {
         onDismiss: { [weak session] in session?.clear() }
     )
 
-    private struct SelectionCandidate {
-        let capture: TextLookupCapture
-        let applicationBundleIdentifier: String?
-        let createdAt: Date
-    }
-
-    private var candidate: SelectionCandidate?
+    private var candidate: TextLookupSelectionCandidate?
     private var captureTask: Task<Void, Never>?
     private var captureAttemptID: UUID?
 
@@ -108,13 +102,15 @@ final class TextLookupPlugin: BuiltinPlugin {
 
         let mode = settings.selectionMode
         beginCapture(request, delay: .milliseconds(130), reportFailure: false) { [weak self] capture in
-            guard let self else { return }
+            guard let self,
+                  NSWorkspace.shared.frontmostApplication?.processIdentifier
+                    == request.targetApplicationPID else { return }
             if mode == .automatic {
                 publish(capture)
             } else {
-                candidate = SelectionCandidate(
+                candidate = TextLookupSelectionCandidate(
                     capture: capture,
-                    applicationBundleIdentifier: capture.sourceApplicationBundleIdentifier,
+                    targetApplicationPID: request.targetApplicationPID,
                     createdAt: Date()
                 )
             }
@@ -122,10 +118,13 @@ final class TextLookupPlugin: BuiltinPlugin {
     }
 
     private func lookupShortcutPressed() {
-        let frontmostBundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        panelController.hide()
+        let frontmostApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         if let candidate,
-           Date().timeIntervalSince(candidate.createdAt) <= 3,
-           candidate.applicationBundleIdentifier == frontmostBundleIdentifier {
+           candidate.isValid(
+                at: Date(),
+                frontmostApplicationPID: frontmostApplicationPID
+           ) {
             self.candidate = nil
             publish(candidate.capture)
             return

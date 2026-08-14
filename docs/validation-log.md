@@ -177,3 +177,14 @@
 - 通过：28 个 zbox Swift Testing 单元测试全部通过，包含新增的取消不敏感、乱序失败回归测试。
 - 通过：zbox Release 配置重新完成签名构建。
 - 限制：包含 UI target 的完整 `test` 命令中，全部单元测试通过，但 UI Test Runner 因系统认证正在运行而初始化失败；该环境失败不作为功能断言通过，也未以产品代码绕过。
+
+## Text Lookup v0.1：逐条完成度审计修正
+
+- 通过：快捷键触发新查词时先关闭旧 panel 并清理旧 session；候选以目标应用 PID 和 3 秒时限校验，捕获完成前应用已切换时不再发布旧选区。
+- 通过：词典内链跳转后保留当前 lookup term；首次失败后的明确重试继续查询当前内链词条，不再退回最初捕获词。
+- 通过：任意外部鼠标按键均可关闭 panel；原句不再四行截断，长内容在最高 88 pt 的原句区域内可滚动查看全文；目标语言菜单与翻译状态归入同一信息区。
+- 通过：`AppEnvironment` 使用既有 `TranslationCredentialStoring` seam；内存 fake 验证 secret 只进入凭据存储、UserDefaults 只含 credential reference，删除配置同步删除凭据。
+- 通过：新增 3 个必要合同测试覆盖候选过期/应用切换、内链词条重试和第三方凭据边界；zbox 共 31 个 Swift Testing 单元测试全部通过。
+- 通过：FlashDictIntegrationKit 当前源码 8 个合同测试重新通过；zbox Release 配置重新完成签名构建。
+- 限制：长原句与翻译区布局已通过代码和构建检查，但当前系统认证状态阻止 UI Test Runner 初始化，本轮没有取得新的 panel 截图或人工交互证据。
+- 阻塞复核：本机 `security find-identity -v -p codesigning` 返回 0 个有效签名身份；现有 FlashDict 1.4.0 虽带 stapled notarization ticket，但签名 authority 不可用、entitlements blob 无效且二进制未包含正式 App Group 标识，仍不能作为真实 App Group 跨进程验收服务端。
