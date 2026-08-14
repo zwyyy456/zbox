@@ -81,6 +81,8 @@ final class TextLookupSessionModel {
     @ObservationIgnored
     private var lookupTask: Task<Void, Never>?
     @ObservationIgnored
+    private var activeDictionaryRequestID: UUID?
+    @ObservationIgnored
     private var cardTasks: [String: Task<Void, Never>] = [:]
 
     private(set) var capture: TextLookupCapture?
@@ -127,6 +129,8 @@ final class TextLookupSessionModel {
         case .senseSelected(let selection):
             createFlashcard(from: selection, capture: capture)
         case .entryRequested(let term, _):
+            cancelCardWork()
+            selectionStates = [:]
             startDictionaryLookup(term: term, sessionID: capture.id)
         case .flashDictNotRunning:
             dictionaryState = .failed(.flashDictNotRunning)
@@ -191,6 +195,7 @@ final class TextLookupSessionModel {
 
     private func startDictionaryLookup(term: String, sessionID: UUID) {
         lookupTask?.cancel()
+        activeDictionaryRequestID = nil
         guard let flashDict else {
             dictionaryState = .failed(.integrationUnavailable)
             return
@@ -199,16 +204,21 @@ final class TextLookupSessionModel {
         dictionaryState = .loading
         surfaceMessage = nil
         let requestID = UUID()
+        activeDictionaryRequestID = requestID
         lookupTask = Task { [weak self, flashDict] in
             do {
                 let document = try await flashDict.lookup(term: term, requestID: requestID)
                 try Task.checkCancellation()
-                guard let self, self.accepts(sessionID) else { return }
+                guard let self,
+                      self.accepts(sessionID),
+                      self.activeDictionaryRequestID == requestID else { return }
                 dictionaryState = .loaded(document)
             } catch is CancellationError {
                 return
             } catch {
-                guard let self, self.accepts(sessionID) else { return }
+                guard let self,
+                      self.accepts(sessionID),
+                      self.activeDictionaryRequestID == requestID else { return }
                 dictionaryState = .failed(Self.map(error))
             }
         }
@@ -263,6 +273,11 @@ final class TextLookupSessionModel {
     private func cancelWork() {
         lookupTask?.cancel()
         lookupTask = nil
+        activeDictionaryRequestID = nil
+        cancelCardWork()
+    }
+
+    private func cancelCardWork() {
         for task in cardTasks.values { task.cancel() }
         cardTasks = [:]
     }

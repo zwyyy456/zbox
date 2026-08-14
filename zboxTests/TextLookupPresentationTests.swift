@@ -111,6 +111,38 @@ struct TextLookupPresentationTests {
         }
     }
 
+    @Test @MainActor
+    func staleDictionaryFailureDoesNotReplaceNewerEntry() async throws {
+        let flashDict = OutOfOrderFlashDictService()
+        let model = TextLookupSessionModel(flashDict: flashDict)
+        model.beginLookup(
+            with: capture(id: UUID(), term: "old"),
+            targetLanguageIdentifier: "zh-Hans"
+        )
+        await flashDict.waitUntilOldLookupStarts()
+
+        model.handle(.entryRequested(term: "new", anchor: nil))
+        await waitUntilLoaded(term: "new", in: model)
+        await flashDict.releaseOldLookup()
+        await flashDict.waitUntilOldLookupReturns()
+        for _ in 0..<20 { await Task.yield() }
+
+        guard case .loaded(let document) = model.dictionaryState else {
+            Issue.record("Expected the newer dictionary entry to remain loaded")
+            return
+        }
+        #expect(document.term == "new")
+    }
+
+    @MainActor
+    private func waitUntilLoaded(term: String, in model: TextLookupSessionModel) async {
+        for _ in 0..<100 {
+            if case .loaded(let document) = model.dictionaryState, document.term == term { return }
+            await Task.yield()
+        }
+        Issue.record("Expected dictionary entry \(term) to load")
+    }
+
     @MainActor
     private func capture(id: UUID, term: String) -> TextLookupCapture {
         TextLookupCapture(
@@ -132,6 +164,66 @@ struct TextLookupPresentationTests {
         }
         Issue.record("Expected a FlashDict create-card request")
         throw CancellationError()
+    }
+}
+
+private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
+    private struct ExpectedFailure: Error {}
+    private var oldLookupStarted = false
+    private var oldLookupReturned = false
+    private var oldLookupReleased = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var returnWaiters: [CheckedContinuation<Void, Never>] = []
+    private var releaseWaiter: CheckedContinuation<Void, Never>?
+
+    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
+        if term == "old" {
+            oldLookupStarted = true
+            startWaiters.forEach { $0.resume() }
+            startWaiters = []
+            if !oldLookupReleased {
+                await withCheckedContinuation { releaseWaiter = $0 }
+            }
+            oldLookupReturned = true
+            returnWaiters.forEach { $0.resume() }
+            returnWaiters = []
+            throw ExpectedFailure()
+        }
+        return LookupDocument(
+            requestID: requestID,
+            dictionaryStableID: "primary",
+            dictionaryName: "Main",
+            term: term,
+            htmlDocument: "<html></html>"
+        )
+    }
+
+    func waitUntilOldLookupStarts() async {
+        guard !oldLookupStarted else { return }
+        await withCheckedContinuation { startWaiters.append($0) }
+    }
+
+    func releaseOldLookup() {
+        oldLookupReleased = true
+        releaseWaiter?.resume()
+        releaseWaiter = nil
+    }
+
+    func waitUntilOldLookupReturns() async {
+        guard !oldLookupReturned else { return }
+        await withCheckedContinuation { returnWaiters.append($0) }
+    }
+
+    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
+        LookupResource(data: Data(), mimeType: "application/octet-stream")
+    }
+
+    func createFlashcard(
+        deliveryID: UUID,
+        seed: FlashcardSeed,
+        context: FlashcardCreationContext
+    ) async throws -> FlashcardCreationResult {
+        .added(cardID: UUID())
     }
 }
 

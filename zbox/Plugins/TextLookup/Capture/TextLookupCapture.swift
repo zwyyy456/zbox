@@ -13,6 +13,14 @@ nonisolated struct TextLookupCapture: Sendable, Equatable {
 nonisolated enum TextCaptureIntent: Sendable {
     case currentSelection
     case pointerLocation(CGPoint)
+
+    var allowsClipboardFallback: Bool {
+        if case .currentSelection = self { true } else { false }
+    }
+
+    var anchorPoint: CGPoint? {
+        if case .pointerLocation(let point) = self { point } else { nil }
+    }
 }
 
 nonisolated struct TextCaptureRequest: Sendable {
@@ -23,7 +31,11 @@ nonisolated struct TextCaptureRequest: Sendable {
     let applicationBundleIdentifiersByPID: [pid_t: String]
     let excludedApplicationBundleIdentifiers: Set<String>
     let primaryScreenMaxY: CGFloat
-    let fallbackAnchorPoint: CGPoint?
+    let triggerAnchorPoint: CGPoint
+
+    var triggerAnchorRect: CGRect {
+        CGRect(x: triggerAnchorPoint.x, y: triggerAnchorPoint.y, width: 1, height: 1)
+    }
 }
 
 nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {

@@ -57,7 +57,11 @@ actor AccessibilityTextCapturer: TextCapturing {
             term: cleaned.term,
             sentence: sentence,
             sourceURL: sourceURL(from: element),
-            anchorRect: cocoaBounds(for: termRange, in: element, primaryMaxY: request.primaryScreenMaxY),
+            anchorRect: cocoaBounds(
+                for: termRange,
+                in: element,
+                primaryMaxY: request.primaryScreenMaxY
+            ) ?? request.triggerAnchorRect,
             sourceApplicationBundleIdentifier: request.targetApplicationBundleIdentifier
         )
     }
@@ -115,7 +119,11 @@ actor AccessibilityTextCapturer: TextCapturing {
             term: term,
             sentence: sentence,
             sourceURL: sourceURL(from: element),
-            anchorRect: cocoaBounds(for: wordRange, in: element, primaryMaxY: request.primaryScreenMaxY),
+            anchorRect: cocoaBounds(
+                for: wordRange,
+                in: element,
+                primaryMaxY: request.primaryScreenMaxY
+            ) ?? request.triggerAnchorRect,
             sourceApplicationBundleIdentifier: bundleIdentifier
         )
     }
@@ -136,19 +144,12 @@ actor AccessibilityTextCapturer: TextCapturing {
         in element: AXUIElement
     ) -> (text: String, globalLocation: Int)? {
         let totalLength = integerAttribute(element, "AXNumberOfCharacters")
-            ?? stringAttribute(element, "AXValue")?.utf16.count
         guard let totalLength, totalLength > 0 else { return nil }
 
         let location = max(0, range.location - contextRadius)
         let end = min(totalLength, NSMaxRange(NSRange(location: range.location, length: range.length)) + contextRadius)
         let contextRange = CFRange(location: location, length: max(0, end - location))
-        if let text = stringForRange(contextRange, in: element) {
-            return (text, location)
-        }
-        if let text = stringAttribute(element, "AXValue") {
-            return (text, 0)
-        }
-        return nil
+        return stringForRange(contextRange, in: element).map { ($0, location) }
     }
 
     private func sourceURL(from element: AXUIElement) -> URL? {

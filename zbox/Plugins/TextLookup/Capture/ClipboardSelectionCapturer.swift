@@ -29,16 +29,12 @@ final class ClipboardSelectionCapturer {
         try Task.checkCancellation()
         guard let copiedText else { throw TextCaptureError.clipboardFallbackFailed }
         let cleaned = try TextLookupTextProcessor.cleanSelection(copiedText)
-        let anchorRect = request.fallbackAnchorPoint.map {
-            CGRect(x: $0.x, y: $0.y, width: 1, height: 1)
-        }
-
         return TextLookupCapture(
             id: request.id,
             term: cleaned.term,
             sentence: nil,
             sourceURL: nil,
-            anchorRect: anchorRect,
+            anchorRect: request.triggerAnchorRect,
             sourceApplicationBundleIdentifier: request.targetApplicationBundleIdentifier
         )
     }

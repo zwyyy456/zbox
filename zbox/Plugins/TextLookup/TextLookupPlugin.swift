@@ -132,8 +132,9 @@ final class TextLookupPlugin: BuiltinPlugin {
         }
 
         candidate = nil
-        guard let request = captureRequest(intent: .pointerLocation(NSEvent.mouseLocation)) else {
-            present(.unableToReadText)
+        let pointerLocation = NSEvent.mouseLocation
+        guard let request = captureRequest(intent: .pointerLocation(pointerLocation)) else {
+            present(.unableToReadText, anchorPoint: pointerLocation)
             return
         }
         beginCapture(request, reportFailure: true, completion: publish)
@@ -144,7 +145,8 @@ final class TextLookupPlugin: BuiltinPlugin {
         fallbackAnchorPoint: CGPoint? = nil
     ) -> TextCaptureRequest? {
         guard let application = NSWorkspace.shared.frontmostApplication,
-              let primaryScreenMaxY = NSScreen.screens.first?.frame.maxY else { return nil }
+              let primaryScreenMaxY = NSScreen.screens.first?.frame.maxY,
+              let anchorPoint = fallbackAnchorPoint ?? intent.anchorPoint else { return nil }
         return TextCaptureRequest(
             id: UUID(),
             intent: intent,
@@ -157,7 +159,7 @@ final class TextLookupPlugin: BuiltinPlugin {
             ),
             excludedApplicationBundleIdentifiers: settings.excludedApplicationBundleIdentifiers,
             primaryScreenMaxY: primaryScreenMaxY,
-            fallbackAnchorPoint: fallbackAnchorPoint
+            triggerAnchorPoint: anchorPoint
         )
     }
 
@@ -176,10 +178,14 @@ final class TextLookupPlugin: BuiltinPlugin {
                 let capture: TextLookupCapture
                 do {
                     capture = try await capturer.capture(request)
-                } catch let error as TextCaptureError
-                    where self.settings.isClipboardFallbackEnabled
-                        && request.fallbackAnchorPoint != nil
-                        && [.noSelection, .unableToReadText, .unsupportedElement].contains(error) {
+                } catch let error as TextCaptureError {
+                    guard self.settings.isClipboardFallbackEnabled,
+                          request.intent.allowsClipboardFallback,
+                          [.noSelection, .unableToReadText, .unsupportedElement].contains(error)
+                    else { throw error }
+                    guard NSWorkspace.shared.frontmostApplication?.processIdentifier
+                            == request.targetApplicationPID
+                    else { throw TextCaptureError.unableToReadText }
                     capture = try await self.clipboardCapturer.capture(request)
                 }
                 try Task.checkCancellation()
@@ -189,11 +195,11 @@ final class TextLookupPlugin: BuiltinPlugin {
                 return
             } catch let error as TextCaptureError {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
-                self.present(error)
+                self.present(error, anchorPoint: request.triggerAnchorPoint)
                 statusMessage = error.localizedDescription
             } catch {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
-                self.present(.unableToReadText)
+                self.present(.unableToReadText, anchorPoint: request.triggerAnchorPoint)
                 statusMessage = TextCaptureError.unableToReadText.localizedDescription
             }
         }
@@ -208,10 +214,11 @@ final class TextLookupPlugin: BuiltinPlugin {
         statusMessage = nil
     }
 
-    private func present(_ error: TextCaptureError) {
+    private func present(_ error: TextCaptureError, anchorPoint: CGPoint) {
         session.present(error)
-        let point = NSEvent.mouseLocation
-        panelController.show(anchor: CGRect(x: point.x, y: point.y, width: 1, height: 1))
+        panelController.show(
+            anchor: CGRect(x: anchorPoint.x, y: anchorPoint.y, width: 1, height: 1)
+        )
     }
 
     private func clearCandidate() {

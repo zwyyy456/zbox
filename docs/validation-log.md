@@ -168,3 +168,12 @@
 - 通过：工作区无未提交实现改动；需求、探针、Slice 1～6 和最终验证均按阶段形成独立提交。
 - 限制：当前 Release 产物使用 Apple Development 证书并包含 `get-task-allow`，不是最终 Developer ID 分发签名；Developer ID、公证和 Gatekeeper 分发验证尚未完成。
 - 结论：代码实施与可在当前环境完成的自动验证已经完成，但需求完成定义第 3～5 项仍有外部验收缺口，因此不把 Text Lookup v0.1 整体标记为完全验收通过。
+
+## Text Lookup v0.1：合并后边界审查
+
+- 通过：新增乱序词典响应回归测试，先复现旧请求普通失败覆盖新词条成功结果，再以独立 dictionary request ID 同时约束成功与失败提交；切换词条时同步取消旧建卡任务并清空义项状态。
+- 通过：剪贴板兼容回退前重新核对前台应用 PID，应用已切换时不再向新应用发送复制事件；selection 与 pointer 均保存触发时锚点，AX 矩形缺失及错误路径不再读取展示时的鼠标位置。
+- 通过：AX 原句上下文只使用 `AXNumberOfCharacters` 与有界 `AXStringForRange`，移除读取完整 `AXValue` 的回退，单次上下文范围保持在目标附近约 2,048 个 UTF-16 单元内。
+- 通过：28 个 zbox Swift Testing 单元测试全部通过，包含新增的取消不敏感、乱序失败回归测试。
+- 通过：zbox Release 配置重新完成签名构建。
+- 限制：包含 UI target 的完整 `test` 命令中，全部单元测试通过，但 UI Test Runner 因系统认证正在运行而初始化失败；该环境失败不作为功能断言通过，也未以产品代码绕过。
