@@ -12,6 +12,7 @@ final class AppEnvironment {
     private let accessibilityAuthorization: AccessibilityAuthorization
     private let windowController: AccessibilityWindowController
     private let launchAtLoginController = LaunchAtLoginController()
+    private let translationCredentialVault = TranslationCredentialVault()
     private let hotkeyStore: HotkeyConfigurationStore
     let textLookupSettings: TextLookupSettingsStore
 
@@ -319,6 +320,44 @@ final class AppEnvironment {
 
     func removeTextLookupExcludedApplication(_ bundleIdentifier: String) {
         textLookupSettings.removeExcludedApplication(bundleIdentifier)
+    }
+
+    func saveThirdPartyTranslationConfiguration(
+        kind: ThirdPartyTranslationKind,
+        endpoint: String,
+        modelIdentifier: String,
+        secret: String
+    ) async {
+        let credentialID = secret.isEmpty ? nil : UUID().uuidString
+        do {
+            if let credentialID {
+                try await translationCredentialVault.store(Data(secret.utf8), for: credentialID)
+            }
+            textLookupSettings.saveThirdPartyConfiguration(
+                ThirdPartyTranslationConfiguration(
+                    id: UUID().uuidString,
+                    kind: kind,
+                    endpoint: endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
+                    modelIdentifier: modelIdentifier.isEmpty ? nil : modelIdentifier,
+                    credentialID: credentialID,
+                    languageMappings: [:]
+                )
+            )
+            statusMessage = "Third-party translation configuration saved"
+        } catch {
+            statusMessage = "Unable to save translation credential"
+        }
+    }
+
+    func removeThirdPartyTranslationConfiguration(_ configuration: ThirdPartyTranslationConfiguration) async {
+        do {
+            if let credentialID = configuration.credentialID {
+                try await translationCredentialVault.remove(for: credentialID)
+            }
+            textLookupSettings.removeThirdPartyConfiguration(id: configuration.id)
+        } catch {
+            statusMessage = "Unable to remove translation credential"
+        }
     }
 
     func requestAccessibilityPermission() {

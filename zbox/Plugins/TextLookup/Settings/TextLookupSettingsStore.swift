@@ -54,6 +54,7 @@ final class TextLookupSettingsStore {
         static let clipboardFallback = "plugin.text-lookup.clipboard-fallback"
         static let targetLanguage = "plugin.text-lookup.target-language"
         static let excludedApplications = "plugin.text-lookup.excluded-applications"
+        static let thirdPartyConfigurations = "plugin.text-lookup.third-party-configurations"
     }
 
     private let defaults: UserDefaults
@@ -64,6 +65,7 @@ final class TextLookupSettingsStore {
     private(set) var isClipboardFallbackEnabled: Bool
     private(set) var targetLanguageIdentifier: String
     private(set) var excludedApplicationBundleIdentifiers: Set<String>
+    private(set) var thirdPartyConfigurations: [ThirdPartyTranslationConfiguration]
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -82,6 +84,9 @@ final class TextLookupSettingsStore {
         } else {
             excludedApplicationBundleIdentifiers = Self.defaultExcludedApplications
         }
+        thirdPartyConfigurations = defaults.data(forKey: Key.thirdPartyConfigurations)
+            .flatMap { try? JSONDecoder().decode([ThirdPartyTranslationConfiguration].self, from: $0) }
+            ?? []
     }
 
     func setEnabled(_ value: Bool) {
@@ -122,7 +127,22 @@ final class TextLookupSettingsStore {
         persistExcludedApplications()
     }
 
+    func saveThirdPartyConfiguration(_ configuration: ThirdPartyTranslationConfiguration) {
+        thirdPartyConfigurations.removeAll { $0.id == configuration.id }
+        thirdPartyConfigurations.append(configuration)
+        persistThirdPartyConfigurations()
+    }
+
+    func removeThirdPartyConfiguration(id: String) {
+        thirdPartyConfigurations.removeAll { $0.id == id }
+        persistThirdPartyConfigurations()
+    }
+
     private func persistExcludedApplications() {
         defaults.set(excludedApplicationBundleIdentifiers.sorted(), forKey: Key.excludedApplications)
+    }
+
+    private func persistThirdPartyConfigurations() {
+        defaults.set(try? JSONEncoder().encode(thirdPartyConfigurations), forKey: Key.thirdPartyConfigurations)
     }
 }

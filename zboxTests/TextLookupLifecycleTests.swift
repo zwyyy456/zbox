@@ -24,6 +24,16 @@ struct TextLookupLifecycleTests {
         store.setClipboardFallbackEnabled(true)
         store.setTargetLanguageIdentifier("ja")
         store.addExcludedApplication("com.example.Reader")
+        store.saveThirdPartyConfiguration(
+            ThirdPartyTranslationConfiguration(
+                id: "deepl-test",
+                kind: .deepL,
+                endpoint: "https://api.example.test/translate",
+                modelIdentifier: nil,
+                credentialID: "keychain-reference-only",
+                languageMappings: [:]
+            )
+        )
         store = TextLookupSettingsStore(defaults: defaults)
 
         #expect(store.isEnabled)
@@ -32,6 +42,8 @@ struct TextLookupLifecycleTests {
         #expect(store.isClipboardFallbackEnabled)
         #expect(store.targetLanguageIdentifier == "ja")
         #expect(store.excludedApplicationBundleIdentifiers.contains("com.example.Reader"))
+        #expect(store.thirdPartyConfigurations.first?.credentialID == "keychain-reference-only")
+        #expect(!String(decoding: defaults.data(forKey: "plugin.text-lookup.third-party-configurations") ?? Data(), as: UTF8.self).contains("secret-value"))
     }
 
     @Test

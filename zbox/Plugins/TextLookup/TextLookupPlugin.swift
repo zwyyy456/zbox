@@ -20,7 +20,8 @@ final class TextLookupPlugin: BuiltinPlugin {
     private lazy var panelController = TextLookupPanelController(
         model: session,
         settings: settings,
-        hotkeyRegistrar: hotkeyRegistrar
+        hotkeyRegistrar: hotkeyRegistrar,
+        onDismiss: { [weak session] in session?.clear() }
     )
 
     private struct SelectionCandidate {
@@ -77,7 +78,6 @@ final class TextLookupPlugin: BuiltinPlugin {
         captureAttemptID = nil
         candidate = nil
         panelController.hide()
-        session.clear()
         triggerMonitor.stop()
         hotkeyRegistrar.unregister(id: Self.hotkeyRegistrationID)
         isRunning = false
@@ -200,7 +200,10 @@ final class TextLookupPlugin: BuiltinPlugin {
     }
 
     private func publish(_ capture: TextLookupCapture) {
-        session.beginLookup(with: capture)
+        session.beginLookup(
+            with: capture,
+            targetLanguageIdentifier: settings.targetLanguageIdentifier
+        )
         panelController.show(anchor: capture.anchorRect)
         statusMessage = nil
     }

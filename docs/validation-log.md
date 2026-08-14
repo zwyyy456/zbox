@@ -122,3 +122,16 @@
 - 通过：移除一次性探针后的 zbox 签名 Debug 干净构建通过；产物保留 Hardened Runtime、关闭 App Sandbox，并带正确 App Group/Info 配置。
 - 阻塞：当前运行的 `/Users/zwyyy/Downloads/vm-mount/FlashDict.app` 是旧协议构建，只监听旧沙箱 socket，签名不含 App Group；真实请求因此按合同超时。
 - 阻塞：相邻 zdict 当前源码的 FlashDict 因本机 Xcode 账号凭据缺失，且现有 `tech.hyperseek.flashdict.dev` provisioning profile 未授权 App Groups，无法签名启动新服务端。未通过关闭 sandbox 或替换 entitlement 绕过安全边界；真实查词、资源、音频和建卡跨进程闭环需在 FlashDict 签名条件修复后复验。
+
+## Text Lookup Slice 5：Apple 与第三方翻译边界
+
+- 通过：原句与释义独立进入会话状态；无原句时不创建翻译请求，有原句时使用独立 translation request ID，旧结果不能覆盖新目标语言或新查词会话。
+- 通过：`TextLookupPanelView` 通过 `.translationTask(configuration)` 持有 Apple `TranslationSession`；先检查 `LanguageAvailability`，随后调用系统 `prepareTranslation()` 和本地 `translate()`，没有把 session 放进长期 model 或插件。
+- 通过：Apple Translation 覆盖原句缺失、加载、成功、无法识别语言、不支持语言对、模型下载取消和内部失败；取消或晚到结果只有 request ID 仍有效时才会显示。
+- 通过：弹窗语言菜单更新持久化目标语言并只替换当前翻译 request/configuration，不重新捕获文本或查询 FlashDict；翻译结果只保留在内存中，建卡上下文仍固定不含翻译。
+- 通过：当前 Mac 上英文到简体中文的真实 `LanguageAvailability` 返回 `supported`，证明语言对受系统支持但模型尚未安装；没有在自动验证中替用户确认下载。首次实际翻译将使用系统下载授权体验。
+- 通过：定义 provider/request/result/error 通用合同，以及 Google、DeepL、LLM 的非秘密配置结构；这些 provider 在设置中明确标注仅保存配置、没有网络 adapter，Apple 仍是唯一可工作的来源。
+- 通过：endpoint、model、credential reference 和可选语言映射使用 `plugin.text-lookup.*` UserDefaults；API secret 只由 `TranslationCredentialVault` 以稳定 service/account 存入 Keychain，普通插件停用不删除。
+- 通过：27 个 Swift Testing 测试全部通过，其中新增目标语言 request 替换/旧结果 gate，并扩展设置恢复测试确认只持久化 Keychain reference。
+- 通过：一次性语言状态探针已移除，签名 Debug 干净构建通过；未向任何第三方翻译服务发送网络请求，也未使用真实第三方 API key。
+- 延后：当前语言模型未安装，Apple Translation 的真实成功文本与用户取消下载路径需在用户首次授权模型下载后复验。

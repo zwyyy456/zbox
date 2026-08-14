@@ -1,9 +1,11 @@
 import FlashDictIntegrationKit
 import SwiftUI
+@preconcurrency import Translation
 
 struct TextLookupPanelView: View {
     let model: TextLookupSessionModel
     let settings: TextLookupSettingsStore
+    @State private var translationConfiguration: TranslationSession.Configuration?
 
     private let languageChoices = [
         ("en", "English"),
@@ -34,11 +36,9 @@ struct TextLookupPanelView: View {
                 }
 
                 Divider()
+                translationContent
+                Divider()
                 dictionaryContent
-                if capture.sentence != nil {
-                    Divider()
-                    pendingRow("Translation", detail: "Preparing translation…")
-                }
             } else if let error = model.captureError {
                 ContentUnavailableView(
                     "Unable to Look Up Text",
@@ -57,6 +57,21 @@ struct TextLookupPanelView: View {
         )
         .background(.regularMaterial)
         .clipShape(.rect(cornerRadius: 12))
+        .onAppear(perform: refreshTranslationConfiguration)
+        .onChange(of: model.translationRequest?.id) {
+            refreshTranslationConfiguration()
+        }
+        .translationTask(translationConfiguration) { session in
+            guard let request = model.translationRequest else { return }
+            switch await Self.runTranslation(session, request: request) {
+            case .success(let result):
+                model.completeTranslation(result)
+            case .failure(let failure):
+                model.failTranslation(failure, requestID: request.id)
+            case .cancelled:
+                model.failTranslation(.modelDownloadCancelled, requestID: request.id)
+            }
+        }
     }
 
     private var languageMenu: some View {
@@ -64,6 +79,7 @@ struct TextLookupPanelView: View {
             ForEach(languageChoices, id: \.0) { identifier, name in
                 Button {
                     settings.setTargetLanguageIdentifier(identifier)
+                    model.requestTranslation(targetLanguageIdentifier: identifier)
                 } label: {
                     if settings.targetLanguageIdentifier == identifier {
                         Label(name, systemImage: "checkmark")
@@ -79,6 +95,83 @@ struct TextLookupPanelView: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help("Translation target language")
+    }
+
+    @ViewBuilder
+    private var translationContent: some View {
+        switch model.translationState {
+        case .sentenceUnavailable:
+            Text("No sentence is available to translate.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case .loading:
+            pendingRow("Translation", detail: "Preparing Apple Translation…")
+        case .translated(let result):
+            Text(result.translatedText)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .failed(let failure):
+            VStack(alignment: .leading, spacing: 6) {
+                Text(failure.message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Button("Retry Translation") {
+                    model.retryTranslation()
+                }
+            }
+        }
+    }
+
+    private func refreshTranslationConfiguration() {
+        guard let request = model.translationRequest else {
+            translationConfiguration = nil
+            return
+        }
+        if var configuration = translationConfiguration {
+            configuration.source = request.sourceLanguage
+            configuration.target = request.targetLanguage
+            configuration.invalidate()
+            translationConfiguration = configuration
+        } else {
+            translationConfiguration = .init(
+                source: request.sourceLanguage,
+                target: request.targetLanguage
+            )
+        }
+    }
+
+    nonisolated private static func runTranslation(
+        _ session: TranslationSession,
+        request: TranslationRequest
+    ) async -> AppleTranslationOutcome {
+        let status: LanguageAvailability.Status
+        do {
+            status = try await LanguageAvailability().status(
+                for: request.text,
+                to: request.targetLanguage
+            )
+        } catch {
+            return .failure(.unableToIdentifyLanguage)
+        }
+        guard status != .unsupported else {
+            return .failure(.unsupportedLanguagePair)
+        }
+        do {
+            try await session.prepareTranslation()
+            let response = try await session.translate(request.text)
+            return .success(
+                TranslationResult(
+                    requestID: request.id,
+                    sourceLanguage: response.sourceLanguage,
+                    targetLanguage: response.targetLanguage,
+                    translatedText: response.targetText
+                )
+            )
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            return .failure(.internalFailure)
+        }
     }
 
     private var languageName: String {
@@ -145,4 +238,10 @@ struct TextLookupPanelView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
+}
+
+private nonisolated enum AppleTranslationOutcome: Sendable {
+    case success(TranslationResult)
+    case failure(TextLookupTranslationFailure)
+    case cancelled
 }

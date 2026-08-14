@@ -50,6 +50,29 @@ enum TextLookupDictionaryState {
     case failed(TextLookupDictionaryFailure)
 }
 
+nonisolated enum TextLookupTranslationFailure: Equatable, Sendable {
+    case unableToIdentifyLanguage
+    case unsupportedLanguagePair
+    case modelDownloadCancelled
+    case internalFailure
+
+    var message: String {
+        switch self {
+        case .unableToIdentifyLanguage: "The sentence language could not be identified."
+        case .unsupportedLanguagePair: "Apple Translation does not support this language pair."
+        case .modelDownloadCancelled: "The language download was cancelled."
+        case .internalFailure: "The sentence could not be translated."
+        }
+    }
+}
+
+enum TextLookupTranslationState {
+    case sentenceUnavailable
+    case loading
+    case translated(TranslationResult)
+    case failed(TextLookupTranslationFailure)
+}
+
 @MainActor
 @Observable
 final class TextLookupSessionModel {
@@ -65,6 +88,8 @@ final class TextLookupSessionModel {
     private(set) var dictionaryState: TextLookupDictionaryState = .idle
     private(set) var selectionStates: [String: SenseSelectionState] = [:]
     private(set) var surfaceMessage: String?
+    private(set) var translationRequest: TranslationRequest?
+    private(set) var translationState: TextLookupTranslationState = .sentenceUnavailable
 
     var activeSessionID: UUID? { capture?.id }
     var resourceProvider: (any FlashDictResourceProviding)? { flashDict }
@@ -73,13 +98,14 @@ final class TextLookupSessionModel {
         self.flashDict = flashDict
     }
 
-    func beginLookup(with capture: TextLookupCapture) {
+    func beginLookup(with capture: TextLookupCapture, targetLanguageIdentifier: String) {
         cancelWork()
         self.capture = capture
         captureError = nil
         selectionStates = [:]
         surfaceMessage = nil
         startDictionaryLookup(term: capture.term, sessionID: capture.id)
+        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier)
     }
 
     func present(_ error: TextCaptureError) {
@@ -87,6 +113,8 @@ final class TextLookupSessionModel {
         capture = nil
         captureError = error
         dictionaryState = .idle
+        translationRequest = nil
+        translationState = .sentenceUnavailable
     }
 
     func accepts(_ sessionID: UUID) -> Bool {
@@ -120,6 +148,36 @@ final class TextLookupSessionModel {
         startDictionaryLookup(term: capture.term, sessionID: capture.id)
     }
 
+    func requestTranslation(targetLanguageIdentifier: String) {
+        guard let sentence = capture?.sentence else {
+            translationRequest = nil
+            translationState = .sentenceUnavailable
+            return
+        }
+        translationRequest = TranslationRequest(
+            id: UUID(),
+            text: sentence,
+            sourceLanguage: nil,
+            targetLanguage: Locale.Language(identifier: targetLanguageIdentifier)
+        )
+        translationState = .loading
+    }
+
+    func completeTranslation(_ result: TranslationResult) {
+        guard translationRequest?.id == result.requestID else { return }
+        translationState = .translated(result)
+    }
+
+    func failTranslation(_ failure: TextLookupTranslationFailure, requestID: UUID) {
+        guard translationRequest?.id == requestID else { return }
+        translationState = .failed(failure)
+    }
+
+    func retryTranslation() {
+        guard let request = translationRequest else { return }
+        requestTranslation(targetLanguageIdentifier: request.targetLanguage.maximalIdentifier)
+    }
+
     func clear() {
         cancelWork()
         capture = nil
@@ -127,6 +185,8 @@ final class TextLookupSessionModel {
         dictionaryState = .idle
         selectionStates = [:]
         surfaceMessage = nil
+        translationRequest = nil
+        translationState = .sentenceUnavailable
     }
 
     private func startDictionaryLookup(term: String, sessionID: UUID) {

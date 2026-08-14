@@ -3,6 +3,10 @@ import SwiftUI
 struct TextLookupSettingsView: View {
     let environment: AppEnvironment
     @State private var excludedBundleIdentifier = ""
+    @State private var providerKind: ThirdPartyTranslationKind = .deepL
+    @State private var providerEndpoint = ""
+    @State private var providerModel = ""
+    @State private var providerSecret = ""
 
     private let commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es"]
 
@@ -112,6 +116,59 @@ struct TextLookupSettingsView: View {
                 }
             }
             .disabled(!settings.isEnabled)
+
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Third-Party Translation")
+                    .font(.headline)
+                Text("Configuration only. Google, DeepL, and LLM network adapters are not enabled in this version; Apple Translation remains the only active provider.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(settings.thirdPartyConfigurations) { configuration in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(configuration.kind.label)
+                            Text(configuration.endpoint)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Remove") {
+                            Task {
+                                await environment.removeThirdPartyTranslationConfiguration(configuration)
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+
+                Picker("Provider", selection: $providerKind) {
+                    ForEach(ThirdPartyTranslationKind.allCases) { kind in
+                        Text(kind.label).tag(kind)
+                    }
+                }
+                TextField("Endpoint", text: $providerEndpoint)
+                TextField("Model identifier (optional)", text: $providerModel)
+                SecureField("API key (stored in Keychain)", text: $providerSecret)
+                Button("Save Configuration") {
+                    let endpoint = providerEndpoint
+                    let model = providerModel
+                    let secret = providerSecret
+                    Task {
+                        await environment.saveThirdPartyTranslationConfiguration(
+                            kind: providerKind,
+                            endpoint: endpoint,
+                            modelIdentifier: model,
+                            secret: secret
+                        )
+                        providerEndpoint = ""
+                        providerModel = ""
+                        providerSecret = ""
+                    }
+                }
+                .disabled(providerEndpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
         }
     }
 

@@ -32,8 +32,8 @@ struct TextLookupPresentationTests {
         let firstID = UUID()
         let secondID = UUID()
 
-        model.beginLookup(with: capture(id: firstID, term: "first"))
-        model.beginLookup(with: capture(id: secondID, term: "second"))
+        model.beginLookup(with: capture(id: firstID, term: "first"), targetLanguageIdentifier: "zh-Hans")
+        model.beginLookup(with: capture(id: secondID, term: "second"), targetLanguageIdentifier: "zh-Hans")
 
         #expect(!model.accepts(firstID))
         #expect(model.accepts(secondID))
@@ -53,7 +53,7 @@ struct TextLookupPresentationTests {
             anchorRect: nil,
             sourceApplicationBundleIdentifier: nil
         )
-        model.beginLookup(with: capture)
+        model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans")
 
         let seed = FlashcardSeed(
             dictionaryStableID: "primary",
@@ -75,6 +75,40 @@ struct TextLookupPresentationTests {
         #expect(context.sentence == capture.sentence)
         #expect(context.sourceURL == sourceURL)
         #expect(context.userNote == nil)
+    }
+
+    @Test @MainActor
+    func targetLanguageChangeReplacesOnlyTranslationRequest() throws {
+        let model = TextLookupSessionModel()
+        let capture = TextLookupCapture(
+            id: UUID(),
+            term: "swift",
+            sentence: "Swift is concise.",
+            sourceURL: nil,
+            anchorRect: nil,
+            sourceApplicationBundleIdentifier: nil
+        )
+        model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans")
+        let firstRequest = try #require(model.translationRequest)
+
+        model.requestTranslation(targetLanguageIdentifier: "ja")
+        let secondRequest = try #require(model.translationRequest)
+        model.completeTranslation(
+            TranslationResult(
+                requestID: firstRequest.id,
+                sourceLanguage: Locale.Language(identifier: "en"),
+                targetLanguage: firstRequest.targetLanguage,
+                translatedText: "stale"
+            )
+        )
+
+        #expect(model.activeSessionID == capture.id)
+        #expect(secondRequest.id != firstRequest.id)
+        if case .loading = model.translationState {
+            // Expected: the stale completion was ignored.
+        } else {
+            Issue.record("Expected translation to remain loading for the new request")
+        }
     }
 
     @MainActor

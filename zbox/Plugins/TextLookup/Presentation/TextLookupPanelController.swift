@@ -7,15 +7,18 @@ final class TextLookupPanelController {
 
     private let panel: TextLookupPanel
     private let hotkeyRegistrar: GlobalHotkeyRegistrar
+    private let onDismiss: () -> Void
 
     var isVisible: Bool { panel.isVisible }
 
     init(
         model: TextLookupSessionModel,
         settings: TextLookupSettingsStore,
-        hotkeyRegistrar: GlobalHotkeyRegistrar
+        hotkeyRegistrar: GlobalHotkeyRegistrar,
+        onDismiss: @escaping () -> Void
     ) {
         self.hotkeyRegistrar = hotkeyRegistrar
+        self.onDismiss = onDismiss
         let hostingView = NSHostingView(
             rootView: TextLookupPanelView(model: model, settings: settings)
         )
@@ -68,6 +71,7 @@ final class TextLookupPanelController {
     func hide() {
         hotkeyRegistrar.unregister(id: Self.escapeRegistrationID)
         panel.orderOut(nil)
+        onDismiss()
     }
 
     private func registerEscape() {
