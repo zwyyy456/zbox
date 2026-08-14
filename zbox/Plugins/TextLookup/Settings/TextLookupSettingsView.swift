@@ -88,6 +88,9 @@ struct TextLookupSettingsView: View {
                         environment.openAccessibilitySettings()
                     }
                 }
+                Text("Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Excluded Applications")

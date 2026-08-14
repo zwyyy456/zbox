@@ -55,7 +55,7 @@ struct SettingsView: View {
             TextLookupSettingsView(environment: environment)
 
             Section("Window Management") {
-                Text("Accessibility access lets ZBox move and resize the frontmost application window. Window contents are not read or stored.")
+                Text("Window Management uses Accessibility only to move and resize the frontmost application window. Text Lookup has separate controls and privacy behavior above.")
                     .foregroundStyle(.secondary)
 
                 HStack {

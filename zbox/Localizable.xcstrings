@@ -1,0 +1,336 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词仅在触发时读取选区或鼠标指针下的文字。捕获内容只保留在当前弹窗中，除非你明确创建 FlashDict 闪卡；不会使用屏幕录制权限，也不会保存查词历史。"
+          }
+        }
+      }
+    },
+    "Window Management uses Accessibility only to move and resize the frontmost application window. Text Lookup has separate controls and privacy behavior above.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口管理仅使用辅助功能移动和缩放前台应用窗口。文本取词使用上方独立的控制和隐私规则。"
+          }
+        }
+      }
+    },
+    "Text Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词"
+          }
+        }
+      }
+    },
+    "Enable Text Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用文本取词"
+          }
+        }
+      }
+    },
+    "Selection Trigger": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "划词触发"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动弹出"
+          }
+        }
+      }
+    },
+    "Shortcut Required": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要快捷键确认"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Lookup Shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取词快捷键"
+          }
+        }
+      }
+    },
+    "Double-tap ⌥": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双击 ⌥"
+          }
+        }
+      }
+    },
+    "Clipboard Compatibility Mode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板兼容取词"
+          }
+        }
+      }
+    },
+    "When Accessibility cannot read an existing selection, ZBox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当辅助功能无法读取已有选区时，ZBox 可短暂模拟复制，并仅在剪贴板未被改动时恢复内容。鼠标指针取词不会使用剪贴板。"
+          }
+        }
+      }
+    },
+    "Translation Language": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻译目标语言"
+          }
+        }
+      }
+    },
+    "Accessibility": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能"
+          }
+        }
+      }
+    },
+    "Granted": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授权"
+          }
+        }
+      }
+    },
+    "Required": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要授权"
+          }
+        }
+      }
+    },
+    "Request Permission": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求授权"
+          }
+        }
+      }
+    },
+    "Open System Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
+          }
+        }
+      }
+    },
+    "Excluded Applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排除的应用"
+          }
+        }
+      }
+    },
+    "Application bundle identifier": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用 Bundle 标识符"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除"
+          }
+        }
+      }
+    },
+    "Third-Party Translation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第三方翻译"
+          }
+        }
+      }
+    },
+    "Configuration only. Google, DeepL, and LLM network adapters are not enabled in this version; Apple Translation remains the only active provider.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前版本仅保存配置，不启用 Google、DeepL 或 LLM 网络适配器；Apple 翻译是唯一可用的翻译来源。"
+          }
+        }
+      }
+    },
+    "Provider": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务商"
+          }
+        }
+      }
+    },
+    "Endpoint": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接口地址"
+          }
+        }
+      }
+    },
+    "Model identifier (optional)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模型标识（可选）"
+          }
+        }
+      }
+    },
+    "API key (stored in Keychain)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API Key（存储在钥匙串）"
+          }
+        }
+      }
+    },
+    "Save Configuration": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存配置"
+          }
+        }
+      }
+    },
+    "Translation target language": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻译目标语言"
+          }
+        }
+      }
+    },
+    "English": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "英语"
+          }
+        }
+      }
+    },
+    "Definition": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "释义"
+          }
+        }
+      }
+    },
+    "Translation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻译"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

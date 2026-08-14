@@ -135,3 +135,27 @@
 - 通过：27 个 Swift Testing 测试全部通过，其中新增目标语言 request 替换/旧结果 gate，并扩展设置恢复测试确认只持久化 Keychain reference。
 - 通过：一次性语言状态探针已移除，签名 Debug 干净构建通过；未向任何第三方翻译服务发送网络请求，也未使用真实第三方 API key。
 - 延后：当前语言模型未安装，Apple Translation 的真实成功文本与用户取消下载路径需在用户首次授权模型下载后复验。
+
+## Text Lookup Slice 6：兼容、隐私与本地化收口
+
+- 通过：默认排除 zbox 与 FlashDict 的正式/开发 bundle ID；selection 和 pointer 两条 AX 路径均在读取正文前检查排除项，并沿父链拒绝 `AXSecureTextField`。
+- 通过：剪贴板兼容模式仍默认关闭，只用于已存在选区的单次 AX 失败；指针、安全输入和排除应用不会进入兼容路径，恢复前检查 change count。
+- 通过：Text Lookup 设置页加入简体中文 String Catalog；签名产物实际生成 `zh-Hans.lproj/Localizable.strings`，覆盖启停、触发、快捷键、兼容模式、翻译、权限、排除应用和第三方配置文案。
+- 通过：权限/隐私文案明确说明触发时读取选区或指针文字、只保留当前会话、建卡是唯一显式持久化、无需 Screen Recording 且不建立历史；窗口管理文案不再笼统声称应用不读取任何文本。
+- 通过：静态检查 Text Lookup 模块没有 Logger、os_log 或 print；UserDefaults 写入项仅为启停/触发/目标语言/排除列表/第三方非秘密配置，不包含 term、原句、URL、释义 HTML、翻译结果或 API secret。
+- 通过：第三方 API secret 仅进入 Keychain，设置模型和日志只持有随机 credential reference；未实现 provider 无法被设为当前翻译来源。
+
+### 应用兼容矩阵（当前机器）
+
+| 应用 | 选区/原句 | 指针取词 | 当前结论 |
+| --- | --- | --- | --- |
+| TextEdit | 实测成功，取得 term、完整原句和范围矩形 | Slice 0 实测 `AXRangeForPosition` 成功 | 原生 AX 主路径支持 |
+| Safari | 网页正文视觉选区不暴露 selected text | 网页 WebArea 不暴露 range-for-position | 划词需用户开启剪贴板兼容；指针模式首版明确不支持 |
+| Xcode | 编辑器选区可读，超长选区正确返回长度错误 | 未完成稳定坐标自动化 | selection 支持；pointer 待人工复验 |
+| 备忘录 | 已安装 | 未执行稳定人工矩阵 | 待人工复验 |
+| Visual Studio Code | 已安装 | 未执行稳定人工矩阵 | Electron 边界待人工复验 |
+| Preview PDF | 已安装 | 未执行稳定人工矩阵 | 可选中文本 PDF 待人工复验 |
+| Google Chrome | 当前机器未安装 | 当前机器未安装 | 无法在本机验收 |
+
+- 限制：当前没有外接显示器，普通/全屏/多 Space 的 nonactivating panel 行为已有 Slice 0 探针证据，但外接双屏仍只有定位纯函数验证。
+- 未闭环：完整人工应用矩阵、Apple 已安装模型成功翻译/取消下载、Developer ID 分发签名，以及新 FlashDict 服务端的跨进程资源/音频/建卡仍受当前环境或外部签名条件限制；不将这些项目标记为已通过。
