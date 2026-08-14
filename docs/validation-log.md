@@ -96,3 +96,15 @@
 - 限制：一次性启动探针会短暂改变前台进程，无法可靠自动验收 Safari 的复制事件；真实常驻插件的 Safari 兼容闭环随 Slice 6 应用矩阵复验，不保留为产品运行时探针。
 - 通过：23 个 Swift Testing 测试全部通过，其中新增 4 个必要测试覆盖清洗边界、长度限制、UTF-16 单词/句子定位和双击 `⌥` 手势。
 - 通过：临时探针移除后的签名 Debug 干净构建通过。
+
+## Text Lookup Slice 3：悬浮窗口与会话模型
+
+- 通过：独立 `TextLookupPanelController` 使用单一 borderless、nonactivating `NSPanel`，显示时只 `orderFrontRegardless`，不激活 zbox 或调用 `makeKeyAndOrderFront`。
+- 通过：面板使用 floating level，并加入 all Spaces、全屏辅助窗口、transient 与忽略窗口循环行为；点击控件时仅按需成为 key window。
+- 通过：显示期间临时注册无修饰键 Escape 并消费关闭动作，隐藏时立即按 registration ID 注销；外部鼠标按下、新会话和插件停用也会关闭面板。
+- 通过：`TextLookupSessionModel` 成为 capture 与捕获错误的唯一 UI 状态 owner；新 capture 替换旧 session ID，后续异步结果可用 `accepts` gate 拒绝旧会话。
+- 通过：首版面板渲染 term、最多四行原句、释义/翻译独立 loading 占位、可操作错误和紧凑目标语言菜单；未保存任何翻译结果。
+- 通过：定位纯函数优先锚点下方、空间不足时上方显示，并把水平和垂直位置夹紧到目标屏幕 visible frame；无锚点时固定使用触发时鼠标位置。
+- 通过：25 个 Swift Testing 测试全部通过，其中新增 2 个必要测试覆盖上下定位/边界夹紧与新 session 拒绝旧 ID。
+- 通过：签名 Debug 构建通过；不抢焦点的 panel、当前 Space/全屏辅助行为和 Escape 注册已在 Text Lookup Slice 0 的真实签名探针验证。
+- 跳过：当前环境没有外接显示器，双屏定位仅验证纯函数边界，留待 Slice 6 兼容矩阵人工复验。

@@ -13,6 +13,14 @@ final class TextLookupPlugin: BuiltinPlugin {
     private let capturer: any TextCapturing
     private let clipboardCapturer = ClipboardSelectionCapturer()
     private let triggerMonitor = TextLookupTriggerMonitor()
+    private let session = TextLookupSessionModel()
+
+    @ObservationIgnored
+    private lazy var panelController = TextLookupPanelController(
+        model: session,
+        settings: settings,
+        hotkeyRegistrar: hotkeyRegistrar
+    )
 
     private struct SelectionCandidate {
         let capture: TextLookupCapture
@@ -26,8 +34,6 @@ final class TextLookupPlugin: BuiltinPlugin {
 
     private(set) var isRunning = false
     private(set) var statusMessage: String?
-    private(set) var lastCapture: TextLookupCapture?
-    private(set) var captureError: TextCaptureError?
 
     init(
         settings: TextLookupSettingsStore,
@@ -37,7 +43,10 @@ final class TextLookupPlugin: BuiltinPlugin {
         self.settings = settings
         self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer
-        triggerMonitor.onMouseDown = { [weak self] in self?.clearCandidate() }
+        triggerMonitor.onMouseDown = { [weak self] in
+            self?.panelController.hide()
+            self?.clearCandidate()
+        }
         triggerMonitor.onMouseUp = { [weak self] point in self?.mouseReleased(at: point) }
         triggerMonitor.onDoubleOption = { [weak self] in
             guard self?.settings.shortcut == .doubleOption else { return }
@@ -63,8 +72,8 @@ final class TextLookupPlugin: BuiltinPlugin {
         captureTask = nil
         captureAttemptID = nil
         candidate = nil
-        lastCapture = nil
-        captureError = nil
+        panelController.hide()
+        session.clear()
         triggerMonitor.stop()
         hotkeyRegistrar.unregister(id: Self.hotkeyRegistrationID)
         isRunning = false
@@ -120,7 +129,7 @@ final class TextLookupPlugin: BuiltinPlugin {
 
         candidate = nil
         guard let request = captureRequest(intent: .pointerLocation(NSEvent.mouseLocation)) else {
-            captureError = .unableToReadText
+            present(.unableToReadText)
             return
         }
         beginCapture(request, reportFailure: true, completion: publish)
@@ -176,20 +185,26 @@ final class TextLookupPlugin: BuiltinPlugin {
                 return
             } catch let error as TextCaptureError {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
-                captureError = error
+                self.present(error)
                 statusMessage = error.localizedDescription
             } catch {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
-                captureError = .unableToReadText
+                self.present(.unableToReadText)
                 statusMessage = TextCaptureError.unableToReadText.localizedDescription
             }
         }
     }
 
     private func publish(_ capture: TextLookupCapture) {
-        lastCapture = capture
-        captureError = nil
+        session.beginLookup(with: capture)
+        panelController.show(anchor: capture.anchorRect)
         statusMessage = nil
+    }
+
+    private func present(_ error: TextCaptureError) {
+        session.present(error)
+        let point = NSEvent.mouseLocation
+        panelController.show(anchor: CGRect(x: point.x, y: point.y, width: 1, height: 1))
     }
 
     private func clearCandidate() {
