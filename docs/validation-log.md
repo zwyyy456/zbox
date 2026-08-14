@@ -72,3 +72,13 @@
 - 通过：相邻 zdict 的 `FlashDictIntegrationKit` 可独立构建，8 个契约测试全部通过。
 - 延后：FlashDict App Group 的真实跨进程往返随 Slice 4 接入验证；Safari、Chrome、Xcode、VS Code 和 Preview 的完整兼容矩阵随 Slice 6 验证。
 - 说明：一次性探针代码已从产品源代码移除，不作为运行时诊断设施保留。
+
+## Text Lookup Slice 1：插件生命周期与设置
+
+- 通过：增加静态 `BuiltinPluginHost` 与幂等的 Text Lookup 启停边界；应用退出时先停止插件，再清理剩余全局快捷键。
+- 通过：总开关、划词模式、`⌥C`/双击 `⌥` 预设、剪贴板兼容模式、目标语言和排除应用使用 `plugin.text-lookup.*` UserDefaults key 持久化；停用不删除配置。
+- 通过：GlobalHotkeyRegistrar 支持按注册 ID 注销；Text Lookup 重载或停用只注销自身快捷键，不清理 Root Search 与窗口命令注册。
+- 通过：Text Lookup 快捷键加入现有内部冲突检查；注册失败时恢复上一预设并展示错误。
+- 通过：窗口管理与 Text Lookup 共用窄的 Accessibility 授权 adapter。
+- 通过：19 个 Swift Testing 单元测试全部通过，其中新增 3 个必要测试覆盖设置恢复、宿主幂等启停和快捷键冲突。
+- 通过：签名 Debug 构建与真实进程启动验证通过。

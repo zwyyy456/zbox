@@ -35,20 +35,22 @@ nonisolated enum AccessibilityWindowError: LocalizedError, Equatable {
 
 @MainActor
 final class AccessibilityWindowController {
+    private let authorization: AccessibilityAuthorization
+
+    init(authorization: AccessibilityAuthorization = AccessibilityAuthorization()) {
+        self.authorization = authorization
+    }
+
     func requestPermission() {
-        let options = ["AXTrustedCheckOptionPrompt": true]
-        _ = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        authorization.request()
     }
 
     func openSystemSettings() {
-        guard let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ) else { return }
-        NSWorkspace.shared.open(url)
+        authorization.openSystemSettings()
     }
 
     func perform(_ action: WindowAction, targetPID: pid_t?) throws {
-        guard AXIsProcessTrusted() else {
+        guard authorization.isTrusted else {
             requestPermission()
             throw AccessibilityWindowError.permissionRequired
         }

@@ -67,7 +67,17 @@ nonisolated enum HotkeyPreset: String, CaseIterable, Identifiable, Sendable {
 
 nonisolated struct HotkeyAssignment: Sendable {
     let owner: String
-    let preset: HotkeyPreset
+    let hotkey: Hotkey?
+
+    init(owner: String, preset: HotkeyPreset) {
+        self.owner = owner
+        hotkey = preset.hotkey
+    }
+
+    init(owner: String, hotkey: Hotkey?) {
+        self.owner = owner
+        self.hotkey = hotkey
+    }
 }
 
 nonisolated enum HotkeyConfigurationError: LocalizedError, Equatable {
@@ -86,7 +96,7 @@ nonisolated enum HotkeyValidator {
         var ownersByHotkey: [Hotkey: String] = [:]
 
         for assignment in assignments {
-            guard let hotkey = assignment.preset.hotkey else { continue }
+            guard let hotkey = assignment.hotkey else { continue }
             if let existingOwner = ownersByHotkey[hotkey] {
                 throw HotkeyConfigurationError.conflict(existingOwner, assignment.owner)
             }

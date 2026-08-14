@@ -52,6 +52,8 @@ struct SettingsView: View {
                 )
             }
 
+            TextLookupSettingsView(environment: environment)
+
             Section("Window Management") {
                 Text("Accessibility access lets ZBox move and resize the frontmost application window. Window contents are not read or stored.")
                     .foregroundStyle(.secondary)
@@ -71,7 +73,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
-        .frame(width: 500, height: 520)
+        .frame(width: 560, height: 760)
         .scenePadding()
     }
 }

@@ -65,13 +65,23 @@ final class GlobalHotkeyRegistrar {
     }
 
     func unregisterAll() {
-        for registration in registrations.values {
-            UnregisterEventHotKey(registration.reference)
-        }
+        for registration in registrations.values { UnregisterEventHotKey(registration.reference) }
         registrations.removeAll()
         actions.removeAll()
         nextNumericID = 1
 
+        removeEventHandlerIfUnused()
+    }
+
+    func unregister(id: String) {
+        guard let registration = registrations.removeValue(forKey: id) else { return }
+        UnregisterEventHotKey(registration.reference)
+        actions.removeValue(forKey: registration.numericID)
+        removeEventHandlerIfUnused()
+    }
+
+    private func removeEventHandlerIfUnused() {
+        guard registrations.isEmpty else { return }
         if let eventHandler {
             RemoveEventHandler(eventHandler)
             self.eventHandler = nil
