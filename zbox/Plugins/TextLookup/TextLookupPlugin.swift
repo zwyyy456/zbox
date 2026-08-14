@@ -21,7 +21,7 @@ final class TextLookupPlugin: BuiltinPlugin {
         model: session,
         settings: settings,
         hotkeyRegistrar: hotkeyRegistrar,
-        onDismiss: { [weak session] in session?.clear() }
+        onDismiss: { [weak self] in self?.dismissSession() }
     )
 
     private var candidate: TextLookupSelectionCandidate?
@@ -136,6 +136,8 @@ final class TextLookupPlugin: BuiltinPlugin {
             present(.unableToReadText, anchorPoint: pointerLocation)
             return
         }
+        session.beginCapture()
+        panelController.show(anchor: request.triggerAnchorRect)
         beginCapture(request, reportFailure: true, completion: publish)
     }
 
@@ -225,5 +227,12 @@ final class TextLookupPlugin: BuiltinPlugin {
         captureTask?.cancel()
         captureTask = nil
         captureAttemptID = nil
+    }
+
+    private func dismissSession() {
+        captureTask?.cancel()
+        captureTask = nil
+        captureAttemptID = nil
+        session.clear()
     }
 }

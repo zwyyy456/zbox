@@ -41,6 +41,26 @@ struct TextLookupPresentationTests {
     }
 
     @Test @MainActor
+    func explicitCaptureClearsThePreviousSession() {
+        let model = TextLookupSessionModel()
+        model.beginLookup(
+            with: capture(id: UUID(), term: "previous"),
+            targetLanguageIdentifier: "zh-Hans"
+        )
+
+        model.beginCapture()
+
+        #expect(model.isCapturing)
+        #expect(model.capture == nil)
+        #expect(model.captureError == nil)
+        if case .idle = model.dictionaryState {
+            // Expected while text is being captured.
+        } else {
+            Issue.record("Expected dictionary state to reset before capture")
+        }
+    }
+
+    @Test @MainActor
     func createsFlashcardFromFrozenSelectionWithOriginalContext() async throws {
         let flashDict = FlashDictServiceSpy()
         let model = TextLookupSessionModel(flashDict: flashDict)

@@ -19,7 +19,9 @@ struct TextLookupPanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if let capture = model.capture {
+            if model.isCapturing {
+                pendingRow("Text", detail: "Reading text under the pointer…")
+            } else if let capture = model.capture {
                 Text(capture.term)
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)

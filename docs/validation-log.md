@@ -188,3 +188,11 @@
 - 通过：FlashDictIntegrationKit 当前源码 8 个合同测试重新通过；zbox Release 配置重新完成签名构建。
 - 限制：长原句与翻译区布局已通过代码和构建检查，但当前系统认证状态阻止 UI Test Runner 初始化，本轮没有取得新的 panel 截图或人工交互证据。
 - 阻塞复核：本机 `security find-identity -v -p codesigning` 返回 0 个有效签名身份；现有 FlashDict 1.4.0 虽带 stapled notarization ticket，但签名 authority 不可用、entitlements blob 无效且二进制未包含正式 App Group 标识，仍不能作为真实 App Group 跨进程验收服务端。
+
+## Text Lookup v0.1：完成定义补证
+
+- 通过：补充 80/81 字符边界断言，与既有 8/9 词测试共同覆盖自动触发长度合同。
+- 通过：显式指针快捷键在 AX 捕获期间立即显示轻量读取状态；Escape、外部点击、新触发或停用会通过 panel dismiss 边界取消当前 capture attempt，晚到结果不能重新弹窗。
+- 通过：新增 1 个 session 状态测试；zbox 共 32 个 Swift Testing 单元测试全部通过。
+- 记录：新增 `text-lookup-plugin-completion-audit-v0.1.md`，逐项区分 TLP-FR-001～023 的实现、自动化证据和仍缺失的真实验收。
+- 限制：尝试以 argument domain 启动 Release zbox 并使用临时 TextEdit 文稿复验 panel；zbox 启动成功，但 TextEdit 对自身 AppleScript 与 System Events 均返回空窗口列表，无法安全定位内容。本轮未生成截图，临时进程和文件均已清理。

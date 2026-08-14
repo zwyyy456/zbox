@@ -27,6 +27,13 @@ struct TextLookupCaptureTests {
         } catch {
             #expect(error as? TextCaptureError == .selectionTooLong)
         }
+
+        #expect(throws: Never.self) {
+            _ = try TextLookupTextProcessor.cleanSelection(String(repeating: "a", count: 80))
+        }
+        #expect(throws: TextCaptureError.selectionTooLong) {
+            _ = try TextLookupTextProcessor.cleanSelection(String(repeating: "a", count: 81))
+        }
     }
 
     @Test
