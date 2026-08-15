@@ -120,8 +120,10 @@
 - 通过：建卡的 adding、added、rejectedQuota 和 failed 状态按 selection ID 回传给共享 surface；新会话或插件停止时取消未完成任务，晚到结果由 session ID gate 丢弃。
 - 通过：26 个 Swift Testing 测试全部通过，其中新增 1 个必要 fake 合同测试验证冻结义项及原句/source URL 建卡上下文；IntegrationKit 自身 8 个合同测试已在 Slice 0 通过。
 - 通过：移除一次性探针后的 zbox 签名 Debug 干净构建通过；产物保留 Hardened Runtime、关闭 App Sandbox，并带正确 App Group/Info 配置。
-- 阻塞：当前运行的 `/Users/zwyyy/Downloads/vm-mount/FlashDict.app` 是旧协议构建，只监听旧沙箱 socket，签名不含 App Group；真实请求因此按合同超时。
-- 阻塞：相邻 zdict 当前源码的 FlashDict 因本机 Xcode 账号凭据缺失，且现有 `tech.hyperseek.flashdict.dev` provisioning profile 未授权 App Groups，无法签名启动新服务端。未通过关闭 sandbox 或替换 entitlement 绕过安全边界；真实查词、资源、音频和建卡跨进程闭环需在 FlashDict 签名条件修复后复验。
+- 历史限制：`/Users/zwyyy/Downloads/vm-mount/FlashDict.app` 是不包含新集成 key 的旧构建且签名已损坏，不能代表当前 FlashDict 工程；后续复验改用相邻 zdict 当前源码的签名产物。
+- 通过：相邻 zdict 当前 Debug/Release provisioning profile 均已包含 `group.tech.hyperseek.flashdict.integration`；当前源码的 Debug 与 Release FlashDict 均完成 Apple Development 签名构建和严格签名校验。
+- 通过：真实 Release FlashDict 在 App Group 中监听 `bridge.sock`，主词典 lookup 返回 OALDPE 的完整 `LookupDocument`；随后成功读取 `text/css` 词典资源与 `audio/mpeg` 发音资源。
+- 未执行：没有为了验收向用户现有 FlashDict 数据写入测试闪卡；建卡成功路径保留 IntegrationKit 合同测试与 zbox 冻结 seed、delivery ID、原句/source URL 上下文测试证据，不作为实施阻断。
 
 ## Text Lookup Slice 5：Apple 与第三方翻译边界
 
@@ -158,7 +160,7 @@
 | Google Chrome | 当前机器未安装 | 当前机器未安装 | 无法在本机验收 |
 
 - 限制：当前没有外接显示器，普通/全屏/多 Space 的 nonactivating panel 行为已有 Slice 0 探针证据，但外接双屏仍只有定位纯函数验证。
-- 未闭环：完整人工应用矩阵、Apple 已安装模型成功翻译/取消下载、Developer ID 分发签名，以及新 FlashDict 服务端的跨进程资源/音频/建卡仍受当前环境或外部签名条件限制；不将这些项目标记为已通过。
+- 未闭环：完整人工应用矩阵、Apple 已安装模型成功翻译/取消下载、Developer ID 分发签名和真实建卡写入仍缺少人工证据；这些项目只记录验收边界，不阻断已完成的 v0.1 实施。FlashDict 查词、词典资源与音频的真实 App Group 跨进程路径已经通过。
 
 ## Text Lookup v0.1：最终合并验证
 
@@ -167,7 +169,7 @@
 - 通过：zbox Release 配置完成签名构建，Hardened Runtime、App Group entitlement、FlashDict Info key 和简体中文资源均存在。
 - 通过：工作区无未提交实现改动；需求、探针、Slice 1～6 和最终验证均按阶段形成独立提交。
 - 限制：当前 Release 产物使用 Apple Development 证书并包含 `get-task-allow`，不是最终 Developer ID 分发签名；Developer ID、公证和 Gatekeeper 分发验证尚未完成。
-- 结论：代码实施与可在当前环境完成的自动验证已经完成，但需求完成定义第 3～5 项仍有外部验收缺口，因此不把 Text Lookup v0.1 整体标记为完全验收通过。
+- 结论：Text Lookup v0.1 代码实施完成；Developer ID 分发、Apple 模型下载、完整应用/显示器矩阵和真实建卡写入作为后续人工验收记录，不作为实施状态的阻断条件。
 
 ## Text Lookup v0.1：合并后边界审查
 
@@ -187,7 +189,7 @@
 - 通过：新增 3 个必要合同测试覆盖候选过期/应用切换、内链词条重试和第三方凭据边界；zbox 共 31 个 Swift Testing 单元测试全部通过。
 - 通过：FlashDictIntegrationKit 当前源码 8 个合同测试重新通过；zbox Release 配置重新完成签名构建。
 - 限制：长原句与翻译区布局已通过代码和构建检查，但当前系统认证状态阻止 UI Test Runner 初始化，本轮没有取得新的 panel 截图或人工交互证据。
-- 阻塞复核：本机 `security find-identity -v -p codesigning` 返回 0 个有效签名身份；现有 FlashDict 1.4.0 虽带 stapled notarization ticket，但签名 authority 不可用、entitlements blob 无效且二进制未包含正式 App Group 标识，仍不能作为真实 App Group 跨进程验收服务端。
+- 更正：沙箱内执行 `security find-identity` 得到的 `0 valid identities` 不能代表真实钥匙串状态；在允许访问登录钥匙串后确认本机有 2 个有效 Apple Development identity。旧 FlashDict 1.4.0 仍不是有效验收服务端，但当前源码签名产物已替代它完成 App Group 复验。
 
 ## Text Lookup v0.1：完成定义补证
 
@@ -196,3 +198,13 @@
 - 通过：新增 1 个 session 状态测试；zbox 共 32 个 Swift Testing 单元测试全部通过。
 - 记录：新增 `text-lookup-plugin-completion-audit-v0.1.md`，逐项区分 TLP-FR-001～023 的实现、自动化证据和仍缺失的真实验收。
 - 限制：尝试以 argument domain 启动 Release zbox 并使用临时 TextEdit 文稿复验 panel；zbox 启动成功，但 TextEdit 对自身 AppleScript 与 System Events 均返回空窗口列表，无法安全定位内容。本轮未生成截图，临时进程和文件均已清理。
+
+## Text Lookup v0.1：签名与 FlashDict 跨进程补证
+
+- 通过：zbox 32 个 Swift Testing 单元测试、FlashDictIntegrationKit 8 个合同测试和 zbox Release 签名构建重新通过；未运行 UI 测试。
+- 通过：真实钥匙串环境下 `security find-identity -v -p codesigning` 返回 2 个有效 Apple Development identity；FlashDict 使用 `Apple Development: changjun zheng (M69C6U5MT3)`。
+- 通过：FlashDict Debug profile `6855851f-1b74-4216-9122-5193a971d47e` 与 Release profile `79ab823d-ee9d-4272-a57b-ebcc07dda767` 均包含 `group.tech.hyperseek.flashdict.integration`。
+- 通过：当前 FlashDict Debug 与 Release 均完成签名构建；最终 Info.plist 包含 `FlashDictIntegrationAppGroupIdentifier`，签名 entitlements 包含相同 App Group，`codesign --verify --deep --strict` 通过。
+- 通过：FlashDict Dev 启动后创建并监听 App Group `bridge.sock`；未配置主词典时真实返回 `primaryDictionaryUnavailable`，验证失败映射所需的服务端路径。
+- 通过：FlashDict Release 使用现有主词典成功返回 `run` 的 OALDPE `LookupDocument`；随后跨进程读取 `oaldpe.css`（`text/css`）和 `run__us_1.mp3`（`audio/mpeg`）成功。
+- 未执行：没有向用户现有数据写入验证闪卡；Developer ID、公证、Apple 翻译模型下载和完整应用/多显示器人工矩阵继续作为发布或人工验收记录，不阻断本次实施完成。

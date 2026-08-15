@@ -29,12 +29,12 @@
 | TLP-FR-012 | 单例 nonactivating NSPanel、Escape、外部鼠标关闭、屏幕定位 | 定位测试与 Slice 0 panel 探针 | 已实现；全屏/Space/外接显示器最终矩阵未完成 |
 | TLP-FR-013 | term、原句、翻译、语言菜单、主词典 surface、建卡状态 | Session 与独立请求 gate 测试 | 已实现；长原句可局部滚动查看全文 |
 | TLP-FR-014 | 显式指针捕获、释义、翻译与建卡的独立 section 状态 | 捕获状态重置、错误映射代码审查及 model 测试 | 已实现；系统模型下载与权限错误人工路径未完整验证 |
-| TLP-FR-015 | 只使用 `FlashDictIntegrationKit` 主词典 lookup/surface | 乱序结果与 IntegrationKit 合同测试 | 已实现；真实 App Group 服务端闭环未完成 |
+| TLP-FR-015 | 只使用 `FlashDictIntegrationKit` 主词典 lookup/surface | 乱序结果与 IntegrationKit 合同测试 | 已实现；真实 App Group lookup、CSS 资源和发音资源已通过 |
 | TLP-FR-016 | 未运行状态、用户启动按钮、明确重试 | 静态代码审查 | 已实现；无自动启动、轮询或自动重连 |
 | TLP-FR-017 | view-bound Apple `TranslationSession` 与本地 prepare/translate | request gate 与真实语言可用性探针 | 已实现；本机模型未安装，成功翻译/取消下载未闭环 |
 | TLP-FR-018 | popup 语言菜单更新设置并只替换 translation request | 目标语言替换测试 | 已实现 |
 | TLP-FR-019 | provider/request/result/error/config 合同与 Keychain seam | 内存凭据 fake 验证 secret 不进 UserDefaults | 已实现；没有具体第三方网络 adapter 或真实请求 |
-| TLP-FR-020 | 冻结 `cardSeed`、新 delivery ID、sentence/URL context | 建卡上下文合同测试 | 已实现；真实跨进程建卡受 FlashDict 签名阻塞 |
+| TLP-FR-020 | 冻结 `cardSeed`、新 delivery ID、sentence/URL context | 建卡上下文合同测试 | 已实现；未为验收向用户现有数据写入测试闪卡 |
 | TLP-FR-021 | secure field 父链拒绝、默认/自定义排除应用 | 默认设置与静态路径审查 | 已实现；安全输入人工矩阵未完成 |
 | TLP-FR-022 | 会话内存状态、UserDefaults 非秘密配置、Keychain secret | 日志/持久化静态检查与凭据 fake 测试 | 已实现 |
 | TLP-FR-023 | capture/session/dictionary/translation request gate 与 stop 取消 | 乱序失败、旧翻译、生命周期测试 | 已实现 |
@@ -43,22 +43,22 @@
 
 | Slice | 代码与自动化 | 真实证据 | 状态 |
 | --- | --- | --- | --- |
-| 0 系统能力探针 | AX、NSPanel、Escape、Translation 编译与 IntegrationKit 合同已探测 | TextEdit/Xcode 有证据；真实 App Group、完整应用矩阵不足 | 部分闭环 |
+| 0 系统能力探针 | AX、NSPanel、Escape、Translation 编译与 IntegrationKit 合同已探测 | TextEdit/Xcode 与真实 App Group 有证据；完整应用矩阵不足 | 部分闭环 |
 | 1 生命周期与设置 | 已实现并独立提交 | 签名进程启动通过 | 闭环 |
 | 2 触发与捕获 | 已实现并独立提交 | TextEdit/Xcode 通过；Safari 记录限制；其它应用不足 | 部分闭环 |
 | 3 Panel 与会话 | 已实现并独立提交 | nonactivating probe 通过；全屏/多屏最终矩阵不足 | 部分闭环 |
-| 4 FlashDict | 已实现并独立提交 | 当前 FlashDict 不是新 App Group 服务端 | 阻塞 |
+| 4 FlashDict | 已实现并独立提交 | 当前源码服务端的 lookup、CSS 与音频跨进程通过；未写入测试卡 | 实施闭环，建卡待人工验收 |
 | 5 Apple Translation | 已实现并独立提交 | 支持语言对已确认；模型未安装 | 部分闭环 |
 | 6 兼容与收口 | 已实现并独立提交 | 完整应用、系统与设备矩阵不足 | 部分闭环 |
 
-## 4. 外部完成条件
+## 4. 剩余验收记录
 
-以下条件仍阻止依据需求文档第 9 节标记 v0.1 完成：
+以下项目不阻断 v0.1 实施完成，仅保留为发布或人工验收记录：
 
-1. 本机没有有效 codesigning identity；无法完成 Developer ID 分发签名、公证和 Gatekeeper 验证。
-2. 当前 FlashDict 1.4.0 的 Info.plist 没有 `FlashDictIntegrationAppGroupIdentifier`，entitlements blob 无效，不能完成真实 lookup/resource/audio/card 跨进程闭环。
+1. 本机有 2 个有效 Apple Development identity；尚未确认可用于最终直发的 Developer ID Application identity，因此分发签名、公证和 Gatekeeper 验证未完成。
+2. 当前源码 FlashDict 已通过真实 App Group lookup、CSS 与音频请求；没有为了验收向用户现有数据写入测试闪卡。
 3. Apple 英文到简体中文语言对受支持但模型未安装；没有替用户触发下载授权，成功翻译和取消下载路径未验收。
 4. 当前没有外接显示器，且系统认证状态会阻止 UI Test Runner 初始化；全屏、Space、多显示器和完整应用矩阵没有充分人工证据。
 5. 本轮尝试以 argument domain 启动 Release zbox 并用临时 TextEdit 文稿复验 panel；zbox 启动成功，但 TextEdit 对自身 AppleScript 与 System Events 都返回空窗口列表，无法安全定位测试内容。未生成截图，临时进程和文件均已清理。
 
-这些项目属于验收证据缺失，不以单元测试、代码推断或旧 FlashDict 构建替代。
+这些项目不以单元测试、代码推断或旧 FlashDict 构建冒充通过，也不再作为代码实施的阻断项。
