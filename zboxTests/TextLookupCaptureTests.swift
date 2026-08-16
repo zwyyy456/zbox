@@ -4,6 +4,15 @@ import Testing
 
 struct TextLookupCaptureTests {
     @Test
+    func clipboardFallbackRequiresAReadableNonSecureElement() {
+        #expect(TextCaptureError.noSelection.allowsClipboardFallback)
+        #expect(TextCaptureError.unableToReadText.allowsClipboardFallback)
+        #expect(!TextCaptureError.unsupportedElement.allowsClipboardFallback)
+        #expect(!TextCaptureError.secureText.allowsClipboardFallback)
+        #expect(!TextCaptureError.permissionRequired.allowsClipboardFallback)
+    }
+
+    @Test
     func cleansSelectionWithoutChangingInternalPhrase() throws {
         let cleaned = try TextLookupTextProcessor.cleanSelection("  “state-of-the-art design!”  ")
 

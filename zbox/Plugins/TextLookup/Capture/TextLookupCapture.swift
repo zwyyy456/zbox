@@ -64,6 +64,15 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
     case unableToReadText
     case clipboardFallbackFailed
 
+    var allowsClipboardFallback: Bool {
+        switch self {
+        case .noSelection, .unableToReadText:
+            true
+        default:
+            false
+        }
+    }
+
     var errorDescription: String? {
         switch self {
         case .permissionRequired: "Accessibility permission is required to read text in other apps."

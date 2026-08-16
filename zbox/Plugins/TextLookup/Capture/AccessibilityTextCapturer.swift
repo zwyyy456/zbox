@@ -130,8 +130,9 @@ actor AccessibilityTextCapturer: TextCapturing {
 
     private func rejectSecureText(_ element: AXUIElement) throws {
         var current: AXUIElement? = element
-        for _ in 0..<6 {
-            guard let candidate = current else { break }
+        var visited: Set<ObjectIdentifier> = []
+        while let candidate = current {
+            guard visited.insert(ObjectIdentifier(candidate)).inserted else { break }
             if stringAttribute(candidate, "AXSubrole") == "AXSecureTextField" {
                 throw TextCaptureError.secureText
             }

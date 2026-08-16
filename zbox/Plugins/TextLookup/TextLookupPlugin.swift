@@ -182,7 +182,7 @@ final class TextLookupPlugin: BuiltinPlugin {
                 } catch let error as TextCaptureError {
                     guard self.settings.isClipboardFallbackEnabled,
                           request.intent.allowsClipboardFallback,
-                          [.noSelection, .unableToReadText, .unsupportedElement].contains(error)
+                          error.allowsClipboardFallback
                     else { throw error }
                     guard NSWorkspace.shared.frontmostApplication?.processIdentifier
                             == request.targetApplicationPID
