@@ -28,17 +28,22 @@ struct RootSearchView: View {
                 ScrollView {
                     LazyVStack(spacing: 4) {
                         ForEach(environment.searchResults) { match in
-                            CommandResultRow(
-                                match: match,
-                                icon: environment.applicationIcon(for: match.id),
-                                systemImage: environment.systemImage(for: match.id),
-                                isSelected: environment.isSelected(match.id)
-                            )
-                            .contentShape(.rect)
-                            .onTapGesture {
+                            Button {
                                 environment.select(match.id)
                                 environment.executeSelectedCommand()
+                            } label: {
+                                CommandResultRow(
+                                    match: match,
+                                    icon: environment.applicationIcon(for: match.id),
+                                    systemImage: environment.systemImage(for: match.id),
+                                    isSelected: environment.isSelected(match.id)
+                                )
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(match.descriptor.title)
+                            .accessibilityValue(
+                                environment.isSelected(match.id) ? "Selected" : ""
+                            )
                         }
                     }
                     .padding(8)
@@ -109,12 +114,11 @@ private struct CommandResultRow: View {
 
             Spacer()
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
+        .contentShape(.rect)
         .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
         .clipShape(.rect(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(match.descriptor.title)
-        .accessibilityValue(isSelected ? "Selected" : "")
     }
 }
