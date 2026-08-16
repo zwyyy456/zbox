@@ -11,6 +11,7 @@ final class AppEnvironment {
     private let hotkeyRegistrar: GlobalHotkeyRegistrar
     private let accessibilityAuthorization: AccessibilityAuthorization
     private let windowController: AccessibilityWindowController
+    private let settingsWindowOpener = SettingsWindowOpener()
     private let launchAtLoginController = LaunchAtLoginController()
     private let translationCredentialVault: any TranslationCredentialStoring
     private let hotkeyStore: HotkeyConfigurationStore
@@ -141,6 +142,9 @@ final class AppEnvironment {
 
         do {
             try WindowCommands.registerAll(in: registry, controller: windowController)
+            try SettingsCommands.register(in: registry) { [settingsWindowOpener] in
+                try settingsWindowOpener.open()
+            }
             for application in applications {
                 try ApplicationCommands.register(
                     application,
@@ -254,6 +258,7 @@ final class AppEnvironment {
 
     func systemImage(for commandID: CommandID) -> String? {
         WindowCommands.systemImage(for: commandID)
+            ?? SettingsCommands.systemImage(for: commandID)
     }
 
     func commandHotkey(for commandID: CommandID) -> HotkeyPreset {
