@@ -6,10 +6,10 @@
 
 ## 1. 当前自动化基线
 
-- zbox：33 个 Swift Testing 单元测试通过。
+- zbox：32 个 Swift Testing 单元测试通过。
 - FlashDictIntegrationKit：8 个合同测试通过。
 - zbox：Debug 测试构建与 Release 签名构建通过。
-- 静态边界：无多词典、在线词典、第三方翻译网络 adapter、动态插件 Runtime、取词历史或捕获正文日志。
+- 静态边界：无多词典、在线词典、第三方翻译接口/配置/凭据/网络 adapter、动态插件 Runtime、取词历史或捕获正文日志。
 
 ## 2. 功能需求追踪
 
@@ -33,10 +33,10 @@
 | TLP-FR-016 | 未运行状态、用户启动按钮、明确重试 | 静态代码审查 | 已实现；无自动启动、轮询或自动重连 |
 | TLP-FR-017 | view-bound Apple `TranslationSession` 与本地 prepare/translate | request gate 与真实语言可用性探针 | 已实现；本机模型未安装，成功翻译/取消下载未闭环 |
 | TLP-FR-018 | popup 语言菜单更新设置并只替换 translation request | 目标语言替换测试 | 已实现 |
-| TLP-FR-019 | provider/request/result/error/config 合同与 Keychain seam | 内存凭据 fake 验证 secret 不进 UserDefaults | 已实现；没有具体第三方网络 adapter 或真实请求 |
+| TLP-FR-019 | 首版不暴露第三方翻译接口、配置或凭据入口 | 静态边界检查 | 已实现；等待第一个真实 provider 进入排期后按实际 API 设计 |
 | TLP-FR-020 | 冻结 `cardSeed`、新 delivery ID、sentence/URL context | 建卡上下文合同测试 | 已实现；未为验收向用户现有数据写入测试闪卡 |
 | TLP-FR-021 | secure field 父链拒绝、默认/自定义排除应用 | 默认设置与静态路径审查 | 已实现；安全输入人工矩阵未完成 |
-| TLP-FR-022 | 会话内存状态、UserDefaults 非秘密配置、Keychain secret | 日志/持久化静态检查与凭据 fake 测试 | 已实现 |
+| TLP-FR-022 | 会话内存状态与 UserDefaults 非敏感设置 | 日志/持久化静态检查 | 已实现 |
 | TLP-FR-023 | capture/session/dictionary/translation request gate 与 stop 取消 | 乱序失败、旧翻译、生命周期测试 | 已实现 |
 
 ## 3. Slice 完成定义审计

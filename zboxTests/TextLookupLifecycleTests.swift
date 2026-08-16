@@ -24,16 +24,6 @@ struct TextLookupLifecycleTests {
         store.setClipboardFallbackEnabled(true)
         store.setTargetLanguageIdentifier("ja")
         store.addExcludedApplication("com.example.Reader")
-        store.saveThirdPartyConfiguration(
-            ThirdPartyTranslationConfiguration(
-                id: "deepl-test",
-                kind: .deepL,
-                endpoint: "https://api.example.test/translate",
-                modelIdentifier: nil,
-                credentialID: "keychain-reference-only",
-                languageMappings: [:]
-            )
-        )
         store = TextLookupSettingsStore(defaults: defaults)
 
         #expect(store.isEnabled)
@@ -42,8 +32,6 @@ struct TextLookupLifecycleTests {
         #expect(store.isClipboardFallbackEnabled)
         #expect(store.targetLanguageIdentifier == "ja")
         #expect(store.excludedApplicationBundleIdentifiers.contains("com.example.Reader"))
-        #expect(store.thirdPartyConfigurations.first?.credentialID == "keychain-reference-only")
-        #expect(!String(decoding: defaults.data(forKey: "plugin.text-lookup.third-party-configurations") ?? Data(), as: UTF8.self).contains("secret-value"))
     }
 
     @Test
@@ -62,64 +50,5 @@ struct TextLookupLifecycleTests {
                     == .conflict("Existing", "Text Lookup")
             )
         }
-    }
-
-    @Test
-    func thirdPartySecretUsesCredentialStoreAndOnlyPersistsItsReference() async throws {
-        let suiteName = "TextLookupCredentialTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let credentialStore = CredentialStoreSpy()
-        let settings = TextLookupSettingsStore(defaults: defaults)
-        let plugin = TextLookupPlugin(
-            settings: settings,
-            hotkeyRegistrar: GlobalHotkeyRegistrar(),
-            credentialVault: credentialStore
-        )
-
-        await plugin.saveThirdPartyTranslationConfiguration(
-            kind: .deepL,
-            endpoint: "https://api.example.test/translate",
-            modelIdentifier: "",
-            secret: "local-secret"
-        )
-
-        let configuration = try #require(
-            settings.thirdPartyConfigurations.first
-        )
-        let credentialID = try #require(configuration.credentialID)
-        #expect(await credentialStore.secret(for: credentialID) == Data("local-secret".utf8))
-        let persisted = defaults.data(forKey: "plugin.text-lookup.third-party-configurations") ?? Data()
-        #expect(!String(decoding: persisted, as: UTF8.self).contains("local-secret"))
-
-        await plugin.removeThirdPartyTranslationConfiguration(configuration)
-        #expect(await credentialStore.wasRemoved(credentialID))
-        #expect(settings.thirdPartyConfigurations.isEmpty)
-    }
-}
-
-private actor CredentialStoreSpy: TranslationCredentialStoring {
-    private var secrets: [String: Data] = [:]
-    private var removedIDs: Set<String> = []
-
-    func store(_ secret: Data, for id: String) {
-        secrets[id] = secret
-    }
-
-    func load(for id: String) -> Data? {
-        secrets[id]
-    }
-
-    func remove(for id: String) {
-        secrets[id] = nil
-        removedIDs.insert(id)
-    }
-
-    func secret(for id: String) -> Data? {
-        secrets[id]
-    }
-
-    func wasRemoved(_ id: String) -> Bool {
-        removedIDs.contains(id)
     }
 }

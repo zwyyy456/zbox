@@ -9,7 +9,6 @@ final class TextLookupPlugin {
 
     let settings: TextLookupSettingsStore
     private let hotkeyRegistrar: GlobalHotkeyRegistrar
-    private let credentialVault: any TranslationCredentialStoring
     private let capturer: any TextCapturing
     private let clipboardCapturer = ClipboardSelectionCapturer()
     private let triggerMonitor = TextLookupTriggerMonitor()
@@ -33,12 +32,10 @@ final class TextLookupPlugin {
     init(
         settings: TextLookupSettingsStore,
         hotkeyRegistrar: GlobalHotkeyRegistrar,
-        credentialVault: any TranslationCredentialStoring = TranslationCredentialVault(),
         capturer: any TextCapturing = AccessibilityTextCapturer()
     ) {
         self.settings = settings
         self.hotkeyRegistrar = hotkeyRegistrar
-        self.credentialVault = credentialVault
         self.capturer = capturer
         session = TextLookupSessionModel(
             flashDict: try? FlashDictBridgeClient.production()
@@ -106,46 +103,6 @@ final class TextLookupPlugin {
         } catch {
             settings.setShortcut(previous)
             throw error
-        }
-    }
-
-    func saveThirdPartyTranslationConfiguration(
-        kind: ThirdPartyTranslationKind,
-        endpoint: String,
-        modelIdentifier: String,
-        secret: String
-    ) async {
-        let credentialID = secret.isEmpty ? nil : UUID().uuidString
-        do {
-            if let credentialID {
-                try await credentialVault.store(Data(secret.utf8), for: credentialID)
-            }
-            settings.saveThirdPartyConfiguration(
-                ThirdPartyTranslationConfiguration(
-                    id: UUID().uuidString,
-                    kind: kind,
-                    endpoint: endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
-                    modelIdentifier: modelIdentifier.isEmpty ? nil : modelIdentifier,
-                    credentialID: credentialID,
-                    languageMappings: [:]
-                )
-            )
-            statusMessage = "Third-party translation configuration saved"
-        } catch {
-            statusMessage = "Unable to save translation credential"
-        }
-    }
-
-    func removeThirdPartyTranslationConfiguration(
-        _ configuration: ThirdPartyTranslationConfiguration
-    ) async {
-        do {
-            if let credentialID = configuration.credentialID {
-                try await credentialVault.remove(for: credentialID)
-            }
-            settings.removeThirdPartyConfiguration(id: configuration.id)
-        } catch {
-            statusMessage = "Unable to remove translation credential"
         }
     }
 

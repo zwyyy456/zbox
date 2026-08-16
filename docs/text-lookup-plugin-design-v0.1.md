@@ -16,7 +16,7 @@
 - FlashDict 跨进程查词、资源渲染和建卡；
 - macOS 15 Apple Translation 的 SwiftUI view-bound session 生命周期；
 - 新会话取消旧任务、旧结果不得覆盖新 UI；
-- 插件设置、应用排除和第三方凭据边界。
+- 功能设置、应用排除和隐私边界。
 
 宿主 `AppEnvironment` 不应知道 AX 属性名、鼠标候选有效期、FlashDict request ID、TranslationSession、WebView 资源路由或剪贴板恢复规则。
 
@@ -122,9 +122,7 @@ ZBoxApp / AppEnvironment
         ├── TextLookupPanelController
         │   └── TextLookupPanelView
         ├── FlashDictBridgeClient actor
-        ├── AppleTranslationViewAdapter
-        └── TranslationConfigurationStore
-            └── TranslationCredentialVault (Keychain)
+        └── AppleTranslationViewAdapter
 ```
 
 建议目录随实现一次性形成：
@@ -179,7 +177,7 @@ Public interface：只实现 `start()`、`stop()`，并向具体 Settings view �
 
 Hidden implementation details：事件监听、候选状态机、Accessibility 查询、剪贴板恢复、查词 request ID、翻译配置、panel controller 和取消任务。
 
-Seam：只在真实变化边界使用协议——文本捕获、FlashDict 查词/建卡、第三方翻译、凭据存储；内部纯函数不包装协议。
+Seam：只在真实变化边界使用协议——文本捕获与 FlashDict 查词/建卡；内部纯函数和未实现的未来 provider 不包装协议。
 
 Testing approach：从插件 intent 和 session model 投影进入，系统 adapter 使用 fake；不直接测试私有 AX 调用顺序。
 
@@ -240,9 +238,9 @@ request ID 必须在开始异步 Accessibility 调用之前由 coordinator 创�
 
 UI 文案按“用户可修复、权限、目标应用不支持、暂时系统失败”映射，不直接显示 AXError 数值。
 
-### 5.5 翻译 seam
+### 5.5 Apple Translation 请求与结果
 
-第三方翻译合同：
+会话模型与 view-bound Apple Translation adapter 之间使用以下值类型：
 
 ```swift
 nonisolated struct TranslationRequest: Sendable, Equatable {
@@ -259,32 +257,11 @@ nonisolated struct TranslationResult: Sendable, Equatable {
     let translatedText: String
 }
 
-protocol SentenceTranslationProviding: Sendable {
-    var id: TranslationProviderID { get }
-    func translate(_ request: TranslationRequest) async throws -> TranslationResult
-}
 ```
-
-首版没有第三方生产 adapter。该接口存在的真实理由是用户已经确认第三方翻译配置属于下一阶段目标，但首版不把具体 vendor 的鉴权、DTO 或错误泄漏给查词 UI。
 
 Apple Translation 不能在 macOS 15 上被简单建成全局长生命周期 service。`AppleTranslationViewAdapter` 由 `TextLookupPanelView` 的 `.translationTask` 获得 session，消费 session model 中当前请求，并把带 request ID 的结果回传。`TranslationSession` 不进入 `TextLookupPlugin`、Settings store 或持久化对象。
 
-### 5.6 Keychain seam
-
-```swift
-protocol TranslationCredentialStoring: Sendable {
-    func store(_ secret: Data, for id: TranslationCredentialID) async throws
-    func load(for id: TranslationCredentialID) async throws -> Data?
-    func remove(for id: TranslationCredentialID) async throws
-}
-```
-
-约束：
-
-- UserDefaults 只保存 credential ID，不保存秘密；
-- Release 日志不记录 secret、请求 body 或 Authorization header；
-- 首版没有真实第三方网络 adapter，凭据能力只做本地读写和错误验证；
-- 未实现 adapter 的 provider 不进入可选的当前 provider 列表。
+首版不定义第三方翻译 protocol、配置 DTO 或 Keychain seam。第一个真实 provider 进入已排期闭环后，再基于其鉴权、请求响应、取消、错误与隐私要求设计；不为未知 vendor 预留通用接口。
 
 ## 6. 触发与候选状态机
 
@@ -564,19 +541,11 @@ LookupSurfaceEvent.senseSelected(selection)
 - 使用 LanguageAvailability 判断支持状态；
 - target 按钮使用语言名称而不是内部 language code；
 - 改变目标语言更新 Settings 并使 configuration invalidate，只重跑翻译；
-- 源目标相同、无法识别或 pairing 不支持时显示对应状态，不向 FlashDict 或第三方 provider 降级。
+- 源目标相同、无法识别或 pairing 不支持时显示对应状态，不向网络服务降级。
 
-### 12.3 第三方接口
+### 12.3 第三方翻译
 
-首版允许持久化以下通用配置：
-
-- provider identity；
-- endpoint；
-- model identifier；
-- credential reference；
-- 可选的 source/target language mapping 配置。
-
-生产 UI 必须明确这些配置尚未提供可工作的网络 adapter，且不能将其设为当前翻译来源。首版验证范围只包括 DTO 编解码、UserDefaults 非秘密配置和 Keychain 凭据的本地读写，不发送真实网络请求。
+首版不展示、持久化或读取第三方翻译配置，也不创建凭据。未来实现具体 provider 时，必须从可执行的翻译闭环出发同时交付配置、鉴权、请求、错误反馈和真实网络验证。
 
 ## 13. 设置与持久化
 
@@ -590,20 +559,10 @@ LookupSurfaceEvent.senseSelected(selection)
 - clipboard fallback enabled；
 - target language identifier；
 - excluded application bundle identifiers；
-- third-party provider non-secret configurations；
-- credential references。
 
 不使用 SwiftData。取词候选、当前 capture、窗口位置、释义、翻译和 selection states 不持久化。
 
-### 13.2 Keychain
-
-- service 使用稳定的 zbox bundle/domain 命名；
-- account 使用 credential ID，不使用 provider 显示名；
-- 修改或删除配置时明确更新对应 secret；
-- 卸载或 reset 是否删除 Keychain 项由后续全局设置策略决定，普通插件停用不删除；
-- 测试使用内存 fake，不访问开发者真实 Keychain 项。
-
-### 13.3 Settings UI
+### 13.2 Settings UI
 
 在现有 Settings 中增加独立 `Text Lookup` section 或 tab，包含：
 
@@ -614,7 +573,6 @@ LookupSurfaceEvent.senseSelected(selection)
 - 目标语言 Picker；
 - 排除应用管理；
 - Accessibility 权限状态与操作；
-- 第三方配置区及“尚未接入网络 adapter”的明确状态。
 
 插件关闭时保留设置，但禁用依赖插件运行的子控件。权限状态不是持久化真源，每次显示或执行前读取系统状态。
 
@@ -627,7 +585,6 @@ LookupSurfaceEvent.senseSelected(selection)
 - 不把捕获文本、原句、URL、词典 HTML 或翻译内容写入 Release 普通日志；
 - 日志可记录 session/request ID、来源 bundle ID、阶段、耗时和错误分类；
 - FlashDict HTML 和资源继续遵守 IntegrationKit 的现有信任与资源路由边界，zbox 不额外重写或 sanitize；
-- 第三方秘密只在 Keychain，设置和日志只持有 credential reference；
 - 插件停用后不保留当前取词内存状态。
 
 ## 15. 错误模型
@@ -682,7 +639,6 @@ TranslationFailure
 - fake FlashDictLookupProviding 验证取消和旧结果隔离；
 - fake FlashDictCardCreating 验证 delivery ID 与原句/source URL；
 - fake translation completion 验证目标语言变化只重跑翻译；
-- fake credential vault 验证 secret 不进入 UserDefaults；
 - fake clipboard adapter 验证 change count 竞争时不覆盖用户新内容；
 - 插件 start/stop 验证所有 registration token、任务和 panel 清理。
 
@@ -769,7 +725,6 @@ TranslationFailure
 
 - 剪贴板兼容取词；
 - 安全输入、排除应用；
-- 第三方配置合同和 Keychain vault；
 - 完整应用矩阵、隐私日志检查和双语文案。
 
 完成证据：需求文档 TLP-FR-001～023 和完成定义全部闭环。
@@ -788,7 +743,7 @@ TranslationFailure
 | 插件停用影响其它快捷键 | registrar 按 token/ID 注销，不调用全局 unregisterAll。 |
 | FlashDict 资源跨进程失败 | 真实签名 App Group 和 WKWebView 资源/音频验收。 |
 | 过早统一在线词典模型 | 首版不建统一 provider，等待真实合法 API。 |
-| 未实现第三方翻译却显示可用 | 配置可保存，但未注册 adapter 的 provider 不可选择。 |
+| 未实现第三方翻译却形成产品表面 | 首版不提供接口、配置 UI 或凭据存储，等待真实 provider 进入排期。 |
 
 ## 19. 非目标与演进边界
 
@@ -804,4 +759,4 @@ TranslationFailure
 
 未来接入第一个真实在线词典时，应基于该 API 的合法使用方式、结果数据形状、资源与建卡语义，再比较“结构化统一 entry”“provider-owned surface”或“并列 source section”。不得为了保持本方案不变而强迫真实在线结果适配 FlashDict HTML 模型。
 
-未来实现具体第三方翻译 adapter 时，必须为该 provider 单独定义：鉴权、endpoint、请求/响应 DTO、速率限制、取消、超时、隐私文案和真实网络验证。通用接口不得吞掉 vendor 的用户可修复错误。
+未来实现具体第三方翻译 adapter 时，必须为该 provider 单独定义：鉴权、endpoint、请求/响应 DTO、速率限制、取消、超时、隐私文案和真实网络验证。只有出现第二个真实实现且接口形状确实重复后，才评估抽取通用合同。
