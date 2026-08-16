@@ -51,6 +51,8 @@ final class AppEnvironment {
     private lazy var searchPanelController = SearchPanelController(environment: self)
     @ObservationIgnored
     private var launchTask: Task<Void, Never>?
+    private var commandExecutionID: UUID?
+    private var rootSearchSessionID: UUID?
     private var hasStarted = false
 
     var isTextLookupRunning: Bool { textLookupPlugin.isRunning }
@@ -107,16 +109,19 @@ final class AppEnvironment {
 
     func stop() {
         launchTask?.cancel()
+        commandExecutionID = nil
+        rootSearchSessionID = nil
         builtinPluginHost.stopAll()
         hotkeyRegistrar.unregisterAll()
     }
 
     func toggleRootSearch() {
         if searchPanelController.isVisible {
-            searchPanelController.hide()
+            hideRootSearch()
             return
         }
 
+        rootSearchSessionID = UUID()
         targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         searchQuery = ""
         selectedCommandID = nil
@@ -125,6 +130,7 @@ final class AppEnvironment {
     }
 
     func hideRootSearch() {
+        rootSearchSessionID = nil
         searchPanelController.hide()
     }
 
@@ -200,11 +206,18 @@ final class AppEnvironment {
         hidePanelOnSuccess: Bool
     ) {
         let registry = commandRegistry
+        let executionID = UUID()
+        let expectedRootSearchSessionID = hidePanelOnSuccess ? rootSearchSessionID : nil
         launchTask?.cancel()
+        commandExecutionID = executionID
         launchTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
                 try await registry.execute(commandID, context: context)
+                guard isCurrentExecution(
+                    executionID,
+                    expectedRootSearchSessionID: expectedRootSearchSessionID
+                ) else { return }
                 shouldOfferAccessibilitySettings = false
                 statusMessage = "Ran \(descriptor.title)"
                 if hidePanelOnSuccess {
@@ -213,10 +226,23 @@ final class AppEnvironment {
             } catch is CancellationError {
                 return
             } catch {
+                guard isCurrentExecution(
+                    executionID,
+                    expectedRootSearchSessionID: expectedRootSearchSessionID
+                ) else { return }
                 shouldOfferAccessibilitySettings = error as? AccessibilityWindowError == .permissionRequired
                 statusMessage = error.localizedDescription
             }
         }
+    }
+
+    private func isCurrentExecution(
+        _ executionID: UUID,
+        expectedRootSearchSessionID: UUID?
+    ) -> Bool {
+        guard !Task.isCancelled, commandExecutionID == executionID else { return false }
+        return expectedRootSearchSessionID == nil
+            || rootSearchSessionID == expectedRootSearchSessionID
     }
 
     func applicationIcon(for commandID: CommandID) -> NSImage? {
