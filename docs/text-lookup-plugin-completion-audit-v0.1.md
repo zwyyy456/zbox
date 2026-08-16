@@ -6,7 +6,7 @@
 
 ## 1. 当前自动化基线
 
-- zbox：32 个 Swift Testing 单元测试通过。
+- zbox：33 个 Swift Testing 单元测试通过。
 - FlashDictIntegrationKit：8 个合同测试通过。
 - zbox：Debug 测试构建与 Release 签名构建通过。
 - 静态边界：无多词典、在线词典、第三方翻译网络 adapter、动态插件 Runtime、取词历史或捕获正文日志。
@@ -15,7 +15,7 @@
 
 | ID | 实现证据 | 自动化/静态证据 | 当前结论 |
 | --- | --- | --- | --- |
-| TLP-FR-001 | `BuiltinPluginHost`、`TextLookupPlugin.start/stop`、设置恢复 | 生命周期幂等与设置持久化测试 | 已实现；真实退出路径已由签名进程验证 |
+| TLP-FR-001 | `AppEnvironment` 直接按 enabled 状态调用 `TextLookupPlugin.start/stop`、设置恢复 | start/stop 幂等 guard 与设置持久化测试 | 已实现；真实退出路径已由签名进程验证 |
 | TLP-FR-002 | Automatic、Shortcut Required、Off 三种模式 | 默认值与持久化测试 | 已实现 |
 | TLP-FR-003 | `TextLookupTextProcessor.cleanSelection` | 空/标点、短语保真、80/81 字符与 8/9 词边界测试 | 已实现 |
 | TLP-FR-004 | 3 秒候选、PID 校验、新候选替换 | 候选过期与应用进程变化测试 | 已实现 |

@@ -7,7 +7,7 @@
 
 ## 1. 设计目标
 
-本方案需要在不建设动态插件 Runtime 的前提下，把鼠标取词作为第一个静态第一方插件接入 zbox，并集中隐藏以下复杂度：
+本方案需要在不建设动态插件 Runtime 的前提下，把鼠标取词作为静态第一方模块接入 zbox，并集中隐藏以下复杂度：
 
 - 全局鼠标事件和双击修饰键手势；
 - Accessibility 选区、指针范围、原句、来源与窗口坐标读取；
@@ -44,7 +44,7 @@
 ### 2.3 Apple Translation 合同
 
 - macOS 15 的 Translation API 可通过 SwiftUI `.translationTask` 提供 session；
-- session 与承载它的 View 生命周期绑定，不应长期保存在全局 model 或插件宿主；
+- session 与承载它的 View 生命周期绑定，不应长期保存在全局 model 或功能根对象；
 - 首次使用未安装语言时可能出现系统下载授权 UI；
 - TranslationSession 取消是协作式行为，UI 仍必须以查词会话身份阻止旧结果提交。
 
@@ -80,24 +80,23 @@ AppEnvironment
 - Settings、窗口和异步状态继续集中到单一 owner；
 - 测试需要穿过完整应用环境，locality 和测试表面都变差。
 
-### 3.2 方案 B：静态第一方插件模块
+### 3.2 方案 B：静态第一方功能模块
 
 形状：
 
 ```text
 AppEnvironment
-└── BuiltinPluginHost
-    └── TextLookupPlugin
+└── TextLookupPlugin
 ```
 
 优点：
 
-- 宿主只负责插件启停，接口小于隐藏的行为，模块具有足够 depth；
+- 宿主只负责功能启停，接口小于隐藏的行为，模块具有足够 depth；
 - 插件内部集中管理监听、任务、窗口和配置，停用时可以完整清理；
 - 系统边界、FlashDict 和翻译 adapter 都有真实替换需求，测试 seam 清晰；
 - 不需要动态加载、跨进程插件 RPC 或公共 SDK。
 
-代价：需要增加最小插件生命周期接口，并调整当前快捷键与 Accessibility 权限共享方式。
+代价：需要调整当前快捷键与 Accessibility 权限共享方式。
 
 ### 3.3 推荐
 
@@ -110,8 +109,7 @@ AppEnvironment
 ```text
 ZBoxApp / AppEnvironment
 ├── Existing Root Search and Commands
-└── BuiltinPluginHost
-    └── TextLookupPlugin (@MainActor)
+└── TextLookupPlugin (@MainActor)
         ├── TextLookupSettingsStore
         ├── TextLookupTriggerMonitor
         │   ├── GlobalHotkeyRegistrar registration
@@ -134,8 +132,6 @@ ZBoxApp / AppEnvironment
 ```text
 zbox/
 ├── Plugins/
-│   ├── BuiltinPlugin.swift
-│   ├── BuiltinPluginHost.swift
 │   └── TextLookup/
 │       ├── TextLookupPlugin.swift
 │       ├── Capture/
@@ -153,23 +149,19 @@ zbox/
 
 ## 5. 模块接口
 
-### 5.1 BuiltinPlugin
+### 5.1 AppEnvironment 接入
 
-调用者：`BuiltinPluginHost`。
+调用者：`AppEnvironment`。
 
 调用者需要完成的工作：随 App 生命周期启动已启用插件、在设置变化时启停插件、退出时停止插件。
 
 调用者不需要知道：插件监听了哪些事件、创建了哪些任务、显示什么窗口或使用什么外部服务。
 
-建议最小接口：
+首版只有 Text Lookup 一个静态第一方功能，`AppEnvironment` 根据持久化的 enabled 状态直接调用：
 
 ```swift
-@MainActor
-protocol BuiltinPlugin: AnyObject {
-    var id: BuiltinPluginID { get }
-    func start()
-    func stop()
-}
+textLookupPlugin.start()
+textLookupPlugin.stop()
 ```
 
 约束：
@@ -177,7 +169,7 @@ protocol BuiltinPlugin: AnyObject {
 - `start()` 和 `stop()` 必须幂等；
 - 启动后的权限或运行错误属于插件状态，不通过生命周期接口暴露复杂错误枚举；
 - `stop()` 同步完成监听注销、窗口关闭和任务取消请求；
-- 首版不加入动态 bundle、版本协商、权限 manifest 或通用 settings view type erasure。
+- 首版不加入通用 plugin protocol/host、动态 bundle、版本协商、权限 manifest 或 settings view type erasure；出现第二个真实模块且生命周期编排确有重复时再评估共用接口。
 
 ### 5.2 TextLookupPlugin
 
@@ -728,9 +720,9 @@ TranslationFailure
 
 完成证据：形成能力矩阵，确认没有阻断首版主路径的系统限制。
 
-### Slice 1：插件生命周期与设置
+### Slice 1：模块生命周期与设置
 
-- 增加 BuiltinPluginHost 和 TextLookupPlugin；
+- 增加 TextLookupPlugin，并由 AppEnvironment 直接按 enabled 状态启停；
 - 增加总开关、触发模式、快捷键、目标语言和排除应用设置；
 - 改造 GlobalHotkeyRegistrar 支持按 registration 注销；
 - 抽取共享 AccessibilityAuthorization。

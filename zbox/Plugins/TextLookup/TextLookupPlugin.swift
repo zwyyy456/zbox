@@ -4,11 +4,9 @@ import Observation
 
 @MainActor
 @Observable
-final class TextLookupPlugin: BuiltinPlugin {
-    static let pluginID = BuiltinPluginID(rawValue: "text-lookup")
+final class TextLookupPlugin {
     static let hotkeyRegistrationID = "plugin.text-lookup.lookup"
 
-    let id = pluginID
     let settings: TextLookupSettingsStore
     private let hotkeyRegistrar: GlobalHotkeyRegistrar
     private let credentialVault: any TranslationCredentialStoring

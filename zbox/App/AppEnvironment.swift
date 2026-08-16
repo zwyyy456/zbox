@@ -17,8 +17,6 @@ final class AppEnvironment {
 
     @ObservationIgnored
     let textLookupPlugin: TextLookupPlugin
-    @ObservationIgnored
-    private let builtinPluginHost: BuiltinPluginHost
 
     private var commandRegistry = CommandRegistry()
     private var applicationURLsByCommandID: [CommandID: URL] = [:]
@@ -71,7 +69,6 @@ final class AppEnvironment {
         windowController = AccessibilityWindowController(authorization: accessibilityAuthorization)
         self.hotkeyStore = hotkeyStore
         self.textLookupPlugin = textLookupPlugin
-        builtinPluginHost = BuiltinPluginHost(plugins: [textLookupPlugin])
         rootSearchHotkey = hotkeyStore.rootSearchPreset()
         commandHotkeys = Dictionary(
             uniqueKeysWithValues: WindowCommands.shortcutTargets.map { target in
@@ -93,17 +90,16 @@ final class AppEnvironment {
             statusMessage = error.localizedDescription
         }
 
-        builtinPluginHost.setEnabled(
-            textLookupPlugin.settings.isEnabled,
-            for: TextLookupPlugin.pluginID
-        )
+        if textLookupPlugin.settings.isEnabled {
+            textLookupPlugin.start()
+        }
     }
 
     func stop() {
         launchTask?.cancel()
         commandExecutionID = nil
         rootSearchSessionID = nil
-        builtinPluginHost.stopAll()
+        textLookupPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -304,7 +300,11 @@ final class AppEnvironment {
                 )
             }
             textLookupPlugin.settings.setEnabled(isEnabled)
-            builtinPluginHost.setEnabled(isEnabled, for: TextLookupPlugin.pluginID)
+            if isEnabled {
+                textLookupPlugin.start()
+            } else {
+                textLookupPlugin.stop()
+            }
             statusMessage = textLookupPlugin.statusMessage
                 ?? (isEnabled ? "Text Lookup enabled" : "Text Lookup disabled")
         } catch {

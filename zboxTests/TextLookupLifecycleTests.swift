@@ -47,26 +47,6 @@ struct TextLookupLifecycleTests {
     }
 
     @Test
-    func hostStartsAndStopsPluginIdempotently() {
-        let plugin = PluginSpy()
-        let host = BuiltinPluginHost(plugins: [plugin])
-
-        host.setEnabled(true, for: plugin.id)
-        host.setEnabled(true, for: plugin.id)
-        #expect(plugin.startCount == 1)
-
-        host.setEnabled(false, for: plugin.id)
-        host.setEnabled(false, for: plugin.id)
-        #expect(plugin.stopCount == 1)
-
-        host.setEnabled(true, for: plugin.id)
-        host.stopAll()
-        host.stopAll()
-        #expect(plugin.startCount == 2)
-        #expect(plugin.stopCount == 2)
-    }
-
-    @Test
     func textLookupHotkeyParticipatesInConflictValidation() {
         let optionC = TextLookupShortcutPreset.optionC.hotkey
 
@@ -116,16 +96,6 @@ struct TextLookupLifecycleTests {
         #expect(await credentialStore.wasRemoved(credentialID))
         #expect(settings.thirdPartyConfigurations.isEmpty)
     }
-}
-
-@MainActor
-private final class PluginSpy: BuiltinPlugin {
-    let id = BuiltinPluginID(rawValue: "spy")
-    private(set) var startCount = 0
-    private(set) var stopCount = 0
-
-    func start() { startCount += 1 }
-    func stop() { stopCount += 1 }
 }
 
 private actor CredentialStoreSpy: TranslationCredentialStoring {
