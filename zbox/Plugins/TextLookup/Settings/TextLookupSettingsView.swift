@@ -11,7 +11,8 @@ struct TextLookupSettingsView: View {
     private let commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es"]
 
     var body: some View {
-        @Bindable var settings = environment.textLookupSettings
+        @Bindable var plugin = environment.textLookupPlugin
+        @Bindable var settings = plugin.settings
 
         Section("Text Lookup") {
             Toggle(
@@ -21,7 +22,7 @@ struct TextLookupSettingsView: View {
                     set: { environment.setTextLookupEnabled($0) }
                 )
             )
-            if let message = environment.textLookupStatusMessage {
+            if let message = plugin.statusMessage {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -32,7 +33,7 @@ struct TextLookupSettingsView: View {
                 "Selection Trigger",
                 selection: Binding(
                     get: { settings.selectionMode },
-                    set: { environment.setTextLookupSelectionMode($0) }
+                    set: { settings.setSelectionMode($0) }
                 )
                 ) {
                     ForEach(TextLookupSelectionMode.allCases) { mode in
@@ -56,7 +57,7 @@ struct TextLookupSettingsView: View {
                 "Clipboard Compatibility Mode",
                 isOn: Binding(
                     get: { settings.isClipboardFallbackEnabled },
-                    set: { environment.setTextLookupClipboardFallbackEnabled($0) }
+                    set: { settings.setClipboardFallbackEnabled($0) }
                 )
                 )
                 Text("When Accessibility cannot read an existing selection, ZBox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.")
@@ -67,7 +68,7 @@ struct TextLookupSettingsView: View {
                 "Translation Language",
                 selection: Binding(
                     get: { settings.targetLanguageIdentifier },
-                    set: { environment.setTextLookupTargetLanguage($0) }
+                    set: { settings.setTargetLanguageIdentifier($0) }
                 )
                 ) {
                     ForEach(targetLanguageChoices, id: \.self) { identifier in
@@ -101,7 +102,7 @@ struct TextLookupSettingsView: View {
                             Spacer()
                             if !TextLookupSettingsStore.defaultExcludedApplications.contains(identifier) {
                                 Button("Remove") {
-                                    environment.removeTextLookupExcludedApplication(identifier)
+                                    settings.removeExcludedApplication(identifier)
                                 }
                                 .buttonStyle(.borderless)
                             }
@@ -111,7 +112,7 @@ struct TextLookupSettingsView: View {
                     HStack {
                         TextField("Application bundle identifier", text: $excludedBundleIdentifier)
                         Button("Add") {
-                            environment.addTextLookupExcludedApplication(excludedBundleIdentifier)
+                            settings.addExcludedApplication(excludedBundleIdentifier)
                             excludedBundleIdentifier = ""
                         }
                         .disabled(excludedBundleIdentifier.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -139,7 +140,7 @@ struct TextLookupSettingsView: View {
                         Spacer()
                         Button("Remove") {
                             Task {
-                                await environment.removeThirdPartyTranslationConfiguration(configuration)
+                                await plugin.removeThirdPartyTranslationConfiguration(configuration)
                             }
                         }
                         .buttonStyle(.borderless)
@@ -159,7 +160,7 @@ struct TextLookupSettingsView: View {
                     let model = providerModel
                     let secret = providerSecret
                     Task {
-                        await environment.saveThirdPartyTranslationConfiguration(
+                        await plugin.saveThirdPartyTranslationConfiguration(
                             kind: providerKind,
                             endpoint: endpoint,
                             modelIdentifier: model,
@@ -176,8 +177,8 @@ struct TextLookupSettingsView: View {
     }
 
     private var targetLanguageChoices: [String] {
-        [environment.textLookupSettings.targetLanguageIdentifier] + commonTargetLanguages.filter {
-            $0 != environment.textLookupSettings.targetLanguageIdentifier
+        [environment.textLookupPlugin.settings.targetLanguageIdentifier] + commonTargetLanguages.filter {
+            $0 != environment.textLookupPlugin.settings.targetLanguageIdentifier
         }
     }
 

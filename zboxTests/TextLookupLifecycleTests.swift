@@ -90,12 +90,14 @@ struct TextLookupLifecycleTests {
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let credentialStore = CredentialStoreSpy()
-        let environment = AppEnvironment(
-            defaults: defaults,
-            translationCredentialVault: credentialStore
+        let settings = TextLookupSettingsStore(defaults: defaults)
+        let plugin = TextLookupPlugin(
+            settings: settings,
+            hotkeyRegistrar: GlobalHotkeyRegistrar(),
+            credentialVault: credentialStore
         )
 
-        await environment.saveThirdPartyTranslationConfiguration(
+        await plugin.saveThirdPartyTranslationConfiguration(
             kind: .deepL,
             endpoint: "https://api.example.test/translate",
             modelIdentifier: "",
@@ -103,16 +105,16 @@ struct TextLookupLifecycleTests {
         )
 
         let configuration = try #require(
-            environment.textLookupSettings.thirdPartyConfigurations.first
+            settings.thirdPartyConfigurations.first
         )
         let credentialID = try #require(configuration.credentialID)
         #expect(await credentialStore.secret(for: credentialID) == Data("local-secret".utf8))
         let persisted = defaults.data(forKey: "plugin.text-lookup.third-party-configurations") ?? Data()
         #expect(!String(decoding: persisted, as: UTF8.self).contains("local-secret"))
 
-        await environment.removeThirdPartyTranslationConfiguration(configuration)
+        await plugin.removeThirdPartyTranslationConfiguration(configuration)
         #expect(await credentialStore.wasRemoved(credentialID))
-        #expect(environment.textLookupSettings.thirdPartyConfigurations.isEmpty)
+        #expect(settings.thirdPartyConfigurations.isEmpty)
     }
 }
 

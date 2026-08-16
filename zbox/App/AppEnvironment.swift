@@ -13,12 +13,10 @@ final class AppEnvironment {
     private let windowController: AccessibilityWindowController
     private let settingsWindowOpener = SettingsWindowOpener()
     private let launchAtLoginController = LaunchAtLoginController()
-    private let translationCredentialVault: any TranslationCredentialStoring
     private let hotkeyStore: HotkeyConfigurationStore
-    let textLookupSettings: TextLookupSettingsStore
 
     @ObservationIgnored
-    private let textLookupPlugin: TextLookupPlugin
+    let textLookupPlugin: TextLookupPlugin
     @ObservationIgnored
     private let builtinPluginHost: BuiltinPluginHost
 
@@ -56,14 +54,9 @@ final class AppEnvironment {
     private var rootSearchSessionID: UUID?
     private var hasStarted = false
 
-    var isTextLookupRunning: Bool { textLookupPlugin.isRunning }
-    var textLookupStatusMessage: String? { textLookupPlugin.statusMessage }
     var isAccessibilityTrusted: Bool { accessibilityAuthorization.isTrusted }
 
-    init(
-        defaults: UserDefaults = .standard,
-        translationCredentialVault: any TranslationCredentialStoring = TranslationCredentialVault()
-    ) {
+    init(defaults: UserDefaults = .standard) {
         let hotkeyRegistrar = GlobalHotkeyRegistrar()
         let accessibilityAuthorization = AccessibilityAuthorization()
         let hotkeyStore = HotkeyConfigurationStore(defaults: defaults)
@@ -77,8 +70,6 @@ final class AppEnvironment {
         self.accessibilityAuthorization = accessibilityAuthorization
         windowController = AccessibilityWindowController(authorization: accessibilityAuthorization)
         self.hotkeyStore = hotkeyStore
-        self.translationCredentialVault = translationCredentialVault
-        self.textLookupSettings = textLookupSettings
         self.textLookupPlugin = textLookupPlugin
         builtinPluginHost = BuiltinPluginHost(plugins: [textLookupPlugin])
         rootSearchHotkey = hotkeyStore.rootSearchPreset()
@@ -103,7 +94,7 @@ final class AppEnvironment {
         }
 
         builtinPluginHost.setEnabled(
-            textLookupSettings.isEnabled,
+            textLookupPlugin.settings.isEnabled,
             for: TextLookupPlugin.pluginID
         )
     }
@@ -308,11 +299,11 @@ final class AppEnvironment {
         do {
             if isEnabled {
                 try validateHotkeyAssignments(
-                    textLookupShortcut: textLookupSettings.shortcut,
+                    textLookupShortcut: textLookupPlugin.settings.shortcut,
                     textLookupEnabled: true
                 )
             }
-            textLookupSettings.setEnabled(isEnabled)
+            textLookupPlugin.settings.setEnabled(isEnabled)
             builtinPluginHost.setEnabled(isEnabled, for: TextLookupPlugin.pluginID)
             statusMessage = textLookupPlugin.statusMessage
                 ?? (isEnabled ? "Text Lookup enabled" : "Text Lookup disabled")
@@ -321,74 +312,13 @@ final class AppEnvironment {
         }
     }
 
-    func setTextLookupSelectionMode(_ mode: TextLookupSelectionMode) {
-        textLookupSettings.setSelectionMode(mode)
-    }
-
     func setTextLookupShortcut(_ shortcut: TextLookupShortcutPreset) {
-        let previous = textLookupSettings.shortcut
         do {
             try validateHotkeyAssignments(textLookupShortcut: shortcut)
-            textLookupSettings.setShortcut(shortcut)
-            try textLookupPlugin.reloadConfiguration()
+            try textLookupPlugin.setShortcut(shortcut)
             statusMessage = "Text Lookup shortcut updated"
         } catch {
-            textLookupSettings.setShortcut(previous)
             statusMessage = error.localizedDescription
-        }
-    }
-
-    func setTextLookupClipboardFallbackEnabled(_ isEnabled: Bool) {
-        textLookupSettings.setClipboardFallbackEnabled(isEnabled)
-    }
-
-    func setTextLookupTargetLanguage(_ identifier: String) {
-        textLookupSettings.setTargetLanguageIdentifier(identifier)
-    }
-
-    func addTextLookupExcludedApplication(_ bundleIdentifier: String) {
-        textLookupSettings.addExcludedApplication(bundleIdentifier)
-    }
-
-    func removeTextLookupExcludedApplication(_ bundleIdentifier: String) {
-        textLookupSettings.removeExcludedApplication(bundleIdentifier)
-    }
-
-    func saveThirdPartyTranslationConfiguration(
-        kind: ThirdPartyTranslationKind,
-        endpoint: String,
-        modelIdentifier: String,
-        secret: String
-    ) async {
-        let credentialID = secret.isEmpty ? nil : UUID().uuidString
-        do {
-            if let credentialID {
-                try await translationCredentialVault.store(Data(secret.utf8), for: credentialID)
-            }
-            textLookupSettings.saveThirdPartyConfiguration(
-                ThirdPartyTranslationConfiguration(
-                    id: UUID().uuidString,
-                    kind: kind,
-                    endpoint: endpoint.trimmingCharacters(in: .whitespacesAndNewlines),
-                    modelIdentifier: modelIdentifier.isEmpty ? nil : modelIdentifier,
-                    credentialID: credentialID,
-                    languageMappings: [:]
-                )
-            )
-            statusMessage = "Third-party translation configuration saved"
-        } catch {
-            statusMessage = "Unable to save translation credential"
-        }
-    }
-
-    func removeThirdPartyTranslationConfiguration(_ configuration: ThirdPartyTranslationConfiguration) async {
-        do {
-            if let credentialID = configuration.credentialID {
-                try await translationCredentialVault.remove(for: credentialID)
-            }
-            textLookupSettings.removeThirdPartyConfiguration(id: configuration.id)
-        } catch {
-            statusMessage = "Unable to remove translation credential"
         }
     }
 
@@ -401,7 +331,7 @@ final class AppEnvironment {
     }
 
     private func applyHotkeyRegistrations() throws {
-        try validateHotkeyAssignments(textLookupShortcut: textLookupSettings.shortcut)
+        try validateHotkeyAssignments(textLookupShortcut: textLookupPlugin.settings.shortcut)
 
         var requests: [HotkeyRegistrationRequest] = []
         if let hotkey = rootSearchHotkey.hotkey {
@@ -443,7 +373,7 @@ final class AppEnvironment {
         ] + WindowCommands.shortcutTargets.map { target in
             HotkeyAssignment(owner: target.title, preset: commandHotkey(for: target.id))
         }
-        if textLookupEnabled ?? textLookupSettings.isEnabled {
+        if textLookupEnabled ?? textLookupPlugin.settings.isEnabled {
             assignments.append(
                 HotkeyAssignment(owner: "Text Lookup", hotkey: textLookupShortcut.hotkey)
             )
