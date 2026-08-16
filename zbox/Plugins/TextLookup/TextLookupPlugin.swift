@@ -80,16 +80,21 @@ final class TextLookupPlugin: BuiltinPlugin {
 
     func reloadConfiguration() throws {
         guard isRunning else { return }
-        hotkeyRegistrar.unregister(id: Self.hotkeyRegistrationID)
-        guard let hotkey = settings.shortcut.hotkey else { return }
-
-        try hotkeyRegistrar.register(
-            id: Self.hotkeyRegistrationID,
-            hotkey: hotkey,
-            label: settings.shortcut.label
-        ) { [weak self] in
-            self?.lookupShortcutPressed()
-        }
+        let requests = settings.shortcut.hotkey.map { hotkey in
+            [
+                HotkeyRegistrationRequest(
+                    id: Self.hotkeyRegistrationID,
+                    hotkey: hotkey,
+                    label: settings.shortcut.label
+                ) { [weak self] in
+                    self?.lookupShortcutPressed()
+                },
+            ]
+        } ?? []
+        try hotkeyRegistrar.replace(
+            ids: [Self.hotkeyRegistrationID],
+            with: requests
+        )
     }
 
     private func mouseReleased(at point: CGPoint) {
@@ -137,7 +142,12 @@ final class TextLookupPlugin: BuiltinPlugin {
             return
         }
         session.beginCapture()
-        panelController.show(anchor: request.triggerAnchorRect)
+        do {
+            try panelController.show(anchor: request.triggerAnchorRect)
+        } catch {
+            statusMessage = error.localizedDescription
+            return
+        }
         beginCapture(request, reportFailure: true, completion: publish)
     }
 
@@ -197,29 +207,36 @@ final class TextLookupPlugin: BuiltinPlugin {
             } catch let error as TextCaptureError {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
                 self.present(error, anchorPoint: request.triggerAnchorPoint)
-                statusMessage = error.localizedDescription
             } catch {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
                 self.present(.unableToReadText, anchorPoint: request.triggerAnchorPoint)
-                statusMessage = TextCaptureError.unableToReadText.localizedDescription
             }
         }
     }
 
     private func publish(_ capture: TextLookupCapture) {
-        session.beginLookup(
-            with: capture,
-            targetLanguageIdentifier: settings.targetLanguageIdentifier
-        )
-        panelController.show(anchor: capture.anchorRect)
-        statusMessage = nil
+        do {
+            try panelController.show(anchor: capture.anchorRect)
+            session.beginLookup(
+                with: capture,
+                targetLanguageIdentifier: settings.targetLanguageIdentifier
+            )
+            statusMessage = nil
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
-    private func present(_ error: TextCaptureError, anchorPoint: CGPoint) {
-        session.present(error)
-        panelController.show(
-            anchor: CGRect(x: anchorPoint.x, y: anchorPoint.y, width: 1, height: 1)
-        )
+    private func present(_ captureError: TextCaptureError, anchorPoint: CGPoint) {
+        session.present(captureError)
+        do {
+            try panelController.show(
+                anchor: CGRect(x: anchorPoint.x, y: anchorPoint.y, width: 1, height: 1)
+            )
+            statusMessage = captureError.localizedDescription
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
     private func clearCandidate() {

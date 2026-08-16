@@ -5,6 +5,7 @@ enum GlobalHotkeyError: LocalizedError {
     case duplicateRegistration(String)
     case eventHandlerInstallationFailed(OSStatus)
     case registrationFailed(String, OSStatus)
+    case replacementRollbackFailed(update: String, rollback: String)
 
     var errorDescription: String? {
         switch self {
@@ -14,8 +15,18 @@ enum GlobalHotkeyError: LocalizedError {
             "Unable to install the global hotkey handler (\(status))."
         case .registrationFailed(let label, let status):
             "\(label) is already used by another app or could not be registered (\(status))."
+        case .replacementRollbackFailed(let update, let rollback):
+            "The shortcut update failed (\(update)), and the previous shortcuts could not be restored (\(rollback))."
         }
     }
+}
+
+@MainActor
+struct HotkeyRegistrationRequest {
+    let id: String
+    let hotkey: Hotkey
+    let label: String
+    let action: () -> Void
 }
 
 @MainActor
@@ -25,6 +36,7 @@ final class GlobalHotkeyRegistrar {
     private struct Registration {
         let reference: EventHotKeyRef
         let numericID: UInt32
+        let request: HotkeyRegistrationRequest
     }
 
     private var eventHandler: EventHandlerRef?
@@ -32,12 +44,32 @@ final class GlobalHotkeyRegistrar {
     private var actions: [UInt32: () -> Void] = [:]
     private var nextNumericID: UInt32 = 1
 
-    func register(
-        id: String,
-        hotkey: Hotkey,
-        label: String,
-        action: @escaping () -> Void
+    func replace(
+        ids: Set<String>,
+        with requests: [HotkeyRegistrationRequest]
     ) throws {
+        let previous = ids.compactMap { registrations[$0]?.request }
+        for id in ids { unregister(id: id) }
+
+        do {
+            for request in requests { try register(request) }
+        } catch {
+            let updateError = error
+            for request in requests { unregister(id: request.id) }
+            do {
+                for request in previous { try register(request) }
+            } catch {
+                throw GlobalHotkeyError.replacementRollbackFailed(
+                    update: updateError.localizedDescription,
+                    rollback: error.localizedDescription
+                )
+            }
+            throw updateError
+        }
+    }
+
+    private func register(_ request: HotkeyRegistrationRequest) throws {
+        let id = request.id
         guard registrations[id] == nil else {
             throw GlobalHotkeyError.duplicateRegistration(id)
         }
@@ -48,8 +80,8 @@ final class GlobalHotkeyRegistrar {
         let hotKeyID = EventHotKeyID(signature: Self.signature, id: numericID)
         var reference: EventHotKeyRef?
         let status = RegisterEventHotKey(
-            hotkey.keyCode,
-            hotkey.modifiers,
+            request.hotkey.keyCode,
+            request.hotkey.modifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -57,11 +89,15 @@ final class GlobalHotkeyRegistrar {
         )
 
         guard status == noErr, let reference else {
-            throw GlobalHotkeyError.registrationFailed(label, status)
+            throw GlobalHotkeyError.registrationFailed(request.label, status)
         }
 
-        registrations[id] = Registration(reference: reference, numericID: numericID)
-        actions[numericID] = action
+        registrations[id] = Registration(
+            reference: reference,
+            numericID: numericID,
+            request: request
+        )
+        actions[numericID] = request.action
     }
 
     func unregisterAll() {

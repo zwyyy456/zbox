@@ -275,7 +275,6 @@ final class AppEnvironment {
             statusMessage = "Root Search shortcut updated"
         } catch {
             rootSearchHotkey = previous
-            try? applyHotkeyRegistrations()
             statusMessage = error.localizedDescription
         }
     }
@@ -290,7 +289,6 @@ final class AppEnvironment {
             statusMessage = "Command shortcut updated"
         } catch {
             commandHotkeys[commandID] = previous
-            try? applyHotkeyRegistrations()
             statusMessage = error.localizedDescription
         }
     }
@@ -336,7 +334,6 @@ final class AppEnvironment {
             statusMessage = "Text Lookup shortcut updated"
         } catch {
             textLookupSettings.setShortcut(previous)
-            try? textLookupPlugin.reloadConfiguration()
             statusMessage = error.localizedDescription
         }
     }
@@ -406,33 +403,35 @@ final class AppEnvironment {
     private func applyHotkeyRegistrations() throws {
         try validateHotkeyAssignments(textLookupShortcut: textLookupSettings.shortcut)
 
-        unregisterCoreHotkeys()
-        do {
-            if let hotkey = rootSearchHotkey.hotkey {
-                try hotkeyRegistrar.register(
+        var requests: [HotkeyRegistrationRequest] = []
+        if let hotkey = rootSearchHotkey.hotkey {
+            requests.append(
+                HotkeyRegistrationRequest(
                     id: "root-search",
                     hotkey: hotkey,
                     label: rootSearchHotkey.label
                 ) { [weak self] in
                     self?.toggleRootSearch()
                 }
-            }
+            )
+        }
 
-            for target in WindowCommands.shortcutTargets {
-                let preset = commandHotkey(for: target.id)
-                guard let hotkey = preset.hotkey else { continue }
-                try hotkeyRegistrar.register(
+        for target in WindowCommands.shortcutTargets {
+            let preset = commandHotkey(for: target.id)
+            guard let hotkey = preset.hotkey else { continue }
+            requests.append(
+                HotkeyRegistrationRequest(
                     id: target.id.rawValue,
                     hotkey: hotkey,
                     label: preset.label
                 ) { [weak self] in
                     self?.executeDirectCommand(target.id)
                 }
-            }
-        } catch {
-            unregisterCoreHotkeys()
-            throw error
+            )
         }
+
+        let coreIDs = Set(["root-search"] + WindowCommands.shortcutTargets.map(\.id.rawValue))
+        try hotkeyRegistrar.replace(ids: coreIDs, with: requests)
     }
 
     private func validateHotkeyAssignments(
@@ -450,13 +449,6 @@ final class AppEnvironment {
             )
         }
         try HotkeyValidator.validate(assignments)
-    }
-
-    private func unregisterCoreHotkeys() {
-        hotkeyRegistrar.unregister(id: "root-search")
-        for target in WindowCommands.shortcutTargets {
-            hotkeyRegistrar.unregister(id: target.id.rawValue)
-        }
     }
 
     private func executeDirectCommand(_ commandID: CommandID) {

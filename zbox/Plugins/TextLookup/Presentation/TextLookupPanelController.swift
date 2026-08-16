@@ -1,6 +1,14 @@
 import AppKit
 import SwiftUI
 
+nonisolated enum TextLookupPanelError: LocalizedError {
+    case noAvailableScreen
+
+    var errorDescription: String? {
+        "Text Lookup could not find an available screen."
+    }
+}
+
 @MainActor
 final class TextLookupPanelController {
     private static let escapeRegistrationID = "builtin.text-lookup.dismiss"
@@ -41,7 +49,7 @@ final class TextLookupPanelController {
         panel.hasShadow = true
     }
 
-    func show(anchor: CGRect?) {
+    func show(anchor: CGRect?) throws {
         let resolvedAnchor = anchor ?? CGRect(
             x: NSEvent.mouseLocation.x,
             y: NSEvent.mouseLocation.y,
@@ -51,7 +59,7 @@ final class TextLookupPanelController {
         let screen = NSScreen.screens.first { $0.frame.contains(resolvedAnchor.center) }
             ?? NSScreen.main
             ?? NSScreen.screens.first
-        guard let screen else { return }
+        guard let screen else { throw TextLookupPanelError.noAvailableScreen }
 
         let width = min(520, screen.visibleFrame.width - 24)
         let size = CGSize(
@@ -64,8 +72,8 @@ final class TextLookupPanelController {
             visibleFrame: screen.visibleFrame
         )
         panel.setFrame(CGRect(origin: origin, size: size), display: true)
+        try registerEscape()
         panel.orderFrontRegardless()
-        registerEscape()
     }
 
     func hide() {
@@ -74,15 +82,19 @@ final class TextLookupPanelController {
         onDismiss()
     }
 
-    private func registerEscape() {
-        hotkeyRegistrar.unregister(id: Self.escapeRegistrationID)
-        try? hotkeyRegistrar.register(
-            id: Self.escapeRegistrationID,
-            hotkey: Hotkey(keyCode: 53, modifiers: 0),
-            label: "Text Lookup Escape"
-        ) { [weak self] in
-            self?.hide()
-        }
+    private func registerEscape() throws {
+        try hotkeyRegistrar.replace(
+            ids: [Self.escapeRegistrationID],
+            with: [
+                HotkeyRegistrationRequest(
+                    id: Self.escapeRegistrationID,
+                    hotkey: Hotkey(keyCode: 53, modifiers: 0),
+                    label: "Text Lookup Escape"
+                ) { [weak self] in
+                    self?.hide()
+                },
+            ]
+        )
     }
 }
 
