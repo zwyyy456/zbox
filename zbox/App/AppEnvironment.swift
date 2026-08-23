@@ -26,7 +26,7 @@ final class AppEnvironment {
     private(set) var rootSearchHotkey: HotkeyPreset
     private(set) var commandHotkeys: [CommandID: HotkeyPreset]
     private(set) var isLaunchAtLoginEnabled = false
-    private(set) var shouldOfferAccessibilitySettings = false
+    private(set) var commandFeedback: CommandFeedback?
     var searchQuery = "" {
         didSet {
             if searchQuery != oldValue {
@@ -46,6 +46,10 @@ final class AppEnvironment {
 
     @ObservationIgnored
     private lazy var searchPanelController = SearchPanelController(environment: self)
+    @ObservationIgnored
+    private lazy var commandFeedbackPanelController = CommandFeedbackPanelController(
+        onRecovery: { [weak self] action in self?.performCommandRecovery(action) }
+    )
     @ObservationIgnored
     private var launchTask: Task<Void, Never>?
     private var commandExecutionID: UUID?
@@ -99,6 +103,7 @@ final class AppEnvironment {
         launchTask?.cancel()
         commandExecutionID = nil
         rootSearchSessionID = nil
+        commandFeedbackPanelController.hide()
         textLookupPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
@@ -113,7 +118,8 @@ final class AppEnvironment {
         targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         searchQuery = ""
         selectedCommandID = nil
-        shouldOfferAccessibilitySettings = false
+        commandFeedback = nil
+        commandFeedbackPanelController.hide()
         searchPanelController.show()
     }
 
@@ -200,6 +206,9 @@ final class AppEnvironment {
         let executionID = UUID()
         let expectedRootSearchSessionID = hidePanelOnSuccess ? rootSearchSessionID : nil
         launchTask?.cancel()
+        if context.source == .directHotkey {
+            commandFeedbackPanelController.hide()
+        }
         commandExecutionID = executionID
         launchTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -209,9 +218,8 @@ final class AppEnvironment {
                     executionID,
                     expectedRootSearchSessionID: expectedRootSearchSessionID
                 ) else { return }
-                shouldOfferAccessibilitySettings = false
-                statusMessage = "Ran \(descriptor.title)"
                 if hidePanelOnSuccess {
+                    commandFeedback = .success("Ran \(descriptor.title)")
                     hideRootSearch()
                 }
             } catch is CancellationError {
@@ -221,8 +229,12 @@ final class AppEnvironment {
                     executionID,
                     expectedRootSearchSessionID: expectedRootSearchSessionID
                 ) else { return }
-                shouldOfferAccessibilitySettings = error as? AccessibilityWindowError == .permissionRequired
-                statusMessage = error.localizedDescription
+                let feedback = CommandFeedbackMapper.failure(for: error)
+                if context.source == .rootSearch {
+                    commandFeedback = feedback
+                } else {
+                    commandFeedbackPanelController.show(feedback)
+                }
             }
         }
     }
@@ -328,6 +340,19 @@ final class AppEnvironment {
 
     func openAccessibilitySettings() {
         windowController.openSystemSettings()
+    }
+
+    func performCommandRecovery(_ action: CommandRecoveryAction) {
+        switch action {
+        case .openAccessibilitySettings:
+            openAccessibilitySettings()
+        case .openWindowManagementSettings:
+            do {
+                try settingsWindowOpener.open()
+            } catch {
+                statusMessage = error.localizedDescription
+            }
+        }
     }
 
     private func applyHotkeyRegistrations() throws {

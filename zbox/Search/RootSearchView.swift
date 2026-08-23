@@ -53,14 +53,22 @@ struct RootSearchView: View {
             Divider()
 
             HStack {
-                Text(environment.statusMessage)
+                Text(environment.commandFeedback?.message ?? environment.statusMessage)
                     .lineLimit(1)
                 Spacer()
-                if environment.shouldOfferAccessibilitySettings {
-                    Button("Open Accessibility Settings") {
-                        environment.openAccessibilitySettings()
+                if let recovery = environment.commandFeedback?.recoveryAction {
+                    switch recovery {
+                    case .openAccessibilitySettings:
+                        Button("Open Accessibility Settings") {
+                            environment.performCommandRecovery(recovery)
+                        }
+                        .buttonStyle(.link)
+                    case .openWindowManagementSettings:
+                        Button("Open Window Management") {
+                            environment.performCommandRecovery(recovery)
+                        }
+                        .buttonStyle(.link)
                     }
-                    .buttonStyle(.link)
                 } else {
                     Text("↑↓ Select   ↩ Run   esc Close")
                 }
