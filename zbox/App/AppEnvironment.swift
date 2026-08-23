@@ -6,6 +6,7 @@ import Observation
 final class AppEnvironment {
     private enum Key {
         static let windowManagementEnabled = "window-management.enabled"
+        static let showApplicationPaths = "search.show-application-paths"
     }
 
     private let applicationCatalog = ApplicationCatalog()
@@ -35,6 +36,7 @@ final class AppEnvironment {
     private(set) var isLaunchAtLoginEnabled = false
     private(set) var isWindowManagementEnabled: Bool
     private(set) var isAccessibilityTrusted: Bool
+    private(set) var showsApplicationPathsInSearchResults: Bool
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var searchQuery = "" {
@@ -90,6 +92,7 @@ final class AppEnvironment {
         rootSearchHotkey = hotkeyStore.rootSearchHotkey()
         isWindowManagementEnabled = defaults.bool(forKey: Key.windowManagementEnabled)
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
+        showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
             for: WindowCommands.shortcutTargets.map(\.id)
         )
@@ -277,6 +280,13 @@ final class AppEnvironment {
         return applicationIconProvider.icon(for: applicationURL)
     }
 
+    func subtitle(for descriptor: CommandDescriptor) -> String? {
+        guard applicationURLsByCommandID[descriptor.id] != nil else {
+            return descriptor.subtitle
+        }
+        return showsApplicationPathsInSearchResults ? descriptor.subtitle : nil
+    }
+
     func systemImage(for commandID: CommandID) -> String? {
         WindowCommands.systemImage(for: commandID)
             ?? SettingsCommands.systemImage(for: commandID)
@@ -372,6 +382,14 @@ final class AppEnvironment {
             isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
             statusMessage = error.localizedDescription
         }
+    }
+
+    func setShowsApplicationPathsInSearchResults(_ isEnabled: Bool) {
+        showsApplicationPathsInSearchResults = isEnabled
+        defaults.set(isEnabled, forKey: Key.showApplicationPaths)
+        statusMessage = isEnabled
+            ? "Application paths shown in search results"
+            : "Application paths hidden in search results"
     }
 
     func setWindowManagementEnabled(_ isEnabled: Bool) {

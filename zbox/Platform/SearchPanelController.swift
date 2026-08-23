@@ -16,6 +16,10 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
         let content = RootSearchView(environment: environment)
         let hostingView = NSHostingView(rootView: content)
         hostingView.frame = NSRect(x: 0, y: 0, width: 640, height: 420)
+        hostingView.wantsLayer = true
+        hostingView.layer?.cornerRadius = RootSearchAppearance.cornerRadius
+        hostingView.layer?.cornerCurve = .continuous
+        hostingView.layer?.masksToBounds = true
 
         panel = SearchPanel(
             contentRect: hostingView.frame,

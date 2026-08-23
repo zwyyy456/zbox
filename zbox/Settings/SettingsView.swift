@@ -42,6 +42,13 @@ private struct GeneralSettingsView: View {
                         set: { environment.setLaunchAtLoginEnabled($0) }
                     )
                 )
+                Toggle(
+                    "Show Application Paths in Search Results",
+                    isOn: Binding(
+                        get: { environment.showsApplicationPathsInSearchResults },
+                        set: { environment.setShowsApplicationPathsInSearchResults($0) }
+                    )
+                )
             }
 
             Section("Applications") {

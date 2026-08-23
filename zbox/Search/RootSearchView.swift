@@ -36,6 +36,7 @@ struct RootSearchView: View {
                                     match: match,
                                     icon: environment.applicationIcon(for: match.id),
                                     systemImage: environment.systemImage(for: match.id),
+                                    subtitle: environment.subtitle(for: match.descriptor),
                                     isSelected: environment.isSelected(match.id)
                                 )
                             }
@@ -80,6 +81,12 @@ struct RootSearchView: View {
         }
         .frame(width: 640, height: 420)
         .background(.regularMaterial)
+        .clipShape(
+            .rect(
+                cornerRadius: RootSearchAppearance.cornerRadius,
+                style: .continuous
+            )
+        )
         .onAppear {
             isSearchFocused = true
         }
@@ -92,6 +99,7 @@ private struct CommandResultRow: View {
     let match: SearchMatch
     let icon: NSImage?
     let systemImage: String?
+    let subtitle: String?
     let isSelected: Bool
 
     var body: some View {
@@ -112,7 +120,7 @@ private struct CommandResultRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(match.descriptor.title)
                     .lineLimit(1)
-                if let subtitle = match.descriptor.subtitle {
+                if let subtitle {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
