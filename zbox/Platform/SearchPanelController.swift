@@ -125,26 +125,21 @@ private final class SearchPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown {
-            if event.specialKey == .upArrow {
-                onMoveSelection?(-1)
-                return
-            }
-            if event.specialKey == .downArrow {
-                onMoveSelection?(1)
-                return
-            }
-
-            switch event.charactersIgnoringModifiers {
-            case "\r":
+        if event.type == .keyDown,
+           let action = SearchKeyboardMapper.action(
+            keyCode: event.keyCode,
+            charactersIgnoringModifiers: event.charactersIgnoringModifiers,
+            modifierFlags: event.modifierFlags
+           ) {
+            switch action {
+            case .moveSelection(let offset):
+                onMoveSelection?(offset)
+            case .execute:
                 onReturn?()
-                return
-            case "\u{1b}":
+            case .dismiss:
                 onEscape?()
-                return
-            default:
-                break
             }
+            return
         }
         super.sendEvent(event)
     }
