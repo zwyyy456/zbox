@@ -51,7 +51,6 @@ final class AccessibilityWindowController {
 
     func perform(_ action: WindowAction, targetPID: pid_t?) throws {
         guard authorization.isTrusted else {
-            requestPermission()
             throw AccessibilityWindowError.permissionRequired
         }
         guard let targetPID,

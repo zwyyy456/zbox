@@ -21,6 +21,18 @@ struct CommandFeedbackTests {
 
         #expect(feedback == .failure("Command failed.", recovery: nil))
     }
+
+    @Test
+    func disabledWindowManagementOffersSettingsRecovery() {
+        let feedback = CommandFeedbackMapper.failure(for: WindowManagementError.disabled)
+
+        #expect(
+            feedback == .failure(
+                "Enable Window Management in Settings before running this command.",
+                recovery: .openWindowManagementSettings
+            )
+        )
+    }
 }
 
 private struct TestFailure: LocalizedError {

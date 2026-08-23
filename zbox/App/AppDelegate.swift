@@ -9,6 +9,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         environment.start()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        environment.reconcileAccessibilityDependentFeatures()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         environment.stop()
     }

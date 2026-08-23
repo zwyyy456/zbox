@@ -10,6 +10,7 @@ final class TextLookupPlugin {
     let settings: TextLookupSettingsStore
     private let hotkeyRegistrar: GlobalHotkeyRegistrar
     private let capturer: any TextCapturing
+    private let isAccessibilityTrusted: @MainActor () -> Bool
     private let clipboardCapturer = ClipboardSelectionCapturer()
     private let triggerMonitor = TextLookupTriggerMonitor()
     private let session: TextLookupSessionModel
@@ -32,11 +33,13 @@ final class TextLookupPlugin {
     init(
         settings: TextLookupSettingsStore,
         hotkeyRegistrar: GlobalHotkeyRegistrar,
-        capturer: any TextCapturing = AccessibilityTextCapturer()
+        capturer: any TextCapturing = AccessibilityTextCapturer(),
+        isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {
         self.settings = settings
         self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer
+        self.isAccessibilityTrusted = isAccessibilityTrusted
         session = TextLookupSessionModel(
             flashDict: try? FlashDictBridgeClient.production()
         )
@@ -53,6 +56,7 @@ final class TextLookupPlugin {
 
     func start() {
         guard !isRunning else { return }
+        guard hasAccessibilityPermission else { return }
         isRunning = true
         triggerMonitor.start()
         do {
@@ -108,6 +112,7 @@ final class TextLookupPlugin {
 
     private func mouseReleased(at point: CGPoint) {
         clearCandidate()
+        guard hasAccessibilityPermission else { return }
         guard settings.selectionMode != .off,
               let request = captureRequest(
                 intent: .currentSelection,
@@ -133,6 +138,7 @@ final class TextLookupPlugin {
 
     private func lookupShortcutPressed() {
         panelController.hide()
+        guard hasAccessibilityPermission else { return }
         let frontmostApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         if let candidate,
            candidate.isValid(
@@ -214,7 +220,12 @@ final class TextLookupPlugin {
             } catch is CancellationError {
                 return
             } catch let error as TextCaptureError {
-                guard self.captureAttemptID == request.id, reportFailure else { return }
+                guard self.captureAttemptID == request.id else { return }
+                if error == .permissionRequired {
+                    self.disableForMissingAccessibilityPermission()
+                    return
+                }
+                guard reportFailure else { return }
                 self.present(error, anchorPoint: request.triggerAnchorPoint)
             } catch {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
@@ -260,5 +271,19 @@ final class TextLookupPlugin {
         captureTask = nil
         captureAttemptID = nil
         session.clear()
+    }
+
+    private var hasAccessibilityPermission: Bool {
+        guard isAccessibilityTrusted() else {
+            disableForMissingAccessibilityPermission()
+            return false
+        }
+        return true
+    }
+
+    private func disableForMissingAccessibilityPermission() {
+        settings.setEnabled(false)
+        stop()
+        statusMessage = TextCaptureError.permissionRequired.localizedDescription
     }
 }

@@ -5,6 +5,14 @@ nonisolated struct CommandShortcutTarget: Identifiable, Sendable {
     let title: String
 }
 
+nonisolated enum WindowManagementError: LocalizedError, Equatable {
+    case disabled
+
+    var errorDescription: String? {
+        "Enable Window Management in Settings before running this command."
+    }
+}
+
 nonisolated enum WindowCommands {
     static let leftHalfID = CommandID("window.left-half")
     static let rightHalfID = CommandID("window.right-half")
@@ -18,7 +26,8 @@ nonisolated enum WindowCommands {
     @MainActor
     static func registerAll(
         in registry: CommandRegistry,
-        controller: AccessibilityWindowController
+        controller: AccessibilityWindowController,
+        isEnabled: @escaping @MainActor () -> Bool
     ) throws {
         try register(
             id: leftHalfID,
@@ -26,7 +35,8 @@ nonisolated enum WindowCommands {
             keywords: ["window", "left", "resize", "tile"],
             action: .leftHalf,
             in: registry,
-            controller: controller
+            controller: controller,
+            isEnabled: isEnabled
         )
         try register(
             id: rightHalfID,
@@ -34,7 +44,8 @@ nonisolated enum WindowCommands {
             keywords: ["window", "right", "resize", "tile"],
             action: .rightHalf,
             in: registry,
-            controller: controller
+            controller: controller,
+            isEnabled: isEnabled
         )
         try register(
             id: maximizeID,
@@ -42,7 +53,8 @@ nonisolated enum WindowCommands {
             keywords: ["window", "full", "resize", "zoom"],
             action: .maximize,
             in: registry,
-            controller: controller
+            controller: controller,
+            isEnabled: isEnabled
         )
     }
 
@@ -66,7 +78,8 @@ nonisolated enum WindowCommands {
         keywords: [String],
         action: WindowAction,
         in registry: CommandRegistry,
-        controller: AccessibilityWindowController
+        controller: AccessibilityWindowController,
+        isEnabled: @escaping @MainActor () -> Bool
     ) throws {
         let descriptor = CommandDescriptor(
             id: id,
@@ -75,6 +88,7 @@ nonisolated enum WindowCommands {
             keywords: keywords
         )
         try registry.register(descriptor) { context in
+            guard isEnabled() else { throw WindowManagementError.disabled }
             try controller.perform(action, targetPID: context.frontmostApplicationPID)
         }
     }

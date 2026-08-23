@@ -55,6 +55,13 @@ struct SettingsView: View {
             TextLookupSettingsView(environment: environment)
 
             Section("Window Management") {
+                Toggle(
+                    "Enable Window Management",
+                    isOn: Binding(
+                        get: { environment.isWindowManagementEnabled },
+                        set: { environment.setWindowManagementEnabled($0) }
+                    )
+                )
                 Text("Window Management uses Accessibility only to move and resize the frontmost application window. Text Lookup has separate controls and privacy behavior above.")
                     .foregroundStyle(.secondary)
 

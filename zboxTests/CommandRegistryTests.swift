@@ -54,6 +54,28 @@ struct CommandRegistryTests {
         }
     }
 
+    @Test
+    func disabledWindowCommandsRemainDiscoverableButDoNotExecute() async throws {
+        let registry = CommandRegistry()
+
+        try WindowCommands.registerAll(
+            in: registry,
+            controller: AccessibilityWindowController(),
+            isEnabled: { false }
+        )
+
+        #expect(registry.descriptors.map(\.id) == WindowCommands.shortcutTargets.map(\.id))
+        do {
+            try await registry.execute(
+                WindowCommands.leftHalfID,
+                context: CommandContext(source: .rootSearch, frontmostApplicationPID: nil)
+            )
+            Issue.record("Expected disabled Window Management to reject execution")
+        } catch {
+            #expect(error as? WindowManagementError == .disabled)
+        }
+    }
+
     private func descriptor(id: CommandID, title: String) -> CommandDescriptor {
         CommandDescriptor(id: id, title: title, subtitle: nil, keywords: [])
     }
