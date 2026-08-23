@@ -12,7 +12,7 @@ final class AppEnvironment {
     private let applicationLauncher = ApplicationLauncher()
     private let applicationIconProvider = ApplicationIconProvider()
     private let searchEngine = SearchEngine()
-    private let hotkeyRegistrar: GlobalHotkeyRegistrar
+    private let hotkeyRegistrar: any HotkeyRegistering
     private let accessibilityAuthorization: AccessibilityAuthorization
     private let windowController: AccessibilityWindowController
     private let settingsWindowOpener = SettingsWindowOpener()
@@ -28,8 +28,10 @@ final class AppEnvironment {
     private(set) var applications: [ApplicationInfo] = []
     private(set) var targetApplicationPID: pid_t?
     private(set) var selectedCommandID: CommandID?
-    private(set) var rootSearchHotkey: HotkeyPreset
-    private(set) var commandHotkeys: [CommandID: HotkeyPreset]
+    private(set) var rootSearchHotkey: Hotkey
+    private(set) var commandHotkeys: [CommandID: Hotkey]
+    private(set) var rootSearchHotkeyError: String?
+    private(set) var commandHotkeyErrors: [CommandID: String] = [:]
     private(set) var isLaunchAtLoginEnabled = false
     private(set) var isWindowManagementEnabled: Bool
     private(set) var isAccessibilityTrusted: Bool
@@ -63,9 +65,13 @@ final class AppEnvironment {
     private var commandExecutionID: UUID?
     private var rootSearchSessionID: UUID?
     private var hasStarted = false
+    private var isRecordingShortcut = false
+    private var coreHotkeysNeedRestoration = false
 
-    init(defaults: UserDefaults = .standard) {
-        let hotkeyRegistrar = GlobalHotkeyRegistrar()
+    init(
+        defaults: UserDefaults = .standard,
+        hotkeyRegistrar: any HotkeyRegistering = GlobalHotkeyRegistrar()
+    ) {
         let accessibilityAuthorization = AccessibilityAuthorization()
         let hotkeyStore = HotkeyConfigurationStore(defaults: defaults)
         let textLookupSettings = TextLookupSettingsStore(defaults: defaults)
@@ -81,13 +87,11 @@ final class AppEnvironment {
         self.hotkeyStore = hotkeyStore
         self.defaults = defaults
         self.textLookupPlugin = textLookupPlugin
-        rootSearchHotkey = hotkeyStore.rootSearchPreset()
+        rootSearchHotkey = hotkeyStore.rootSearchHotkey()
         isWindowManagementEnabled = defaults.bool(forKey: Key.windowManagementEnabled)
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
-        commandHotkeys = Dictionary(
-            uniqueKeysWithValues: WindowCommands.shortcutTargets.map { target in
-                (target.id, hotkeyStore.commandPreset(for: target.id))
-            }
+        commandHotkeys = hotkeyStore.commandHotkeys(
+            for: WindowCommands.shortcutTargets.map(\.id)
         )
     }
 
@@ -278,34 +282,83 @@ final class AppEnvironment {
             ?? SettingsCommands.systemImage(for: commandID)
     }
 
-    func commandHotkey(for commandID: CommandID) -> HotkeyPreset {
-        commandHotkeys[commandID] ?? .none
+    func commandHotkey(for commandID: CommandID) -> Hotkey? {
+        commandHotkeys[commandID]
     }
 
-    func setRootSearchHotkey(_ preset: HotkeyPreset) {
+    func setRootSearchHotkey(_ hotkey: Hotkey) {
         let previous = rootSearchHotkey
-        rootSearchHotkey = preset
+        rootSearchHotkeyError = nil
 
         do {
+            try HotkeyValidator.validateUserShortcut(hotkey)
+            rootSearchHotkey = hotkey
             try applyHotkeyRegistrations()
-            hotkeyStore.setRootSearchPreset(preset)
+            coreHotkeysNeedRestoration = false
+            hotkeyStore.setRootSearchHotkey(hotkey)
             statusMessage = "Root Search shortcut updated"
         } catch {
             rootSearchHotkey = previous
+            rootSearchHotkeyError = error.localizedDescription
             statusMessage = error.localizedDescription
         }
     }
 
-    func setCommandHotkey(_ preset: HotkeyPreset, for commandID: CommandID) {
-        let previous = commandHotkeys[commandID] ?? .none
-        commandHotkeys[commandID] = preset
+    func reportInvalidRootSearchHotkey(_ message: String) {
+        rootSearchHotkeyError = message
+        statusMessage = message
+    }
+
+    func setCommandHotkey(_ hotkey: Hotkey?, for commandID: CommandID) {
+        let previous = commandHotkeys[commandID]
+        commandHotkeyErrors[commandID] = nil
 
         do {
+            if let hotkey {
+                try HotkeyValidator.validateUserShortcut(hotkey)
+                commandHotkeys[commandID] = hotkey
+            } else {
+                commandHotkeys[commandID] = nil
+            }
             try applyHotkeyRegistrations()
-            hotkeyStore.setCommandPreset(preset, for: commandID)
+            coreHotkeysNeedRestoration = false
+            hotkeyStore.setCommandHotkey(hotkey, for: commandID)
             statusMessage = "Command shortcut updated"
         } catch {
             commandHotkeys[commandID] = previous
+            commandHotkeyErrors[commandID] = error.localizedDescription
+            statusMessage = error.localizedDescription
+        }
+    }
+
+    func reportInvalidCommandHotkey(_ message: String, for commandID: CommandID) {
+        commandHotkeyErrors[commandID] = message
+        statusMessage = message
+    }
+
+    func setShortcutRecordingActive(_ isActive: Bool) {
+        guard isActive != isRecordingShortcut else { return }
+        isRecordingShortcut = isActive
+
+        if isActive {
+            coreHotkeysNeedRestoration = true
+            hotkeyRegistrar.unregister(id: "root-search")
+            for target in WindowCommands.shortcutTargets {
+                hotkeyRegistrar.unregister(id: target.id.rawValue)
+            }
+            hotkeyRegistrar.unregister(id: TextLookupPlugin.hotkeyRegistrationID)
+            return
+        }
+
+        do {
+            if coreHotkeysNeedRestoration {
+                try applyHotkeyRegistrations()
+            }
+            if textLookupPlugin.settings.isEnabled {
+                try textLookupPlugin.reloadConfiguration()
+            }
+            coreHotkeysNeedRestoration = false
+        } catch {
             statusMessage = error.localizedDescription
         }
     }
@@ -431,27 +484,24 @@ final class AppEnvironment {
         try validateHotkeyAssignments(textLookupShortcut: textLookupPlugin.settings.shortcut)
 
         var requests: [HotkeyRegistrationRequest] = []
-        if let hotkey = rootSearchHotkey.hotkey {
-            requests.append(
-                HotkeyRegistrationRequest(
-                    id: "root-search",
-                    hotkey: hotkey,
-                    label: rootSearchHotkey.label
-                ) { [weak self] in
-                    self?.toggleRootSearch()
-                }
-            )
-        }
+        requests.append(
+            HotkeyRegistrationRequest(
+                id: "root-search",
+                hotkey: rootSearchHotkey,
+                label: HotkeyFormatter.displayName(for: rootSearchHotkey)
+            ) { [weak self] in
+                self?.toggleRootSearch()
+            }
+        )
 
         if isWindowManagementEnabled, accessibilityAuthorization.isTrusted {
             for target in WindowCommands.shortcutTargets {
-                let preset = commandHotkey(for: target.id)
-                guard let hotkey = preset.hotkey else { continue }
+                guard let hotkey = commandHotkey(for: target.id) else { continue }
                 requests.append(
                     HotkeyRegistrationRequest(
                         id: target.id.rawValue,
                         hotkey: hotkey,
-                        label: preset.label
+                        label: HotkeyFormatter.displayName(for: hotkey)
                     ) { [weak self] in
                         self?.executeDirectCommand(target.id)
                     }
@@ -468,12 +518,9 @@ final class AppEnvironment {
         textLookupEnabled: Bool? = nil
     ) throws {
         var assignments = [
-            HotkeyAssignment(owner: "Root Search", preset: rootSearchHotkey),
-        ]
-        if isWindowManagementEnabled {
-            assignments += WindowCommands.shortcutTargets.map { target in
-                HotkeyAssignment(owner: target.title, preset: commandHotkey(for: target.id))
-            }
+            HotkeyAssignment(owner: "Root Search", hotkey: rootSearchHotkey),
+        ] + WindowCommands.shortcutTargets.map { target in
+            HotkeyAssignment(owner: target.title, hotkey: commandHotkey(for: target.id))
         }
         if textLookupEnabled ?? textLookupPlugin.settings.isEnabled {
             assignments.append(

@@ -65,30 +65,54 @@ private struct ShortcutSettingsView: View {
 
         Form {
             Section("Root Search") {
-                Picker(
-                    "Global Hotkey",
-                    selection: Binding(
-                        get: { environment.rootSearchHotkey },
-                        set: { environment.setRootSearchHotkey($0) }
-                    )
-                ) {
-                    ForEach(HotkeyPreset.rootSearchChoices) { preset in
-                        Text(preset.label).tag(preset)
+                VStack(alignment: .leading, spacing: 6) {
+                    LabeledContent("Global Hotkey") {
+                        ShortcutRecorder(
+                            hotkey: environment.rootSearchHotkey,
+                            allowsClearing: false,
+                            accessibilityLabel: "Root Search shortcut",
+                            onChange: { hotkey in
+                                guard let hotkey else { return }
+                                environment.setRootSearchHotkey(hotkey)
+                            },
+                            onInvalid: environment.reportInvalidRootSearchHotkey,
+                            onRecordingChanged: environment.setShortcutRecordingActive
+                        )
+                        .frame(width: 180)
+                    }
+                    if let error = environment.rootSearchHotkeyError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
                 }
             }
 
             Section("Command Shortcuts") {
                 ForEach(WindowCommands.shortcutTargets) { target in
-                    Picker(
-                        target.title,
-                        selection: Binding(
-                            get: { environment.commandHotkey(for: target.id) },
-                            set: { environment.setCommandHotkey($0, for: target.id) }
-                        )
-                    ) {
-                        ForEach(HotkeyPreset.allCases) { preset in
-                            Text(preset.label).tag(preset)
+                    VStack(alignment: .leading, spacing: 6) {
+                        LabeledContent(target.title) {
+                            ShortcutRecorder(
+                                hotkey: environment.commandHotkey(for: target.id),
+                                allowsClearing: true,
+                                accessibilityLabel: "\(target.title) shortcut",
+                                onChange: { hotkey in
+                                    environment.setCommandHotkey(hotkey, for: target.id)
+                                },
+                                onInvalid: { message in
+                                    environment.reportInvalidCommandHotkey(
+                                        message,
+                                        for: target.id
+                                    )
+                                },
+                                onRecordingChanged: environment.setShortcutRecordingActive
+                            )
+                            .frame(width: 180)
+                        }
+                        if let error = environment.commandHotkeyErrors[target.id] {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
                         }
                     }
                 }

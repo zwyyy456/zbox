@@ -8,7 +8,7 @@ final class TextLookupPlugin {
     static let hotkeyRegistrationID = "plugin.text-lookup.lookup"
 
     let settings: TextLookupSettingsStore
-    private let hotkeyRegistrar: GlobalHotkeyRegistrar
+    private let hotkeyRegistrar: any HotkeyRegistering
     private let capturer: any TextCapturing
     private let isAccessibilityTrusted: @MainActor () -> Bool
     private let clipboardCapturer = ClipboardSelectionCapturer()
@@ -32,7 +32,7 @@ final class TextLookupPlugin {
 
     init(
         settings: TextLookupSettingsStore,
-        hotkeyRegistrar: GlobalHotkeyRegistrar,
+        hotkeyRegistrar: any HotkeyRegistering,
         capturer: any TextCapturing = AccessibilityTextCapturer(),
         isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {

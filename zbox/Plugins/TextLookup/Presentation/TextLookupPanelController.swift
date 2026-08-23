@@ -14,7 +14,7 @@ final class TextLookupPanelController {
     private static let escapeRegistrationID = "builtin.text-lookup.dismiss"
 
     private let panel: TextLookupPanel
-    private let hotkeyRegistrar: GlobalHotkeyRegistrar
+    private let hotkeyRegistrar: any HotkeyRegistering
     private let onDismiss: () -> Void
 
     var isVisible: Bool { panel.isVisible }
@@ -22,7 +22,7 @@ final class TextLookupPanelController {
     init(
         model: TextLookupSessionModel,
         settings: TextLookupSettingsStore,
-        hotkeyRegistrar: GlobalHotkeyRegistrar,
+        hotkeyRegistrar: any HotkeyRegistering,
         onDismiss: @escaping () -> Void
     ) {
         self.hotkeyRegistrar = hotkeyRegistrar

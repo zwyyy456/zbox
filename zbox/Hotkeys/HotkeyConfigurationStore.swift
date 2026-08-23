@@ -15,27 +15,52 @@ struct HotkeyConfigurationStore {
         self.defaults = defaults
     }
 
-    func rootSearchPreset() -> HotkeyPreset {
-        preset(forKey: Key.rootSearch) ?? .controlOptionSpace
+    func rootSearchHotkey() -> Hotkey {
+        hotkey(forKey: Key.rootSearch) ?? .defaultRootSearch
     }
 
-    func setRootSearchPreset(_ preset: HotkeyPreset) {
-        defaults.set(preset.rawValue, forKey: Key.rootSearch)
+    func setRootSearchHotkey(_ hotkey: Hotkey) {
+        set(hotkey, forKey: Key.rootSearch)
     }
 
-    func commandPreset(for commandID: CommandID) -> HotkeyPreset {
-        preset(forKey: Key.command(commandID)) ?? .none
+    func commandHotkeys(for commandIDs: [CommandID]) -> [CommandID: Hotkey] {
+        Dictionary(
+            uniqueKeysWithValues: commandIDs.compactMap { commandID in
+                hotkey(forKey: Key.command(commandID)).map { (commandID, $0) }
+            }
+        )
     }
 
-    func setCommandPreset(_ preset: HotkeyPreset, for commandID: CommandID) {
-        if preset == .none {
-            defaults.removeObject(forKey: Key.command(commandID))
-        } else {
-            defaults.set(preset.rawValue, forKey: Key.command(commandID))
+    func setCommandHotkey(_ hotkey: Hotkey?, for commandID: CommandID) {
+        let key = Key.command(commandID)
+        guard let hotkey else {
+            defaults.removeObject(forKey: key)
+            return
         }
+        set(hotkey, forKey: key)
     }
 
-    private func preset(forKey key: String) -> HotkeyPreset? {
-        defaults.string(forKey: key).flatMap(HotkeyPreset.init(rawValue:))
+    private func hotkey(forKey key: String) -> Hotkey? {
+        guard let value = defaults.dictionary(forKey: key),
+              let keyCode = value["keyCode"] as? Int,
+              let modifiers = value["modifiers"] as? Int,
+              let keyCode = UInt32(exactly: keyCode),
+              let modifiers = UInt32(exactly: modifiers) else {
+            if defaults.object(forKey: key) != nil {
+                defaults.removeObject(forKey: key)
+            }
+            return nil
+        }
+        return Hotkey(keyCode: keyCode, modifiers: modifiers)
+    }
+
+    private func set(_ hotkey: Hotkey, forKey key: String) {
+        defaults.set(
+            [
+                "keyCode": Int(hotkey.keyCode),
+                "modifiers": Int(hotkey.modifiers),
+            ],
+            forKey: key
+        )
     }
 }

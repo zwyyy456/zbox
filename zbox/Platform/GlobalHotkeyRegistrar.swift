@@ -30,7 +30,14 @@ struct HotkeyRegistrationRequest {
 }
 
 @MainActor
-final class GlobalHotkeyRegistrar {
+protocol HotkeyRegistering: AnyObject {
+    func replace(ids: Set<String>, with requests: [HotkeyRegistrationRequest]) throws
+    func unregisterAll()
+    func unregister(id: String)
+}
+
+@MainActor
+final class GlobalHotkeyRegistrar: HotkeyRegistering {
     private static let signature: OSType = 0x5A42584B
 
     private struct Registration {
