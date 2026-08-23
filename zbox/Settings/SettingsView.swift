@@ -6,6 +6,63 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var environment = environment
 
+        TabView(selection: $environment.selectedSettingsTab) {
+            GeneralSettingsView(environment: environment)
+                .settingsTab(SettingsTab.general)
+
+            ShortcutSettingsView(environment: environment)
+                .settingsTab(SettingsTab.shortcuts)
+
+            WindowManagementSettingsView(environment: environment)
+                .settingsTab(SettingsTab.windowManagement)
+
+            Form {
+                TextLookupSettingsView(environment: environment)
+                SettingsStatusView(message: environment.statusMessage)
+            }
+            .settingsPane()
+            .settingsTab(SettingsTab.textLookup)
+        }
+        .frame(width: 600, height: 520)
+    }
+}
+
+private struct GeneralSettingsView: View {
+    let environment: AppEnvironment
+
+    var body: some View {
+        @Bindable var environment = environment
+
+        Form {
+            Section("General") {
+                Toggle(
+                    "Launch at Login",
+                    isOn: Binding(
+                        get: { environment.isLaunchAtLoginEnabled },
+                        set: { environment.setLaunchAtLoginEnabled($0) }
+                    )
+                )
+            }
+
+            Section("Applications") {
+                LabeledContent("Indexed Applications", value: "\(environment.applications.count)")
+                Button("Reload Applications") {
+                    environment.reloadApplications()
+                }
+            }
+
+            SettingsStatusView(message: environment.statusMessage)
+        }
+        .settingsPane()
+    }
+}
+
+private struct ShortcutSettingsView: View {
+    let environment: AppEnvironment
+
+    var body: some View {
+        @Bindable var environment = environment
+
         Form {
             Section("Root Search") {
                 Picker(
@@ -18,11 +75,6 @@ struct SettingsView: View {
                     ForEach(HotkeyPreset.rootSearchChoices) { preset in
                         Text(preset.label).tag(preset)
                     }
-                }
-                LabeledContent("Applications", value: "\(environment.applications.count)")
-
-                Button("Reload Applications") {
-                    environment.reloadApplications()
                 }
             }
 
@@ -42,18 +94,19 @@ struct SettingsView: View {
                 }
             }
 
-            Section("General") {
-                Toggle(
-                    "Launch at Login",
-                    isOn: Binding(
-                        get: { environment.isLaunchAtLoginEnabled },
-                        set: { environment.setLaunchAtLoginEnabled($0) }
-                    )
-                )
-            }
+            SettingsStatusView(message: environment.statusMessage)
+        }
+        .settingsPane()
+    }
+}
 
-            TextLookupSettingsView(environment: environment)
+private struct WindowManagementSettingsView: View {
+    let environment: AppEnvironment
 
+    var body: some View {
+        @Bindable var environment = environment
+
+        Form {
             Section("Window Management") {
                 Toggle(
                     "Enable Window Management",
@@ -62,9 +115,15 @@ struct SettingsView: View {
                         set: { environment.setWindowManagementEnabled($0) }
                     )
                 )
-                Text("Window Management uses Accessibility only to move and resize the frontmost application window. Text Lookup has separate controls and privacy behavior above.")
+                Text("Window Management uses Accessibility only to move and resize the frontmost application window.")
                     .foregroundStyle(.secondary)
+            }
 
+            Section("Accessibility") {
+                LabeledContent(
+                    "Permission",
+                    value: environment.isAccessibilityTrusted ? "Granted" : "Required"
+                )
                 HStack {
                     Button("Request Permission") {
                         environment.requestAccessibilityPermission()
@@ -75,12 +134,34 @@ struct SettingsView: View {
                 }
             }
 
-            Text(environment.statusMessage)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            SettingsStatusView(message: environment.statusMessage)
         }
-        .formStyle(.grouped)
-        .frame(width: 560, height: 760)
-        .scenePadding()
+        .settingsPane()
+    }
+}
+
+private struct SettingsStatusView: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+}
+
+private extension View {
+    func settingsPane() -> some View {
+        formStyle(.grouped)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+    }
+
+    func settingsTab(_ tab: SettingsTab) -> some View {
+        tabItem {
+            Label(tab.title, systemImage: tab.systemImage)
+        }
+        .tag(tab)
     }
 }

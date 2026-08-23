@@ -34,6 +34,7 @@ final class AppEnvironment {
     private(set) var isWindowManagementEnabled: Bool
     private(set) var isAccessibilityTrusted: Bool
     private(set) var commandFeedback: CommandFeedback?
+    var selectedSettingsTab: SettingsTab = .general
     var searchQuery = "" {
         didSet {
             if searchQuery != oldValue {
@@ -149,8 +150,8 @@ final class AppEnvironment {
                 controller: windowController,
                 isEnabled: { [weak self] in self?.isWindowManagementEnabled == true }
             )
-            try SettingsCommands.register(in: registry) { [settingsWindowOpener] in
-                try settingsWindowOpener.open()
+            try SettingsCommands.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .general)
             }
             for application in applications {
                 try ApplicationCommands.register(
@@ -396,11 +397,16 @@ final class AppEnvironment {
             openAccessibilitySettings()
         case .openWindowManagementSettings:
             do {
-                try settingsWindowOpener.open()
+                try openSettings(tab: .windowManagement)
             } catch {
                 statusMessage = error.localizedDescription
             }
         }
+    }
+
+    func openSettings(tab: SettingsTab) throws {
+        selectedSettingsTab = tab
+        try settingsWindowOpener.open()
     }
 
     func reconcileAccessibilityDependentFeatures() {
