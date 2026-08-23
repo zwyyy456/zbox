@@ -208,3 +208,21 @@
 - 通过：FlashDict Dev 启动后创建并监听 App Group `bridge.sock`；未配置主词典时真实返回 `primaryDictionaryUnavailable`，验证失败映射所需的服务端路径。
 - 通过：FlashDict Release 使用现有主词典成功返回 `run` 的 OALDPE `LookupDocument`；随后跨进程读取 `oaldpe.css`（`text/css`）和 `run__us_1.mp3`（`audio/mpeg`）成功。
 - 未执行：没有向用户现有数据写入验证闪卡；Developer ID、公证、Apple 翻译模型下载和完整应用/多显示器人工矩阵继续作为发布或人工验收记录，不阻断本次实施完成。
+
+## ZWY-208 / ZWY-210 / ZWY-264：实施收口（2026-08-23）
+
+- 通过：Root Search 与 Direct Hotkey 继续共用 `CommandRegistry.execute`；直接快捷键成功保持安静，失败由非激活反馈 Panel 显示，并为权限缺失和窗口管理未启用提供对应恢复操作。
+- 通过：窗口管理默认关闭；命令仍可在 Root Search 中发现，只有功能已启用且 Accessibility 已授权时才注册直接快捷键。权限撤销后相关功能关闭并停止运行能力，配置保留；重新授权后由用户手动启用。
+- 通过：用户快捷键改为可编码的 `keyCode + normalized modifiers`，设置页使用 AppKit recorder 录制；支持添加、修改、取消和清除命令快捷键，Root Search 不可清空。旧预设字符串直接丢弃，不保留迁移路径。
+- 通过：快捷键注册继续使用事务式替换；内部冲突、无效普通组合、未知 CommandID 忽略和注册失败回滚均由定向单元测试覆盖。Text Lookup 双击 Option 保持独立触发类型。
+- 通过：Root Search 增加纯 Control-N/P 导航映射；应用命令预生成中文全拼、紧凑全拼和首字母别名，`微信`、`wei xin`、`weixin`、`wx` 与固定排名测试通过。
+- 通过：Settings 拆分为 General、Shortcuts、Window Management 和 Text Lookup 四个原生 Tab；应用路径开关默认关闭且只影响应用结果副标题；Root Search 的 SwiftUI 内容和 AppKit hosting view 共用 16 pt 连续圆角。
+- 通过：Settings、菜单栏、Root Search、命令、快捷键、窗口和 Text Lookup 可见文案统一进入 String Catalog；共 141 个条目，141 个具备简体中文翻译，0 个 stale，签名 Debug 产物包含 `zh-Hans.lproj/Localizable.strings`。产品名称统一为 `zbox`。
+- 通过：默认 Debug 构建命令 `xcodebuild -project zbox.xcodeproj -scheme zbox -destination 'platform=macOS' build` 成功。
+- 通过：默认单元测试命令加 `-only-testing:zboxTests` 成功，42 个 Swift Testing 测试全部通过；命令虽会构建 scheme 中的 UI test bundle，但未执行任何 UI 测试。
+- 通过：`script/build_and_run.sh --verify` 在独立 DerivedData 中完成签名构建、启动和进程存活检查。
+- 通过：`git diff --check` 无空白错误；开发方案已校正为当前实现基线。
+- 未执行：真实 Carbon 按键录制、动态键盘布局显示、系统级快捷键占用与注册失败的人工交互矩阵。
+- 未执行：Direct Hotkey 失败 Panel 的非激活交互，以及无窗口、窗口不可调整、权限缺失从两种入口得到相同错误语义的真实窗口操作矩阵。
+- 未执行：Accessibility 首次请求、拒绝、撤销、重新授权并手动重新启用，以及普通桌面、全屏、多 Space 和外接显示器的人工系统验收。
+- 未执行：Root Search 在浅色、深色和不同桌面背景下的边缘/阴影截图，以及 English/简体中文真实界面的截断与布局检查。

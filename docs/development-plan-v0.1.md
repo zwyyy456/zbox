@@ -2,7 +2,7 @@
 
 > 状态：Implemented（M1 代码基线）
 > 初始日期：2026-08-13
-> 最后校正：2026-08-14
+> 最后校正：2026-08-23
 > 输入约束：《zbox 产品设计文档 v0.1》
 > 文档职责：记录 M0/M1 已实施的代码形状和实现顺序；实际完成证据以《zbox 实施验证记录》为准。
 
@@ -13,7 +13,10 @@
 - 一个 macOS App target、一个 Swift Testing 单元测试 target 和一个最小 UI 冒烟测试 target；
 - 使用 `MenuBarExtra`、独立 `Settings` scene 和由 `NSPanel` 承载的 Root Search，不创建普通 `WindowGroup`；
 - App Launch、Window Command、Root Search 和 Direct Hotkey 共用 Command Registry；
-- 已实现应用枚举/启动、三种窗口操作、快捷键配置、开机启动设置和 Accessibility 恢复入口；
+- 已实现应用枚举/启动、中文拼音检索、三种窗口操作、快捷键录制、开机启动设置和 Accessibility 恢复入口；
+- Settings 已按 General、Shortcuts、Window Management 和 Text Lookup 分栏；
+- 窗口管理默认关闭，只有功能已启用且 Accessibility 已授权时才注册其直接快捷键；
+- Root Search 与 Direct Hotkey 共用命令执行和错误语义，直接快捷键失败由非激活反馈 Panel 显示；
 - 配置使用 UserDefaults，不使用模板 SwiftData 持久化；
 - 最低系统设为 macOS 15；
 - Swift Language Mode 设为 Swift 6；
@@ -40,12 +43,16 @@
 ZBoxApp / AppEnvironment
     ├── Root Search
     │     ├── CommandRegistry
-    │     └── SearchEngine
+    │     ├── SearchEngine
+    │     └── CommandFeedback
     ├── Built-in Commands
     │     ├── Application Commands
     │     └── Window Commands
+    ├── Settings
+    │     └── ShortcutRecorder
     └── macOS Integration
           ├── SearchPanelController
+          ├── CommandFeedbackPanelController
           ├── GlobalHotkeyRegistrar
           ├── ApplicationCatalog
           ├── ApplicationLauncher
@@ -79,11 +86,12 @@ M1 采用类似 Raycast 的简单常驻形态：
 
 1. App 启动后进入 accessory/UIElement 模式，不创建普通主窗口；
 2. 菜单栏图标始终存在，提供打开 Root Search、Settings 和 Quit；
-3. 全局快捷键触发时，先记录当前前台应用 PID，再显示 Root Search Panel；
+3. Root Search 全局快捷键触发时，先记录当前前台应用 PID，再显示 Root Search Panel；
 4. Panel 显示在当前 Space，获得键盘焦点，但不丢失已经记录的目标应用；
-5. 再次按快捷键、按 Escape、失焦或命令完成后隐藏 Panel；
+5. 方向键、纯 Control-N/P、Return 和 Escape 统一映射为搜索键盘动作；再次按快捷键、按 Escape、失焦或命令完成后隐藏 Panel；
 6. Settings 作为独立普通窗口打开，不复用 Panel；
-7. App 没有任何可见窗口时继续后台常驻。
+7. Direct Hotkey 成功时保持安静，失败时使用非激活反馈 Panel 显示与 Root Search 相同的错误语义；
+8. App 没有任何可见窗口时继续后台常驻。
 
 实现时移除模板 `WindowGroup`，使用 `MenuBarExtra`、`Settings` scene 和一个窄的 `SearchPanelController`。`NSPanel` 的焦点、Space 和全屏行为由 AppKit adapter 负责，不把 `NSWindow` 操作散落到 SwiftUI View。
 
@@ -200,6 +208,8 @@ func perform(_ action: WindowAction, targetPID: Int32?) throws
 
 内部处理 Accessibility 权限、目标应用的 focused window、坐标转换、当前显示器的 `visibleFrame` 以及不可调整窗口的错误。
 
+窗口管理功能默认关闭。命令始终可被 Root Search 发现，但关闭时执行只引导用户前往对应 Settings 分栏；只有功能已启用且 Accessibility 已授权时才注册窗口命令的直接快捷键。普通命令失败不得触发系统授权提示，系统提示只能来自用户显式的权限请求操作。
+
 两种触发方式都产生相同的 `CommandContext`：
 
 - Root Search：在 Panel 显示之前记录前台应用 PID；
@@ -267,13 +277,13 @@ App Launch
 
 ### Slice 3：Direct Hotkey 与 Settings
 
-加入 Root Search 快捷键设置、命令快捷键、冲突提示和开机启动。配置使用 `CommandID.rawValue` 保存到 UserDefaults；不使用 SwiftData。
+加入 Root Search 快捷键设置、命令快捷键、冲突提示和开机启动。快捷键使用可编码的 `keyCode + normalized modifiers`，由 AppKit recorder 直接录制；命令配置使用 `CommandID.rawValue` 作为 UserDefaults key 的一部分，不使用 SwiftData。尚未正式发布，因此旧的预设字符串直接丢弃，不保留迁移路径。
 
-完成证据：配置重启后仍然存在；移除快捷键可以立即注销；Root Search 和 Direct Hotkey 操作同一目标窗口规则。
+完成证据：配置重启后仍然存在；命令快捷键可添加、修改和清除；Root Search 始终保留有效快捷键；注册失败时模型、持久化值和旧系统注册保持不变；Root Search 和 Direct Hotkey 操作同一目标窗口规则。
 
 ### Slice 4：产品收口
 
-统一成功和错误提示，补齐菜单栏命令、键盘操作、Accessibility 文案和真实使用中发现的问题。
+统一命令错误语义并补齐 Direct Hotkey 可见失败反馈；增加 Control-N/P 导航、应用中文拼音别名、搜索结果路径开关、Root Search 整体圆角、四分栏 Settings、Accessibility 功能启停边界，以及 English/简体中文文案。
 
 ## 11. Swift 6 与并发规则
 
@@ -289,9 +299,10 @@ App Launch
 ### 单元测试
 
 - Command 注册、重复 ID、列表和执行；
-- Search 归一化、模糊匹配、关键词、limit 和固定顺序；
+- Search 归一化、模糊匹配、关键词、中文全拼/紧凑全拼/首字母、limit 和固定顺序；
 - 窗口矩形计算和显示器选择；
-- 快捷键配置保存和冲突检测。
+- 快捷键编码、配置保存、清除、冲突检测、无效组合和注册失败回滚；
+- Root Search 键盘动作映射。
 
 ### 少量集成测试
 
@@ -305,6 +316,10 @@ App Launch
 - 普通桌面、全屏应用和多个 Space；
 - 单显示器和外接显示器；
 - Accessibility 首次授权、拒绝、撤销和重新授权；
+- Accessibility 撤销后相关功能关闭且配置保留，重新授权后由用户手动重新启用；
+- Carbon 真实按键录制、动态键盘布局显示和系统级注册冲突；
+- Root Search 浅色、深色和不同桌面背景下的边缘、阴影与圆角；
+- English 和简体中文下 Settings、菜单栏与 Root Search 的截断和布局；
 - 启动应用、激活应用、隐藏 Panel、打开 Settings 和退出。
 
 ## 13. 当前决策记录
@@ -318,6 +333,8 @@ App Launch
 | DEC-005 | 应用列表内存保存；图标只做按需进程内复用 |
 | DEC-006 | Global Hotkey 使用 Carbon `RegisterEventHotKey`，注册与回调状态保持 MainActor 隔离 |
 | DEC-007 | 窗口所属显示器优先按中心点判断，必要时以最大交叠面积回退 |
+| DEC-008 | 用户快捷键持久化为 keyCode 与规范化 modifiers；未发布的旧预设字符串不迁移 |
+| DEC-009 | 窗口管理默认关闭；权限撤销时关闭相关功能，重新授权后由用户手动启用 |
 
 以上选择构成当前 M1 基线。后续实现继续以满足 macOS 15 和真实产品需求为准，不为未来键盘引擎或 Display 管理预留额外层次。
 
@@ -328,7 +345,7 @@ App Launch
 | Panel 抢走前台上下文 | 显示 Panel 前记录目标 PID；Root Search 和 Direct Hotkey 共用 CommandContext |
 | 全屏或 Space 中 Panel 不出现 | M0 Check 1 验证 `NSPanel.CollectionBehavior` 和激活顺序 |
 | 多显示器坐标错误 | 几何计算独立成纯函数，并对 `visibleFrame` 做单元测试 |
-| Accessibility 权限变化后无法恢复 | 每次窗口命令执行前检查权限，不把授权状态永久保存在内存中 |
+| Accessibility 权限变化后运行能力失真 | App 再次激活和功能执行前检查权限；撤销后停止并关闭相关功能，重新授权后由用户手动启用 |
 | 应用重复或无法启动 | Catalog 去重；Launcher 返回明确错误 |
 | 提前抽象导致代码变散 | 保持单 target；只为 Hotkey、App Launch 和 AX 等真实系统边界设置替换点 |
 

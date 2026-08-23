@@ -9,7 +9,7 @@ struct CommandFeedbackTests {
 
         #expect(
             feedback == .failure(
-                "Accessibility permission is required to move windows.",
+                AccessibilityWindowError.permissionRequired.localizedDescription,
                 recovery: .openAccessibilitySettings
             )
         )
@@ -28,7 +28,7 @@ struct CommandFeedbackTests {
 
         #expect(
             feedback == .failure(
-                "Enable Window Management in Settings before running this command.",
+                WindowManagementError.disabled.localizedDescription,
                 recovery: .openWindowManagementSettings
             )
         )
