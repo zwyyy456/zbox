@@ -19,7 +19,8 @@ enum ApplicationCommands {
             title: application.name,
             subtitle: application.url.path,
             keywords: [application.bundleIdentifier, application.url.lastPathComponent]
-                .compactMap { $0 }
+                .compactMap { $0 },
+            searchAliases: ApplicationSearchAliases.make(for: application.name)
         )
 
         try registry.register(descriptor) { _ in

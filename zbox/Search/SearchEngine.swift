@@ -52,6 +52,10 @@ nonisolated struct SearchEngine {
         if title.hasPrefix(query) { return 900 }
         if title.contains(query) { return 700 }
 
+        let bestAliasScore = descriptor.searchAliases.compactMap { alias in
+            aliasScore(alias, for: query)
+        }.max()
+
         var bestKeywordScore: Int?
         for keyword in descriptor.keywords.map(normalize) {
             let keywordScore: Int?
@@ -71,7 +75,20 @@ nonisolated struct SearchEngine {
         }
 
         let titleFuzzyScore = fuzzyScore(query: query, candidate: title).map { 400 + $0 }
-        return [bestKeywordScore, titleFuzzyScore].compactMap(\.self).max()
+        return [bestAliasScore, bestKeywordScore, titleFuzzyScore].compactMap(\.self).max()
+    }
+
+    private func aliasScore(_ alias: CommandSearchAlias, for query: String) -> Int? {
+        let value = normalize(alias.value)
+        let scores = switch alias.kind {
+        case .transliteration: (exact: 680, prefix: 640, contains: 610)
+        case .initials: (exact: 570, prefix: 560, contains: 540)
+        }
+
+        if value == query { return scores.exact }
+        if value.hasPrefix(query) { return scores.prefix }
+        if value.contains(query) { return scores.contains }
+        return nil
     }
 
     private func fuzzyScore(query: String, candidate: String) -> Int? {

@@ -62,16 +62,59 @@ struct SearchEngineTests {
         #expect(results.map(\.id) == [CommandID("second")])
     }
 
+    @Test
+    func findsChineseApplicationByTitleFullPinyinAndInitials() {
+        let aliases = ApplicationSearchAliases.make(for: "微信")
+        let commands = [descriptor("wechat", title: "微信", aliases: aliases)]
+
+        #expect(engine.search(query: "微信", in: commands, limit: 8).first?.id == CommandID("wechat"))
+        #expect(engine.search(query: "wei xin", in: commands, limit: 8).first?.id == CommandID("wechat"))
+        #expect(engine.search(query: "weixin", in: commands, limit: 8).first?.id == CommandID("wechat"))
+        #expect(engine.search(query: "wx", in: commands, limit: 8).first?.id == CommandID("wechat"))
+    }
+
+    @Test
+    func ranksLiteralTitleThenTransliterationThenInitialsThenFuzzy() {
+        let query = "wx"
+        let commands = [
+            descriptor("fuzzy", title: "Work Xylophone"),
+            descriptor(
+                "initials",
+                title: "首字母",
+                aliases: [CommandSearchAlias(value: query, kind: .initials)]
+            ),
+            descriptor(
+                "transliteration",
+                title: "全拼",
+                aliases: [CommandSearchAlias(value: query, kind: .transliteration)]
+            ),
+            descriptor("literal", title: query),
+        ]
+
+        let results = engine.search(query: query, in: commands, limit: 8)
+
+        #expect(
+            results.map(\.id) == [
+                CommandID("literal"),
+                CommandID("transliteration"),
+                CommandID("initials"),
+                CommandID("fuzzy"),
+            ]
+        )
+    }
+
     private func descriptor(
         _ id: String,
         title: String,
-        keywords: [String] = []
+        keywords: [String] = [],
+        aliases: [CommandSearchAlias] = []
     ) -> CommandDescriptor {
         CommandDescriptor(
             id: CommandID(id),
             title: title,
             subtitle: nil,
-            keywords: keywords
+            keywords: keywords,
+            searchAliases: aliases
         )
     }
 }
