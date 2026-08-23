@@ -6,7 +6,7 @@ enum ApplicationLaunchError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unableToOpen(let name):
-            "Unable to open \(name)."
+            String(localized: "Unable to open \(name).")
         }
     }
 }

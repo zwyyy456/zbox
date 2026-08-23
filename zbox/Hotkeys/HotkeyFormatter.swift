@@ -21,7 +21,7 @@ nonisolated enum HotkeyFormatter {
         if let specialName = specialKeyNames[keyCode] {
             return specialName
         }
-        return translatedKeyName(for: keyCode) ?? "Key \(keyCode)"
+        return translatedKeyName(for: keyCode) ?? String(localized: "Key \(keyCode)")
     }
 
     private static func translatedKeyName(for keyCode: UInt32) -> String? {
@@ -57,13 +57,13 @@ nonisolated enum HotkeyFormatter {
     }
 
     private static let specialKeyNames: [UInt32: String] = [
-        36: "Return",
-        48: "Tab",
-        49: "Space",
-        51: "Delete",
-        53: "Escape",
-        71: "Clear",
-        76: "Enter",
+        36: String(localized: "Return"),
+        48: String(localized: "Tab"),
+        49: String(localized: "Space"),
+        51: String(localized: "Delete"),
+        53: String(localized: "Escape"),
+        71: String(localized: "Clear"),
+        76: String(localized: "Enter"),
         96: "F5",
         97: "F6",
         98: "F7",
@@ -73,13 +73,13 @@ nonisolated enum HotkeyFormatter {
         103: "F11",
         109: "F10",
         111: "F12",
-        115: "Home",
-        116: "Page Up",
-        117: "Forward Delete",
+        115: String(localized: "Home"),
+        116: String(localized: "Page Up"),
+        117: String(localized: "Forward Delete"),
         118: "F4",
-        119: "End",
+        119: String(localized: "End"),
         120: "F2",
-        121: "Page Down",
+        121: String(localized: "Page Down"),
         122: "F1",
         123: "←",
         124: "→",

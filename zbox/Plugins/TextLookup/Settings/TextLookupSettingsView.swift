@@ -56,7 +56,7 @@ struct TextLookupSettingsView: View {
                     set: { settings.setClipboardFallbackEnabled($0) }
                 )
                 )
-                Text("When Accessibility cannot read an existing selection, ZBox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.")
+                Text("When Accessibility cannot read an existing selection, zbox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -74,7 +74,9 @@ struct TextLookupSettingsView: View {
 
                 LabeledContent(
                     "Accessibility",
-                    value: environment.isAccessibilityTrusted ? "Granted" : "Required"
+                    value: environment.isAccessibilityTrusted
+                        ? String(localized: "Granted")
+                        : String(localized: "Required")
                 )
 
                 HStack {

@@ -77,7 +77,7 @@ private struct ShortcutSettingsView: View {
                         ShortcutRecorder(
                             hotkey: environment.rootSearchHotkey,
                             allowsClearing: false,
-                            accessibilityLabel: "Root Search shortcut",
+                            accessibilityLabel: String(localized: "Root Search shortcut"),
                             onChange: { hotkey in
                                 guard let hotkey else { return }
                                 environment.setRootSearchHotkey(hotkey)
@@ -102,7 +102,7 @@ private struct ShortcutSettingsView: View {
                             ShortcutRecorder(
                                 hotkey: environment.commandHotkey(for: target.id),
                                 allowsClearing: true,
-                                accessibilityLabel: "\(target.title) shortcut",
+                                accessibilityLabel: String(localized: "\(target.title) shortcut"),
                                 onChange: { hotkey in
                                     environment.setCommandHotkey(hotkey, for: target.id)
                                 },
@@ -153,7 +153,9 @@ private struct WindowManagementSettingsView: View {
             Section("Accessibility") {
                 LabeledContent(
                     "Permission",
-                    value: environment.isAccessibilityTrusted ? "Granted" : "Required"
+                    value: environment.isAccessibilityTrusted
+                        ? String(localized: "Granted")
+                        : String(localized: "Required")
                 )
                 HStack {
                     Button("Request Permission") {

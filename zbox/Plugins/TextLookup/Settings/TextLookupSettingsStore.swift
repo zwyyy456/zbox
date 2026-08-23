@@ -10,9 +10,9 @@ nonisolated enum TextLookupSelectionMode: String, CaseIterable, Identifiable, Se
 
     var label: String {
         switch self {
-        case .automatic: "Automatic"
-        case .shortcutRequired: "Shortcut Required"
-        case .off: "Off"
+        case .automatic: String(localized: "Automatic")
+        case .shortcutRequired: String(localized: "Shortcut Required")
+        case .off: String(localized: "Off")
         }
     }
 }
@@ -26,7 +26,7 @@ nonisolated enum TextLookupShortcutPreset: String, CaseIterable, Identifiable, S
     var label: String {
         switch self {
         case .optionC: "⌥C"
-        case .doubleOption: "Double-tap ⌥"
+        case .doubleOption: String(localized: "Double-tap ⌥")
         }
     }
 

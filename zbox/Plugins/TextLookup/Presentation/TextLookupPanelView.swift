@@ -7,15 +7,7 @@ struct TextLookupPanelView: View {
     let settings: TextLookupSettingsStore
     @State private var translationConfiguration: TranslationSession.Configuration?
 
-    private let languageChoices = [
-        ("en", "English"),
-        ("zh-Hans", "简体中文"),
-        ("ja", "日本語"),
-        ("ko", "한국어"),
-        ("fr", "Français"),
-        ("de", "Deutsch"),
-        ("es", "Español"),
-    ]
+    private let languageIdentifiers = ["en", "zh-Hans", "ja", "ko", "fr", "de", "es"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -194,6 +186,15 @@ struct TextLookupPanelView: View {
             ?? settings.targetLanguageIdentifier
     }
 
+    private var languageChoices: [(String, String)] {
+        languageIdentifiers.map { identifier in
+            (
+                identifier,
+                Locale.current.localizedString(forIdentifier: identifier) ?? identifier
+            )
+        }
+    }
+
     @ViewBuilder
     private var dictionaryContent: some View {
         switch model.dictionaryState {
@@ -238,7 +239,10 @@ struct TextLookupPanelView: View {
         }
     }
 
-    private func pendingRow(_ title: String, detail: String) -> some View {
+    private func pendingRow(
+        _ title: LocalizedStringKey,
+        detail: LocalizedStringKey
+    ) -> some View {
         HStack(spacing: 10) {
             ProgressView()
                 .controlSize(.small)

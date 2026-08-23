@@ -1,3 +1,5 @@
+import Foundation
+
 nonisolated enum SettingsCommands {
     static let openID = CommandID("settings.open")
 
@@ -8,9 +10,9 @@ nonisolated enum SettingsCommands {
     ) throws {
         let descriptor = CommandDescriptor(
             id: openID,
-            title: "Settings",
-            subtitle: "ZBox Settings",
-            keywords: ["settings", "preferences", "configuration"]
+            title: String(localized: "Settings"),
+            subtitle: String(localized: "zbox Settings"),
+            keywords: ["settings", "preferences", "configuration", "设置", "偏好设置"]
         )
         try registry.register(descriptor) { _ in
             try openSettings()

@@ -9,7 +9,7 @@ nonisolated enum WindowManagementError: LocalizedError, Equatable {
     case disabled
 
     var errorDescription: String? {
-        "Enable Window Management in Settings before running this command."
+        String(localized: "Enable Window Management in Settings before running this command.")
     }
 }
 
@@ -18,9 +18,9 @@ nonisolated enum WindowCommands {
     static let rightHalfID = CommandID("window.right-half")
     static let maximizeID = CommandID("window.maximize")
     static let shortcutTargets = [
-        CommandShortcutTarget(id: leftHalfID, title: "Left Half"),
-        CommandShortcutTarget(id: rightHalfID, title: "Right Half"),
-        CommandShortcutTarget(id: maximizeID, title: "Maximize"),
+        CommandShortcutTarget(id: leftHalfID, title: String(localized: "Left Half")),
+        CommandShortcutTarget(id: rightHalfID, title: String(localized: "Right Half")),
+        CommandShortcutTarget(id: maximizeID, title: String(localized: "Maximize")),
     ]
 
     @MainActor
@@ -31,8 +31,8 @@ nonisolated enum WindowCommands {
     ) throws {
         try register(
             id: leftHalfID,
-            title: "Left Half",
-            keywords: ["window", "left", "resize", "tile"],
+            title: String(localized: "Left Half"),
+            keywords: ["window", "left", "resize", "tile", "窗口", "左半屏"],
             action: .leftHalf,
             in: registry,
             controller: controller,
@@ -40,8 +40,8 @@ nonisolated enum WindowCommands {
         )
         try register(
             id: rightHalfID,
-            title: "Right Half",
-            keywords: ["window", "right", "resize", "tile"],
+            title: String(localized: "Right Half"),
+            keywords: ["window", "right", "resize", "tile", "窗口", "右半屏"],
             action: .rightHalf,
             in: registry,
             controller: controller,
@@ -49,8 +49,8 @@ nonisolated enum WindowCommands {
         )
         try register(
             id: maximizeID,
-            title: "Maximize",
-            keywords: ["window", "full", "resize", "zoom"],
+            title: String(localized: "Maximize"),
+            keywords: ["window", "full", "resize", "zoom", "窗口", "最大化"],
             action: .maximize,
             in: registry,
             controller: controller,
@@ -84,7 +84,7 @@ nonisolated enum WindowCommands {
         let descriptor = CommandDescriptor(
             id: id,
             title: title,
-            subtitle: "Window Management",
+            subtitle: String(localized: "Window Management"),
             keywords: keywords
         )
         try registry.register(descriptor) { context in

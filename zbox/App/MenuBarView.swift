@@ -5,7 +5,7 @@ struct MenuBarView: View {
     let environment: AppEnvironment
 
     var body: some View {
-        Button("Open ZBox") {
+        Button("Open zbox") {
             environment.toggleRootSearch()
         }
 
@@ -27,7 +27,7 @@ struct MenuBarView: View {
 
         Divider()
 
-        Button("Quit ZBox") {
+        Button("Quit zbox") {
             NSApplication.shared.terminate(nil)
         }
     }

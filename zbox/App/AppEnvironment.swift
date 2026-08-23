@@ -46,7 +46,7 @@ final class AppEnvironment {
             }
         }
     }
-    var statusMessage = "Ready"
+    var statusMessage = String(localized: "Ready")
 
     var searchResults: [SearchMatch] {
         searchEngine.search(
@@ -170,7 +170,7 @@ final class AppEnvironment {
             }
             commandRegistry = registry
             applicationURLsByCommandID = applicationURLs
-            statusMessage = "Loaded \(applications.count) applications"
+            statusMessage = String(localized: "Loaded \(applications.count) applications")
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -241,7 +241,7 @@ final class AppEnvironment {
                     expectedRootSearchSessionID: expectedRootSearchSessionID
                 ) else { return }
                 if hidePanelOnSuccess {
-                    commandFeedback = .success("Ran \(descriptor.title)")
+                    commandFeedback = .success(String(localized: "Ran \(descriptor.title)"))
                     hideRootSearch()
                 }
             } catch is CancellationError {
@@ -306,7 +306,7 @@ final class AppEnvironment {
             try applyHotkeyRegistrations()
             coreHotkeysNeedRestoration = false
             hotkeyStore.setRootSearchHotkey(hotkey)
-            statusMessage = "Root Search shortcut updated"
+            statusMessage = String(localized: "Root Search shortcut updated")
         } catch {
             rootSearchHotkey = previous
             rootSearchHotkeyError = error.localizedDescription
@@ -333,7 +333,7 @@ final class AppEnvironment {
             try applyHotkeyRegistrations()
             coreHotkeysNeedRestoration = false
             hotkeyStore.setCommandHotkey(hotkey, for: commandID)
-            statusMessage = "Command shortcut updated"
+            statusMessage = String(localized: "Command shortcut updated")
         } catch {
             commandHotkeys[commandID] = previous
             commandHotkeyErrors[commandID] = error.localizedDescription
@@ -377,7 +377,9 @@ final class AppEnvironment {
         do {
             try launchAtLoginController.setEnabled(isEnabled)
             isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
-            statusMessage = isEnabled ? "Launch at Login enabled" : "Launch at Login disabled"
+            statusMessage = isEnabled
+                ? String(localized: "Launch at Login enabled")
+                : String(localized: "Launch at Login disabled")
         } catch {
             isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
             statusMessage = error.localizedDescription
@@ -388,8 +390,8 @@ final class AppEnvironment {
         showsApplicationPathsInSearchResults = isEnabled
         defaults.set(isEnabled, forKey: Key.showApplicationPaths)
         statusMessage = isEnabled
-            ? "Application paths shown in search results"
-            : "Application paths hidden in search results"
+            ? String(localized: "Application paths shown in search results")
+            : String(localized: "Application paths hidden in search results")
     }
 
     func setWindowManagementEnabled(_ isEnabled: Bool) {
@@ -397,11 +399,11 @@ final class AppEnvironment {
 
         guard isEnabled else {
             disableWindowManagement()
-            statusMessage = "Window Management disabled"
+            statusMessage = String(localized: "Window Management disabled")
             return
         }
         guard isAccessibilityTrusted else {
-            statusMessage = "Accessibility permission is required to enable Window Management."
+            statusMessage = String(localized: "Accessibility permission is required to enable Window Management.")
             return
         }
         guard !isWindowManagementEnabled else { return }
@@ -410,7 +412,7 @@ final class AppEnvironment {
         do {
             try applyHotkeyRegistrations()
             defaults.set(true, forKey: Key.windowManagementEnabled)
-            statusMessage = "Window Management enabled"
+            statusMessage = String(localized: "Window Management enabled")
         } catch {
             isWindowManagementEnabled = false
             statusMessage = error.localizedDescription
@@ -422,7 +424,7 @@ final class AppEnvironment {
             if isEnabled {
                 refreshAccessibilityState()
                 guard isAccessibilityTrusted else {
-                    statusMessage = "Accessibility permission is required to enable Text Lookup."
+                    statusMessage = String(localized: "Accessibility permission is required to enable Text Lookup.")
                     return
                 }
                 try validateHotkeyAssignments(
@@ -437,7 +439,9 @@ final class AppEnvironment {
                 textLookupPlugin.stop()
             }
             statusMessage = textLookupPlugin.statusMessage
-                ?? (isEnabled ? "Text Lookup enabled" : "Text Lookup disabled")
+                ?? (isEnabled
+                    ? String(localized: "Text Lookup enabled")
+                    : String(localized: "Text Lookup disabled"))
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -447,7 +451,7 @@ final class AppEnvironment {
         do {
             try validateHotkeyAssignments(textLookupShortcut: shortcut)
             try textLookupPlugin.setShortcut(shortcut)
-            statusMessage = "Text Lookup shortcut updated"
+            statusMessage = String(localized: "Text Lookup shortcut updated")
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -494,7 +498,7 @@ final class AppEnvironment {
             textLookupPlugin.stop()
         }
         if disabledWindowManagement || disabledTextLookup {
-            statusMessage = "Accessibility-dependent features were disabled. Re-enable them after granting permission."
+            statusMessage = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
         }
     }
 
@@ -536,13 +540,16 @@ final class AppEnvironment {
         textLookupEnabled: Bool? = nil
     ) throws {
         var assignments = [
-            HotkeyAssignment(owner: "Root Search", hotkey: rootSearchHotkey),
+            HotkeyAssignment(owner: String(localized: "Root Search"), hotkey: rootSearchHotkey),
         ] + WindowCommands.shortcutTargets.map { target in
             HotkeyAssignment(owner: target.title, hotkey: commandHotkey(for: target.id))
         }
         if textLookupEnabled ?? textLookupPlugin.settings.isEnabled {
             assignments.append(
-                HotkeyAssignment(owner: "Text Lookup", hotkey: textLookupShortcut.hotkey)
+                HotkeyAssignment(
+                    owner: String(localized: "Text Lookup"),
+                    hotkey: textLookupShortcut.hotkey
+                )
             )
         }
         try HotkeyValidator.validate(assignments)

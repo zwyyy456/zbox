@@ -102,7 +102,7 @@ final class ShortcutRecorderButton: NSButton {
 
         if carbonModifiers(from: event.modifierFlags) != 0 {
             sawModifier = true
-            title = "Press another key…"
+            title = String(localized: "Press another key…")
         } else if sawModifier {
             sawModifier = false
             onInvalid?(HotkeyConfigurationError.modifierOnly.localizedDescription)
@@ -124,7 +124,7 @@ final class ShortcutRecorderButton: NSButton {
 
     func refreshTitle() {
         guard !isRecording else { return }
-        title = hotkey.map(HotkeyFormatter.displayName(for:)) ?? "Not Set"
+        title = hotkey.map(HotkeyFormatter.displayName(for:)) ?? String(localized: "Not Set")
         setAccessibilityValue(title)
     }
 
@@ -132,7 +132,7 @@ final class ShortcutRecorderButton: NSButton {
         guard !isRecording, window?.makeFirstResponder(self) == true else { return }
         isRecording = true
         sawModifier = false
-        title = "Type Shortcut…"
+        title = String(localized: "Type Shortcut…")
         onRecordingChanged?(true)
     }
 

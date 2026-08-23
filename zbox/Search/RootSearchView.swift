@@ -43,7 +43,9 @@ struct RootSearchView: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel(match.descriptor.title)
                             .accessibilityValue(
-                                environment.isSelected(match.id) ? "Selected" : ""
+                                environment.isSelected(match.id)
+                                    ? String(localized: "Selected")
+                                    : ""
                             )
                         }
                     }

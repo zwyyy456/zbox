@@ -5,7 +5,7 @@ nonisolated enum TextLookupPanelError: LocalizedError {
     case noAvailableScreen
 
     var errorDescription: String? {
-        "Text Lookup could not find an available screen."
+        String(localized: "Text Lookup could not find an available screen.")
     }
 }
 
@@ -89,7 +89,7 @@ final class TextLookupPanelController {
                 HotkeyRegistrationRequest(
                     id: Self.escapeRegistrationID,
                     hotkey: Hotkey(keyCode: 53, modifiers: 0),
-                    label: "Text Lookup Escape"
+                    label: String(localized: "Text Lookup Escape")
                 ) { [weak self] in
                     self?.hide()
                 },

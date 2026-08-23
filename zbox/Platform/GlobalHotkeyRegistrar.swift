@@ -10,13 +10,13 @@ enum GlobalHotkeyError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .duplicateRegistration(let id):
-            "The hotkey registration \(id) already exists."
+            String(localized: "The hotkey registration \(id) already exists.")
         case .eventHandlerInstallationFailed(let status):
-            "Unable to install the global hotkey handler (\(status))."
+            String(localized: "Unable to install the global hotkey handler (\(status)).")
         case .registrationFailed(let label, let status):
-            "\(label) is already used by another app or could not be registered (\(status))."
+            String(localized: "\(label) is already used by another app or could not be registered (\(status)).")
         case .replacementRollbackFailed(let update, let rollback):
-            "The shortcut update failed (\(update)), and the previous shortcuts could not be restored (\(rollback))."
+            String(localized: "The shortcut update failed (\(update)), and the previous shortcuts could not be restored (\(rollback)).")
         }
     }
 }

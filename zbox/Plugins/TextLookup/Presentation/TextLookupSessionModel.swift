@@ -21,17 +21,17 @@ nonisolated enum TextLookupDictionaryFailure: Equatable, Sendable {
     var message: String {
         switch self {
         case .integrationUnavailable:
-            "FlashDict integration is unavailable in this build."
+            String(localized: "FlashDict integration is unavailable in this build.")
         case .flashDictNotRunning:
-            "Open FlashDict, then try again."
+            String(localized: "Open FlashDict, then try again.")
         case .primaryDictionaryUnavailable:
-            "Choose a primary dictionary in FlashDict first."
+            String(localized: "Choose a primary dictionary in FlashDict first.")
         case .noResult:
-            "The primary dictionary has no result for this term."
+            String(localized: "The primary dictionary has no result for this term.")
         case .incompatibleProtocol:
-            "Update zbox and FlashDict to compatible versions."
+            String(localized: "Update zbox and FlashDict to compatible versions.")
         case .requestFailed(let message):
-            message ?? "FlashDict could not complete the lookup."
+            message ?? String(localized: "FlashDict could not complete the lookup.")
         }
     }
 
@@ -58,10 +58,14 @@ nonisolated enum TextLookupTranslationFailure: Equatable, Sendable {
 
     var message: String {
         switch self {
-        case .unableToIdentifyLanguage: "The sentence language could not be identified."
-        case .unsupportedLanguagePair: "Apple Translation does not support this language pair."
-        case .modelDownloadCancelled: "The language download was cancelled."
-        case .internalFailure: "The sentence could not be translated."
+        case .unableToIdentifyLanguage:
+            String(localized: "The sentence language could not be identified.")
+        case .unsupportedLanguagePair:
+            String(localized: "Apple Translation does not support this language pair.")
+        case .modelDownloadCancelled:
+            String(localized: "The language download was cancelled.")
+        case .internalFailure:
+            String(localized: "The sentence could not be translated.")
         }
     }
 }
@@ -152,7 +156,7 @@ final class TextLookupSessionModel {
         case .flashDictNotRunning:
             dictionaryState = .failed(.flashDictNotRunning)
         case .resourceUnavailable:
-            surfaceMessage = "A dictionary resource is unavailable."
+            surfaceMessage = String(localized: "A dictionary resource is unavailable.")
         }
     }
 

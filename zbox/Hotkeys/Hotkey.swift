@@ -49,11 +49,11 @@ nonisolated enum HotkeyConfigurationError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .conflict(let first, let second):
-            "The shortcut is already used by \(first) and \(second)."
+            String(localized: "The shortcut is already used by \(first) and \(second).")
         case .modifierRequired:
-            "Include Command, Control, Option, or Shift in the shortcut."
+            String(localized: "Include Command, Control, Option, or Shift in the shortcut.")
         case .modifierOnly:
-            "Press a non-modifier key to complete the shortcut."
+            String(localized: "Press a non-modifier key to complete the shortcut.")
         }
     }
 }

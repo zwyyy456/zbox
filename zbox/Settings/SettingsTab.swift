@@ -1,3 +1,5 @@
+import Foundation
+
 nonisolated enum SettingsTab: Hashable {
     case general
     case shortcuts
@@ -6,10 +8,10 @@ nonisolated enum SettingsTab: Hashable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .shortcuts: "Shortcuts"
-        case .windowManagement: "Window Management"
-        case .textLookup: "Text Lookup"
+        case .general: String(localized: "General")
+        case .shortcuts: String(localized: "Shortcuts")
+        case .windowManagement: String(localized: "Window Management")
+        case .textLookup: String(localized: "Text Lookup")
         }
     }
 

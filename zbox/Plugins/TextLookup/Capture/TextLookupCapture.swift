@@ -75,15 +75,24 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         switch self {
-        case .permissionRequired: "Accessibility permission is required to read text in other apps."
-        case .excludedApplication: "Text Lookup is disabled for this application."
-        case .secureText: "Protected text cannot be read."
-        case .noSelection: "Select a word or phrase first."
-        case .noTextAtPointer: "Move the pointer over a readable word."
-        case .unsupportedElement: "This application does not expose text at this location."
-        case .selectionTooLong: "Select no more than 80 characters and 8 words."
-        case .unableToReadText: "The selected text could not be read."
-        case .clipboardFallbackFailed: "The selection could not be read using clipboard compatibility mode."
+        case .permissionRequired:
+            String(localized: "Accessibility permission is required to read text in other apps.")
+        case .excludedApplication:
+            String(localized: "Text Lookup is disabled for this application.")
+        case .secureText:
+            String(localized: "Protected text cannot be read.")
+        case .noSelection:
+            String(localized: "Select a word or phrase first.")
+        case .noTextAtPointer:
+            String(localized: "Move the pointer over a readable word.")
+        case .unsupportedElement:
+            String(localized: "This application does not expose text at this location.")
+        case .selectionTooLong:
+            String(localized: "Select no more than 80 characters and 8 words.")
+        case .unableToReadText:
+            String(localized: "The selected text could not be read.")
+        case .clipboardFallbackFailed:
+            String(localized: "The selection could not be read using clipboard compatibility mode.")
         }
     }
 }

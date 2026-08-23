@@ -1,132 +1,48 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.": {
+    "%@ is already used by another app or could not be registered (%d).": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ is already used by another app or could not be registered (%2$d)."
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "文本取词仅在触发时读取选区或鼠标指针下的文字。捕获内容只保留在当前弹窗中，除非你明确创建 FlashDict 闪卡；不会使用屏幕录制权限，也不会保存查词历史。"
+            "value": "%1$@ 已被其他应用占用或无法注册（%2$d）。"
           }
         }
       }
     },
-    "Window Management uses Accessibility only to move and resize the frontmost application window. Text Lookup has separate controls and privacy behavior above.": {
+    "%@ shortcut": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "窗口管理仅使用辅助功能移动和缩放前台应用窗口。文本取词使用上方独立的控制和隐私规则。"
+            "value": "%@ 快捷键"
           }
         }
       }
     },
-    "Text Lookup": {
+    "%lld applications": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "文本取词"
+            "value": "%lld 个应用"
           }
         }
       }
     },
-    "Enable Text Lookup": {
+    "A dictionary resource is unavailable.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "启用文本取词"
-          }
-        }
-      }
-    },
-    "Selection Trigger": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "划词触发"
-          }
-        }
-      }
-    },
-    "Automatic": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动弹出"
-          }
-        }
-      }
-    },
-    "Shortcut Required": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "需要快捷键确认"
-          }
-        }
-      }
-    },
-    "Off": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
-          }
-        }
-      }
-    },
-    "Lookup Shortcut": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取词快捷键"
-          }
-        }
-      }
-    },
-    "Double-tap ⌥": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双击 ⌥"
-          }
-        }
-      }
-    },
-    "Clipboard Compatibility Mode": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "剪贴板兼容取词"
-          }
-        }
-      }
-    },
-    "When Accessibility cannot read an existing selection, ZBox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当辅助功能无法读取已有选区时，ZBox 可短暂模拟复制，并仅在剪贴板未被改动时恢复内容。鼠标指针取词不会使用剪贴板。"
-          }
-        }
-      }
-    },
-    "Translation Language": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "翻译目标语言"
+            "value": "词典资源不可用。"
           }
         }
       }
@@ -141,62 +57,52 @@
         }
       }
     },
-    "Granted": {
+    "Accessibility permission is required to enable Text Lookup.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已授权"
+            "value": "启用文本取词需要辅助功能权限。"
           }
         }
       }
     },
-    "Required": {
+    "Accessibility permission is required to enable Window Management.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "需要授权"
+            "value": "启用窗口管理需要辅助功能权限。"
           }
         }
       }
     },
-    "Request Permission": {
+    "Accessibility permission is required to move windows.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请求授权"
+            "value": "移动窗口需要辅助功能权限。"
           }
         }
       }
     },
-    "Open System Settings": {
+    "Accessibility permission is required to read text in other apps.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "打开系统设置"
+            "value": "读取其他应用中的文本需要辅助功能权限。"
           }
         }
       }
     },
-    "Excluded Applications": {
+    "Accessibility-dependent features were disabled. Re-enable them after granting permission.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "排除的应用"
-          }
-        }
-      }
-    },
-    "Application bundle identifier": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "应用 Bundle 标识符"
+            "value": "依赖辅助功能权限的功能已关闭。重新授权后请手动启用。"
           }
         }
       }
@@ -211,32 +117,122 @@
         }
       }
     },
-    "Remove": {
+    "Apple Translation does not support this language pair.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "移除"
+            "value": "Apple 翻译不支持此语言组合。"
           }
         }
       }
     },
-    "Translation target language": {
+    "Application bundle identifier": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "翻译目标语言"
+            "value": "应用 Bundle 标识符"
           }
         }
       }
     },
-    "English": {
+    "Application paths hidden in search results": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "英语"
+            "value": "搜索结果中已隐藏应用路径"
+          }
+        }
+      }
+    },
+    "Application paths shown in search results": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索结果中已显示应用路径"
+          }
+        }
+      }
+    },
+    "Applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动弹出"
+          }
+        }
+      }
+    },
+    "Choose a primary dictionary in FlashDict first.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在 FlashDict 中选择主词典。"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除"
+          }
+        }
+      }
+    },
+    "Clipboard Compatibility Mode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板兼容取词"
+          }
+        }
+      }
+    },
+    "Command Failed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命令执行失败"
+          }
+        }
+      }
+    },
+    "Command Shortcuts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命令快捷键"
+          }
+        }
+      }
+    },
+    "Command shortcut updated": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命令快捷键已更新"
           }
         }
       }
@@ -251,12 +247,1184 @@
         }
       }
     },
+    "Definition unavailable": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "释义不可用"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Double-tap ⌥": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双击 ⌥"
+          }
+        }
+      }
+    },
+    "Enable Text Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用文本取词"
+          }
+        }
+      }
+    },
+    "Enable Window Management": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用窗口管理"
+          }
+        }
+      }
+    },
+    "Enable Window Management in Settings before running this command.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在设置中启用窗口管理，再执行此命令。"
+          }
+        }
+      }
+    },
+    "End": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End"
+          }
+        }
+      }
+    },
+    "Enter": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter"
+          }
+        }
+      }
+    },
+    "Escape": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esc"
+          }
+        }
+      }
+    },
+    "Excluded Applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排除的应用"
+          }
+        }
+      }
+    },
+    "FlashDict could not complete the lookup.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FlashDict 无法完成查询。"
+          }
+        }
+      }
+    },
+    "FlashDict integration is unavailable in this build.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本不支持 FlashDict 集成。"
+          }
+        }
+      }
+    },
+    "Forward Delete": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向前删除"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通用"
+          }
+        }
+      }
+    },
+    "Global Hotkey": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局快捷键"
+          }
+        }
+      }
+    },
+    "Granted": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授权"
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        }
+      }
+    },
+    "Include Command, Control, Option, or Shift in the shortcut.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键中需包含 Command、Control、Option 或 Shift。"
+          }
+        }
+      }
+    },
+    "Indexed Applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已索引应用"
+          }
+        }
+      }
+    },
+    "Key %u": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按键 %u"
+          }
+        }
+      }
+    },
+    "Launch at Login": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时启动"
+          }
+        }
+      }
+    },
+    "Launch at Login disabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭登录时启动"
+          }
+        }
+      }
+    },
+    "Launch at Login enabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用登录时启动"
+          }
+        }
+      }
+    },
+    "Left Half": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左半屏"
+          }
+        }
+      }
+    },
+    "Loaded %lld applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已载入 %lld 个应用"
+          }
+        }
+      }
+    },
+    "Looking up in FlashDict…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在 FlashDict 中查询…"
+          }
+        }
+      }
+    },
+    "Lookup Shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取词快捷键"
+          }
+        }
+      }
+    },
+    "Maximize": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最大化"
+          }
+        }
+      }
+    },
+    "Move the pointer over a readable word.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请将指针移到可读取的单词上。"
+          }
+        }
+      }
+    },
+    "No Commands Found": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到命令"
+          }
+        }
+      }
+    },
+    "No sentence is available to translate.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可翻译的句子。"
+          }
+        }
+      }
+    },
+    "Not Set": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未设置"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Open Accessibility Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开辅助功能设置"
+          }
+        }
+      }
+    },
+    "Open FlashDict": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 FlashDict"
+          }
+        }
+      }
+    },
+    "Open FlashDict, then try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请打开 FlashDict 后重试。"
+          }
+        }
+      }
+    },
+    "Open System Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
+          }
+        }
+      }
+    },
+    "Open Window Management": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开窗口管理设置"
+          }
+        }
+      }
+    },
+    "Open zbox": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 zbox"
+          }
+        }
+      }
+    },
+    "Page Down": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一页"
+          }
+        }
+      }
+    },
+    "Page Up": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一页"
+          }
+        }
+      }
+    },
+    "Permission": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限"
+          }
+        }
+      }
+    },
+    "Preparing Apple Translation…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备 Apple 翻译…"
+          }
+        }
+      }
+    },
+    "Press a non-modifier key to complete the shortcut.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请再按一个非修饰键以完成快捷键。"
+          }
+        }
+      }
+    },
+    "Press another key…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请再按一个按键…"
+          }
+        }
+      }
+    },
+    "Protected text cannot be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取受保护的文本。"
+          }
+        }
+      }
+    },
+    "Quit zbox": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 zbox"
+          }
+        }
+      }
+    },
+    "Ran %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已执行 %@"
+          }
+        }
+      }
+    },
+    "Reading text under the pointer…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取指针下的文本…"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就绪"
+          }
+        }
+      }
+    },
+    "Reload Applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新扫描应用"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除"
+          }
+        }
+      }
+    },
+    "Request Permission": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求授权"
+          }
+        }
+      }
+    },
+    "Required": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要授权"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        }
+      }
+    },
+    "Retry Translation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试翻译"
+          }
+        }
+      }
+    },
+    "Return": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回车"
+          }
+        }
+      }
+    },
+    "Right Half": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右半屏"
+          }
+        }
+      }
+    },
+    "Root Search": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局搜索"
+          }
+        }
+      }
+    },
+    "Root Search shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局搜索快捷键"
+          }
+        }
+      }
+    },
+    "Root Search shortcut updated": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局搜索快捷键已更新"
+          }
+        }
+      }
+    },
+    "Root Search: %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局搜索：%@"
+          }
+        }
+      }
+    },
+    "Search applications": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索应用和命令"
+          }
+        }
+      }
+    },
+    "Select a word or phrase first.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先选择单词或短语。"
+          }
+        }
+      }
+    },
+    "Select no more than 80 characters and 8 words.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择不超过 80 个字符且不超过 8 个单词的内容。"
+          }
+        }
+      }
+    },
+    "Selected": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选中"
+          }
+        }
+      }
+    },
+    "Selection Trigger": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "划词触发"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "Settings could not be opened.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开设置。"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置…"
+          }
+        }
+      }
+    },
+    "Shortcut Required": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要快捷键确认"
+          }
+        }
+      }
+    },
+    "Shortcuts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键"
+          }
+        }
+      }
+    },
+    "Show Application Paths in Search Results": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在搜索结果中显示应用路径"
+          }
+        }
+      }
+    },
+    "Space": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空格"
+          }
+        }
+      }
+    },
+    "Tab": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab"
+          }
+        }
+      }
+    },
+    "Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本"
+          }
+        }
+      }
+    },
+    "Text Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词"
+          }
+        }
+      }
+    },
+    "Text Lookup Escape": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词关闭键"
+          }
+        }
+      }
+    },
+    "Text Lookup could not find an available screen.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词找不到可用的显示器。"
+          }
+        }
+      }
+    },
+    "Text Lookup disabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭文本取词"
+          }
+        }
+      }
+    },
+    "Text Lookup enabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用文本取词"
+          }
+        }
+      }
+    },
+    "Text Lookup is disabled for this application.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此应用已禁用文本取词。"
+          }
+        }
+      }
+    },
+    "Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词仅在触发时读取选区或鼠标指针下的文字。捕获内容只保留在当前弹窗中，除非你明确创建 FlashDict 闪卡；不会使用屏幕录制权限，也不会保存查词历史。"
+          }
+        }
+      }
+    },
+    "Text Lookup shortcut updated": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本取词快捷键已更新"
+          }
+        }
+      }
+    },
+    "The application that owned the window is no longer available.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原窗口所属的应用已不可用。"
+          }
+        }
+      }
+    },
+    "The hotkey registration %@ already exists.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键注册 %@ 已存在。"
+          }
+        }
+      }
+    },
+    "The language download was cancelled.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言下载已取消。"
+          }
+        }
+      }
+    },
+    "The primary dictionary has no result for this term.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主词典中没有此词条的结果。"
+          }
+        }
+      }
+    },
+    "The selected text could not be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取所选文本。"
+          }
+        }
+      }
+    },
+    "The selection could not be read using clipboard compatibility mode.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法通过剪贴板兼容模式读取选区。"
+          }
+        }
+      }
+    },
+    "The sentence could not be translated.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法翻译此句。"
+          }
+        }
+      }
+    },
+    "The sentence language could not be identified.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法识别句子语言。"
+          }
+        }
+      }
+    },
+    "The shortcut is already used by %@ and %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The shortcut is already used by %1$@ and %2$@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键已被 %1$@ 和 %2$@ 使用。"
+          }
+        }
+      }
+    },
+    "The shortcut update failed (%@), and the previous shortcuts could not be restored (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "The shortcut update failed (%1$@), and the previous shortcuts could not be restored (%2$@)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键更新失败（%1$@），且无法恢复原快捷键（%2$@）。"
+          }
+        }
+      }
+    },
+    "The target application has no focused window.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标应用没有聚焦窗口。"
+          }
+        }
+      }
+    },
+    "The target window does not support this operation.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标窗口不支持此操作。"
+          }
+        }
+      }
+    },
+    "The target window is not on an available display.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标窗口不在可用的显示器上。"
+          }
+        }
+      }
+    },
+    "The target window position or size could not be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取目标窗口的位置或大小。"
+          }
+        }
+      }
+    },
+    "This application does not expose text at this location.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此应用未公开该位置的文本。"
+          }
+        }
+      }
+    },
     "Translation": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "翻译"
+          }
+        }
+      }
+    },
+    "Translation Language": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻译目标语言"
+          }
+        }
+      }
+    },
+    "Translation target language": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻译目标语言"
+          }
+        }
+      }
+    },
+    "Try a different application or command name.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请尝试其他应用或命令名称。"
+          }
+        }
+      }
+    },
+    "Type Shortcut…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请按快捷键…"
+          }
+        }
+      }
+    },
+    "Unable to Look Up Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法取词"
+          }
+        }
+      }
+    },
+    "Unable to install the global hotkey handler (%d).": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法安装全局快捷键处理程序（%d）。"
+          }
+        }
+      }
+    },
+    "Unable to open %@.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开 %@。"
+          }
+        }
+      }
+    },
+    "Update zbox and FlashDict to compatible versions.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请将 zbox 和 FlashDict 更新到兼容版本。"
+          }
+        }
+      }
+    },
+    "When Accessibility cannot read an existing selection, zbox may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当辅助功能无法读取已有选区时，zbox 可短暂模拟复制，并仅在剪贴板未被改动时恢复内容。鼠标指针取词不会使用剪贴板。"
+          }
+        }
+      }
+    },
+    "Window Management": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口管理"
+          }
+        }
+      }
+    },
+    "Window Management disabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭窗口管理"
+          }
+        }
+      }
+    },
+    "Window Management enabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用窗口管理"
+          }
+        }
+      }
+    },
+    "Window Management uses Accessibility only to move and resize the frontmost application window.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口管理仅使用辅助功能权限移动和缩放前台应用窗口。"
+          }
+        }
+      }
+    },
+    "zbox": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zbox"
+          }
+        }
+      }
+    },
+    "zbox Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zbox 设置"
+          }
+        }
+      }
+    },
+    "↑↓ Select   ↩ Run   esc Close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↑↓ 选择   ↩ 执行   esc 关闭"
           }
         }
       }

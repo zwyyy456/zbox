@@ -4,7 +4,7 @@ nonisolated enum SettingsWindowError: LocalizedError {
     case unavailable
 
     var errorDescription: String? {
-        "Settings could not be opened."
+        String(localized: "Settings could not be opened.")
     }
 }
 

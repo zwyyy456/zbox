@@ -18,17 +18,17 @@ nonisolated enum AccessibilityWindowError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .permissionRequired:
-            "Accessibility permission is required to move windows."
+            String(localized: "Accessibility permission is required to move windows.")
         case .noTargetApplication:
-            "The application that owned the window is no longer available."
+            String(localized: "The application that owned the window is no longer available.")
         case .noFocusedWindow:
-            "The target application has no focused window."
+            String(localized: "The target application has no focused window.")
         case .unableToReadFrame:
-            "The target window position or size could not be read."
+            String(localized: "The target window position or size could not be read.")
         case .unableToSetFrame:
-            "The target window does not support this operation."
+            String(localized: "The target window does not support this operation.")
         case .noScreen:
-            "The target window is not on an available display."
+            String(localized: "The target window is not on an available display.")
         }
     }
 }
