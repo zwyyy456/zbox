@@ -312,7 +312,7 @@ final class TextLookupSessionModel {
         case .noResult: .noResult
         case .incompatibleProtocol: .incompatibleProtocol
         case .requestFailed(let message): .requestFailed(message)
-        case .resourceUnavailable, .invalidRequest: .requestFailed(nil)
+        case .resourceUnavailable, .translationUnavailable, .invalidRequest: .requestFailed(nil)
         }
     }
 }
