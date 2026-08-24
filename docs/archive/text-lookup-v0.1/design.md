@@ -1,6 +1,8 @@
 # zbox 鼠标取词插件设计方案 v0.1
 
-> 状态：Active（首版工程基线）
+> 归档：长期工程边界已合并到 `../../../engineering-guidelines.md`。
+
+> 状态：Archived（首版工程基线快照）
 > 日期：2026-08-14
 > 输入约束：《zbox 鼠标取词插件需求文档 v0.1》
 > 文档职责：定义 Text Lookup Plugin v0.1 的模块边界、状态所有权、平台 adapter、接口、并发、窗口、接入与验证方案。

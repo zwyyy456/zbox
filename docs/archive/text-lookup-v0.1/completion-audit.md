@@ -1,7 +1,9 @@
 # Text Lookup Plugin v0.1 完成度审计
 
+> 归档：已完成实施证据；尚未闭环的真实系统项目见 `../../release-readiness.md`。
+
 > 日期：2026-08-15
-> 基准：`docs/text-lookup-plugin-requirements-v0.1.md`、`docs/text-lookup-plugin-design-v0.1.md`
+> 基准：`requirements.md`、`design.md`
 > 目的：区分“产品代码已实现”“自动化证据已通过”和“真实环境验收已闭环”，不以构建成功替代完整完成定义。
 
 ## 1. 当前自动化基线

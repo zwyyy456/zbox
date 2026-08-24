@@ -1,5 +1,9 @@
 # zbox 开发方案 v0.1
 
+> 归档：M0/M1 已实施设计，仅供历史追溯，不是当前规范或待办。
+
+> 类型：Implemented baseline（非规范）。本文保留 M0/M1 的实施设计和顺序，供追溯既有选择；当前产品规则见 `../../product-design-v0.1.md`，当前工程规则见 `../../../engineering-guidelines.md`，历史验证结果见同层归档材料。
+
 > 状态：Implemented（M1 代码基线）
 > 初始日期：2026-08-13
 > 最后校正：2026-08-23
@@ -22,7 +26,7 @@
 - Swift Language Mode 设为 Swift 6；
 - App Sandbox 关闭，Hardened Runtime 开启。
 
-本文件保留 M0/M1 的实施设计，后续能力不得把其中的阶段描述误当作当前待办；通过、跳过和受环境限制的检查统一记录在 `docs/validation-log.md`。
+本文件保留 M0/M1 的实施设计，后续能力不得把其中的阶段描述误当作当前待办；通过、跳过和受环境限制的检查统一记录在同层 `../text-lookup-v0.1/validation-log.md`。
 
 ## 2. 已确定的技术选择
 

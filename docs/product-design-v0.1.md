@@ -1,10 +1,10 @@
 # zbox 产品设计文档 v0.1
 
-> 状态：Active（M1 产品基线）
+> 状态：Active（当前产品基线）
 > 初始日期：2026-08-13
 > 最后校正：2026-08-14
-> 适用范围：M0 Prototype、M1 MVP
-> 文档职责：定义目标用户、用户问题、MVP 范围与验收方式。工程结构和实现顺序见《zbox 开发方案 v0.1》。
+> 适用范围：M1 命令中心、Text Lookup v0.1
+> 文档职责：定义当前产品范围、用户行为与验收边界；工程边界见根目录 `engineering-guidelines.md`。
 
 ## 1. 产品定义
 
@@ -164,7 +164,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 
 - 第三方插件、Extension SDK、JS Runtime、RPC 或 XPC；
 - 文件索引和文件内容搜索；
-- Clipboard History、Selected Text；
+- Clipboard History；
 - Display 开关、拓扑控制和 Workspace；
 - Calendar、Contacts、Snippets、Calculator；
 - AI、云同步、账号、团队功能；
@@ -184,13 +184,13 @@ M1 可以被称为“可日用 MVP”，需要满足：
 6. 没有常规路径崩溃、快捷键失效后无法恢复或窗口严重错位的问题；
 7. 至少进行一轮真实使用，并记录阻碍日用的问题。
 
-FR-07 和 FR-08 已进入 M1 实施基线；实际验证结果与仍受环境限制的项目以《zbox 实施验证记录》为准。
+FR-07 和 FR-08 已进入 M1 实施基线；仍需真实系统或分发环境的验收见 `release-readiness.md`。
 
 ## 10. MVP 之后
 
 | 阶段 | 产品目标 |
 | --- | --- |
-| M2 System Toolkit | Clipboard、Selected Text、Display、Workspace |
+| M2 System Toolkit | Text Lookup v0.1 已进入当前产品；后续候选为 Clipboard、Display、Workspace |
 | M3 Internal Extensions | 用真实官方功能检验内部扩展边界 |
 | M4 Plugin Preview | 再决定独立 Runtime、权限和 SDK |
 
@@ -209,3 +209,17 @@ FR-07 和 FR-08 已进入 M1 实施基线；实际验证结果与仍受环境限
 | OQ-07 | Direct Hotkey 成功静默；失败使用不激活 zbox 的轻量反馈 Panel。 |
 | OQ-08 | 用户快捷键使用真实录制，不保留旧预设枚举兼容；Root Search 无有效持久化值时回落默认快捷键，Command 回落未分配。 |
 | OQ-09 | 用户可见产品名暂统一为小写 `zbox`；后续名称调整通过 String Catalog 统一完成。 |
+
+## 12. Text Lookup v0.1
+
+Text Lookup 是当前内置能力，不是动态插件系统，也不建立第三方 Runtime、SDK 或插件市场。
+
+- 用户可通过选区自动触发、选区快捷键确认或显式指针快捷键发起取词；安全输入、排除应用和不支持的文本表面必须明确拒绝。
+- 取词窗口显示当前单词、尽力提取的原句和来源、FlashDict 释义、Apple 本地翻译及义项级建卡状态。悬浮窗口不主动抢走当前应用焦点。
+- FlashDict 必须已经运行。zbox 不自动启动、不轮询，也不建立本地词典 fallback；失败提供可理解的状态和用户主动重试入口。
+- 建卡以用户选择的义项为准，并携带当次冻结的原句与来源 URL。只有 FlashDict 返回实际成功后才能显示“已添加”。
+- Apple Translation 只处理当前原句；切换词条、原句或目标语言后，旧结果不能覆盖当前会话。首版不提供第三方翻译服务入口。
+- 捕获的单词、原句和来源只存在于当前会话，除非用户明确创建闪卡；不建立取词历史，不上传内容，也不把正文写入普通日志。
+- Accessibility 被拒绝时提供系统设置入口；兼容复制只在用户启用后作为单次受控操作，并避免覆盖用户随后产生的剪贴板内容。
+
+真实应用兼容、Apple 语言模型、Developer ID 分发、外接显示器和真实建卡验收按需读取 `release-readiness.md`。
