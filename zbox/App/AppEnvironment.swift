@@ -33,6 +33,11 @@ final class AppEnvironment {
     private(set) var commandHotkeys: [CommandID: Hotkey]
     private(set) var rootSearchHotkeyError: String?
     private(set) var commandHotkeyErrors: [CommandID: String] = [:]
+    private(set) var applicationReloadError: String?
+    private(set) var launchAtLoginError: String?
+    private(set) var shortcutRegistrationError: String?
+    private(set) var windowManagementError: String?
+    private(set) var textLookupError: String?
     private(set) var isLaunchAtLoginEnabled = false
     private(set) var isWindowManagementEnabled: Bool
     private(set) var isAccessibilityTrusted: Bool
@@ -46,8 +51,6 @@ final class AppEnvironment {
             }
         }
     }
-    var statusMessage = String(localized: "Ready")
-
     var searchResults: [SearchMatch] {
         searchEngine.search(
             query: searchQuery,
@@ -108,7 +111,7 @@ final class AppEnvironment {
         do {
             try applyHotkeyRegistrations()
         } catch {
-            statusMessage = error.localizedDescription
+            shortcutRegistrationError = error.localizedDescription
         }
 
         if textLookupPlugin.settings.isEnabled, isAccessibilityTrusted {
@@ -169,9 +172,9 @@ final class AppEnvironment {
             }
             commandRegistry = registry
             applicationURLsByCommandID = applicationURLs
-            statusMessage = String(localized: "Loaded \(applications.count) applications")
+            applicationReloadError = nil
         } catch {
-            statusMessage = error.localizedDescription
+            applicationReloadError = error.localizedDescription
         }
     }
 
@@ -304,17 +307,15 @@ final class AppEnvironment {
             rootSearchHotkey = hotkey
             try applyHotkeyRegistrations()
             hotkeyStore.setRootSearchHotkey(hotkey)
-            statusMessage = String(localized: "Root Search shortcut updated")
+            shortcutRegistrationError = nil
         } catch {
             rootSearchHotkey = previous
             rootSearchHotkeyError = error.localizedDescription
-            statusMessage = error.localizedDescription
         }
     }
 
     func reportInvalidRootSearchHotkey(_ message: String) {
         rootSearchHotkeyError = message
-        statusMessage = message
     }
 
     func setCommandHotkey(_ hotkey: Hotkey?, for commandID: CommandID) {
@@ -330,17 +331,15 @@ final class AppEnvironment {
             }
             try applyHotkeyRegistrations()
             hotkeyStore.setCommandHotkey(hotkey, for: commandID)
-            statusMessage = String(localized: "Command shortcut updated")
+            shortcutRegistrationError = nil
         } catch {
             commandHotkeys[commandID] = previous
             commandHotkeyErrors[commandID] = error.localizedDescription
-            statusMessage = error.localizedDescription
         }
     }
 
     func reportInvalidCommandHotkey(_ message: String, for commandID: CommandID) {
         commandHotkeyErrors[commandID] = message
-        statusMessage = message
     }
 
     func setShortcutRecordingActive(_ isActive: Bool) {
@@ -349,8 +348,9 @@ final class AppEnvironment {
 
         do {
             try hotkeyRegistrar.setSuspended(isActive)
+            shortcutRegistrationError = nil
         } catch {
-            statusMessage = error.localizedDescription
+            shortcutRegistrationError = error.localizedDescription
         }
     }
 
@@ -358,21 +358,16 @@ final class AppEnvironment {
         do {
             try launchAtLoginController.setEnabled(isEnabled)
             isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
-            statusMessage = isEnabled
-                ? String(localized: "Launch at Login enabled")
-                : String(localized: "Launch at Login disabled")
+            launchAtLoginError = nil
         } catch {
             isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
-            statusMessage = error.localizedDescription
+            launchAtLoginError = error.localizedDescription
         }
     }
 
     func setShowsApplicationPathsInSearchResults(_ isEnabled: Bool) {
         showsApplicationPathsInSearchResults = isEnabled
         defaults.set(isEnabled, forKey: Key.showApplicationPaths)
-        statusMessage = isEnabled
-            ? String(localized: "Application paths shown in search results")
-            : String(localized: "Application paths hidden in search results")
     }
 
     func setWindowManagementEnabled(_ isEnabled: Bool) {
@@ -380,11 +375,11 @@ final class AppEnvironment {
 
         guard isEnabled else {
             disableWindowManagement()
-            statusMessage = String(localized: "Window Management disabled")
+            windowManagementError = nil
             return
         }
         guard isAccessibilityTrusted else {
-            statusMessage = String(localized: "Accessibility permission is required to enable Window Management.")
+            windowManagementError = String(localized: "Accessibility permission is required to enable Window Management.")
             return
         }
         guard !isWindowManagementEnabled else { return }
@@ -393,19 +388,20 @@ final class AppEnvironment {
         do {
             try applyHotkeyRegistrations()
             defaults.set(true, forKey: Key.windowManagementEnabled)
-            statusMessage = String(localized: "Window Management enabled")
+            windowManagementError = nil
         } catch {
             isWindowManagementEnabled = false
-            statusMessage = error.localizedDescription
+            windowManagementError = error.localizedDescription
         }
     }
 
     func setTextLookupEnabled(_ isEnabled: Bool) {
+        textLookupError = nil
         do {
             if isEnabled {
                 refreshAccessibilityState()
                 guard isAccessibilityTrusted else {
-                    statusMessage = String(localized: "Accessibility permission is required to enable Text Lookup.")
+                    textLookupError = String(localized: "Accessibility permission is required to enable Text Lookup.")
                     return
                 }
                 try validateHotkeyAssignments(
@@ -419,22 +415,18 @@ final class AppEnvironment {
             } else {
                 textLookupPlugin.stop()
             }
-            statusMessage = textLookupPlugin.statusMessage
-                ?? (isEnabled
-                    ? String(localized: "Text Lookup enabled")
-                    : String(localized: "Text Lookup disabled"))
         } catch {
-            statusMessage = error.localizedDescription
+            textLookupError = error.localizedDescription
         }
     }
 
     func setTextLookupShortcut(_ shortcut: TextLookupShortcutPreset) {
+        textLookupError = nil
         do {
             try validateHotkeyAssignments(textLookupShortcut: shortcut)
             try textLookupPlugin.setShortcut(shortcut)
-            statusMessage = String(localized: "Text Lookup shortcut updated")
         } catch {
-            statusMessage = error.localizedDescription
+            textLookupError = error.localizedDescription
         }
     }
 
@@ -455,7 +447,7 @@ final class AppEnvironment {
             do {
                 try openSettings(tab: .windowManagement)
             } catch {
-                statusMessage = error.localizedDescription
+                commandFeedback = CommandFeedbackMapper.failure(for: error)
             }
         }
     }
@@ -473,13 +465,12 @@ final class AppEnvironment {
         let disabledTextLookup = textLookupPlugin.settings.isEnabled
         if disabledWindowManagement {
             disableWindowManagement()
+            windowManagementError = String(localized: "Window Management was disabled because Accessibility permission is unavailable.")
         }
         if disabledTextLookup {
             textLookupPlugin.settings.setEnabled(false)
             textLookupPlugin.stop()
-        }
-        if disabledWindowManagement || disabledTextLookup {
-            statusMessage = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
+            textLookupError = String(localized: "Text Lookup was disabled because Accessibility permission is unavailable.")
         }
     }
 

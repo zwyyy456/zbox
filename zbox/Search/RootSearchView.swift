@@ -56,9 +56,14 @@ struct RootSearchView: View {
             Divider()
 
             HStack {
-                Text(environment.commandFeedback?.message ?? environment.statusMessage)
-                    .lineLimit(1)
-                Spacer()
+                if let feedback = environment.commandFeedback {
+                    Text(feedback.message)
+                        .lineLimit(1)
+                    Spacer()
+                } else {
+                    Spacer()
+                    Text("↑↓ Select   ↩ Run   esc Close")
+                }
                 if let recovery = environment.commandFeedback?.recoveryAction {
                     switch recovery {
                     case .openAccessibilitySettings:
@@ -72,8 +77,6 @@ struct RootSearchView: View {
                         }
                         .buttonStyle(.link)
                     }
-                } else {
-                    Text("↑↓ Select   ↩ Run   esc Close")
                 }
             }
             .font(.caption)

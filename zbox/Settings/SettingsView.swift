@@ -18,7 +18,6 @@ struct SettingsView: View {
 
             Form {
                 TextLookupSettingsView(environment: environment)
-                SettingsStatusView(message: environment.statusMessage)
             }
             .settingsPane()
             .settingsTab(SettingsTab.textLookup)
@@ -42,6 +41,9 @@ private struct GeneralSettingsView: View {
                         set: { environment.setLaunchAtLoginEnabled($0) }
                     )
                 )
+                if let error = environment.launchAtLoginError {
+                    SettingsErrorView(message: error)
+                }
                 Toggle(
                     "Show Application Paths in Search Results",
                     isOn: Binding(
@@ -56,9 +58,10 @@ private struct GeneralSettingsView: View {
                 Button("Reload Applications") {
                     environment.reloadApplications()
                 }
+                if let error = environment.applicationReloadError {
+                    SettingsErrorView(message: error)
+                }
             }
-
-            SettingsStatusView(message: environment.statusMessage)
         }
         .settingsPane()
     }
@@ -125,7 +128,9 @@ private struct ShortcutSettingsView: View {
                 }
             }
 
-            SettingsStatusView(message: environment.statusMessage)
+            if let error = environment.shortcutRegistrationError {
+                SettingsErrorView(message: error)
+            }
         }
         .settingsPane()
     }
@@ -167,19 +172,21 @@ private struct WindowManagementSettingsView: View {
                 }
             }
 
-            SettingsStatusView(message: environment.statusMessage)
+            if let error = environment.windowManagementError {
+                SettingsErrorView(message: error)
+            }
         }
         .settingsPane()
     }
 }
 
-private struct SettingsStatusView: View {
+private struct SettingsErrorView: View {
     let message: String
 
     var body: some View {
         Text(message)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.red)
     }
 }
 

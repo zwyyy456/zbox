@@ -18,7 +18,7 @@ struct TextLookupSettingsView: View {
                     set: { environment.setTextLookupEnabled($0) }
                 )
             )
-            if let message = plugin.statusMessage {
+            if let message = environment.textLookupError ?? plugin.statusMessage {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
