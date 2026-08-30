@@ -4,9 +4,16 @@ import FlashDictIntegrationKit
 import Observation
 
 nonisolated protocol TextLookupFlashDictServicing:
-    FlashDictLookupProviding,
-    FlashDictResourceProviding,
-    FlashDictCardCreating {}
+    FlashDictResourceProviding
+{
+    func lookup(term: String, requestID: UUID) async throws -> LookupDocument
+
+    func createFlashcard(
+        deliveryID: UUID,
+        seed: FlashcardSeed,
+        context: FlashcardCreationContext
+    ) async throws -> FlashcardCreationResult
+}
 
 extension FlashDictBridgeClient: TextLookupFlashDictServicing {}
 
