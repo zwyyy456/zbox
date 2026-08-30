@@ -17,8 +17,6 @@ final class TextLookupPanelController {
     private let hotkeyRegistrar: any HotkeyRegistering
     private let onDismiss: () -> Void
 
-    var isVisible: Bool { panel.isVisible }
-
     init(
         model: TextLookupSessionModel,
         settings: TextLookupSettingsStore,

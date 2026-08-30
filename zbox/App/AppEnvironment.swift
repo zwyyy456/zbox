@@ -203,8 +203,7 @@ final class AppEnvironment {
 
     func executeSelectedCommand() {
         let results = searchResults
-        guard let commandID = selectedCommandID ?? results.first?.id,
-              let descriptor = results.first(where: { $0.id == commandID })?.descriptor else {
+        guard let commandID = selectedCommandID ?? results.first?.id else {
             return
         }
 
@@ -214,7 +213,6 @@ final class AppEnvironment {
         )
         execute(
             commandID,
-            descriptor: descriptor,
             context: context,
             hidePanelOnSuccess: true
         )
@@ -222,7 +220,6 @@ final class AppEnvironment {
 
     private func execute(
         _ commandID: CommandID,
-        descriptor: CommandDescriptor,
         context: CommandContext,
         hidePanelOnSuccess: Bool
     ) {
@@ -243,7 +240,6 @@ final class AppEnvironment {
                     expectedRootSearchSessionID: expectedRootSearchSessionID
                 ) else { return }
                 if hidePanelOnSuccess {
-                    commandFeedback = .success(String(localized: "Ran \(descriptor.title)"))
                     hideRootSearch()
                 }
             } catch is CancellationError {
@@ -465,12 +461,12 @@ final class AppEnvironment {
         let disabledTextLookup = textLookupPlugin.settings.isEnabled
         if disabledWindowManagement {
             disableWindowManagement()
-            windowManagementError = String(localized: "Window Management was disabled because Accessibility permission is unavailable.")
+            windowManagementError = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
         }
         if disabledTextLookup {
             textLookupPlugin.settings.setEnabled(false)
             textLookupPlugin.stop()
-            textLookupError = String(localized: "Text Lookup was disabled because Accessibility permission is unavailable.")
+            textLookupError = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
         }
     }
 
@@ -540,16 +536,12 @@ final class AppEnvironment {
     }
 
     private func executeDirectCommand(_ commandID: CommandID) {
-        guard let descriptor = commandRegistry.descriptors.first(where: { $0.id == commandID }) else {
-            return
-        }
         let context = CommandContext(
             source: .directHotkey,
             frontmostApplicationPID: NSWorkspace.shared.frontmostApplication?.processIdentifier
         )
         execute(
             commandID,
-            descriptor: descriptor,
             context: context,
             hidePanelOnSuccess: false
         )

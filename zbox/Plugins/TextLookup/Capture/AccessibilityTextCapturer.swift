@@ -16,8 +16,7 @@ actor AccessibilityTextCapturer: TextCapturing {
     }
 
     private func captureSelection(_ request: TextCaptureRequest) throws -> TextLookupCapture {
-        if let bundleIdentifier = request.targetApplicationBundleIdentifier,
-           request.excludedApplicationBundleIdentifiers.contains(bundleIdentifier) {
+        if request.excludedApplicationPIDs.contains(request.targetApplicationPID) {
             throw TextCaptureError.excludedApplication
         }
         let application = AXUIElementCreateApplication(request.targetApplicationPID)
@@ -61,8 +60,7 @@ actor AccessibilityTextCapturer: TextCapturing {
                 for: termRange,
                 in: element,
                 primaryMaxY: request.primaryScreenMaxY
-            ) ?? request.triggerAnchorRect,
-            sourceApplicationBundleIdentifier: request.targetApplicationBundleIdentifier
+            ) ?? request.triggerAnchorRect
         )
     }
 
@@ -83,9 +81,7 @@ actor AccessibilityTextCapturer: TextCapturing {
         }
         var hitPID: pid_t = 0
         AXUIElementGetPid(element, &hitPID)
-        let bundleIdentifier = request.applicationBundleIdentifiersByPID[hitPID]
-        if let bundleIdentifier,
-           request.excludedApplicationBundleIdentifiers.contains(bundleIdentifier) {
+        if request.excludedApplicationPIDs.contains(hitPID) {
             throw TextCaptureError.excludedApplication
         }
         try rejectSecureText(element)
@@ -123,8 +119,7 @@ actor AccessibilityTextCapturer: TextCapturing {
                 for: wordRange,
                 in: element,
                 primaryMaxY: request.primaryScreenMaxY
-            ) ?? request.triggerAnchorRect,
-            sourceApplicationBundleIdentifier: bundleIdentifier
+            ) ?? request.triggerAnchorRect
         )
     }
 

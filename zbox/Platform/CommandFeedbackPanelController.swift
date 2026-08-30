@@ -12,7 +12,7 @@ final class CommandFeedbackPanelController {
         self.onRecovery = onRecovery
         hostingView = NSHostingView(
             rootView: CommandFeedbackView(
-                feedback: .failure("", recovery: nil),
+                feedback: CommandFeedback(message: "", recoveryAction: nil),
                 onRecovery: { _ in },
                 onDismiss: {}
             )

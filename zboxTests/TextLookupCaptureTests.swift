@@ -104,8 +104,7 @@ struct TextLookupCaptureTests {
                 term: "swift",
                 sentence: nil,
                 sourceURL: nil,
-                anchorRect: nil,
-                sourceApplicationBundleIdentifier: "com.example.Reader"
+                anchorRect: nil
             ),
             targetApplicationPID: 42,
             createdAt: createdAt

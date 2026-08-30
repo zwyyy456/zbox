@@ -7,7 +7,6 @@ nonisolated struct TextLookupCapture: Sendable, Equatable {
     let sentence: String?
     let sourceURL: URL?
     let anchorRect: CGRect?
-    let sourceApplicationBundleIdentifier: String?
 }
 
 nonisolated enum TextCaptureIntent: Sendable {
@@ -27,9 +26,7 @@ nonisolated struct TextCaptureRequest: Sendable {
     let id: UUID
     let intent: TextCaptureIntent
     let targetApplicationPID: pid_t
-    let targetApplicationBundleIdentifier: String?
-    let applicationBundleIdentifiersByPID: [pid_t: String]
-    let excludedApplicationBundleIdentifiers: Set<String>
+    let excludedApplicationPIDs: Set<pid_t>
     let primaryScreenMaxY: CGFloat
     let triggerAnchorPoint: CGPoint
 

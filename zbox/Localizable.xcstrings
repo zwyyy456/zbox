@@ -137,26 +137,6 @@
         }
       }
     },
-    "Application paths hidden in search results": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索结果中已隐藏应用路径"
-          }
-        }
-      }
-    },
-    "Application paths shown in search results": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索结果中已显示应用路径"
-          }
-        }
-      }
-    },
     "Applications": {
       "localizations": {
         "zh-Hans": {
@@ -223,16 +203,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "命令快捷键"
-          }
-        }
-      }
-    },
-    "Command shortcut updated": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "命令快捷键已更新"
           }
         }
       }
@@ -467,42 +437,12 @@
         }
       }
     },
-    "Launch at Login disabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已关闭登录时启动"
-          }
-        }
-      }
-    },
-    "Launch at Login enabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已启用登录时启动"
-          }
-        }
-      }
-    },
     "Left Half": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "左半屏"
-          }
-        }
-      }
-    },
-    "Loaded %lld applications": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已载入 %lld 个应用"
           }
         }
       }
@@ -727,32 +667,12 @@
         }
       }
     },
-    "Ran %@": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已执行 %@"
-          }
-        }
-      }
-    },
     "Reading text under the pointer…": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "正在读取指针下的文本…"
-          }
-        }
-      }
-    },
-    "Ready": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "就绪"
           }
         }
       }
@@ -853,16 +773,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "全局搜索快捷键"
-          }
-        }
-      }
-    },
-    "Root Search shortcut updated": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全局搜索快捷键已更新"
           }
         }
       }
@@ -1047,26 +957,6 @@
         }
       }
     },
-    "Text Lookup disabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已关闭文本取词"
-          }
-        }
-      }
-    },
-    "Text Lookup enabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已启用文本取词"
-          }
-        }
-      }
-    },
     "Text Lookup is disabled for this application.": {
       "localizations": {
         "zh-Hans": {
@@ -1083,16 +973,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "文本取词仅在触发时读取选区或鼠标指针下的文字。捕获内容只保留在当前弹窗中，除非你明确创建 FlashDict 闪卡；不会使用屏幕录制权限，也不会保存查词历史。"
-          }
-        }
-      }
-    },
-    "Text Lookup shortcut updated": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文本取词快捷键已更新"
           }
         }
       }
@@ -1365,26 +1245,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口管理"
-          }
-        }
-      }
-    },
-    "Window Management disabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已关闭窗口管理"
-          }
-        }
-      }
-    },
-    "Window Management enabled": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已启用窗口管理"
           }
         }
       }

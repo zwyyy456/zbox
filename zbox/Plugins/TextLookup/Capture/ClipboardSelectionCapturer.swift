@@ -34,8 +34,7 @@ final class ClipboardSelectionCapturer {
             term: cleaned.term,
             sentence: nil,
             sourceURL: nil,
-            anchorRect: request.triggerAnchorRect,
-            sourceApplicationBundleIdentifier: request.targetApplicationBundleIdentifier
+            anchorRect: request.triggerAnchorRect
         )
     }
 

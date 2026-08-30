@@ -1,7 +1,7 @@
 @preconcurrency import Carbon.HIToolbox
 import Foundation
 
-nonisolated struct Hotkey: Codable, Hashable, Sendable {
+nonisolated struct Hotkey: Hashable, Sendable {
     static let defaultRootSearch = Hotkey(
         keyCode: 49,
         modifiers: UInt32(controlKey | optionKey)
@@ -13,14 +13,6 @@ nonisolated struct Hotkey: Codable, Hashable, Sendable {
     init(keyCode: UInt32, modifiers: UInt32) {
         self.keyCode = keyCode
         self.modifiers = HotkeyModifiers.normalized(modifiers)
-    }
-
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(
-            keyCode: try container.decode(UInt32.self, forKey: .keyCode),
-            modifiers: try container.decode(UInt32.self, forKey: .modifiers)
-        )
     }
 }
 

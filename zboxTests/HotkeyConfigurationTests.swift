@@ -52,20 +52,6 @@ struct HotkeyConfigurationTests {
     }
 
     @Test
-    func codableRoundTripNormalizesModifiers() throws {
-        let hotkey = Hotkey(
-            keyCode: 0,
-            modifiers: HotkeyModifiers.command | HotkeyModifiers.option | UInt32.max
-        )
-
-        let data = try JSONEncoder().encode(hotkey)
-        let decoded = try JSONDecoder().decode(Hotkey.self, from: data)
-
-        #expect(decoded.keyCode == 0)
-        #expect(decoded.modifiers == HotkeyModifiers.supported)
-    }
-
-    @Test
     func rejectsUnsafeUserShortcutsAndInternalConflicts() {
         let plainLetter = Hotkey(keyCode: 0, modifiers: 0)
         let modifierKey = Hotkey(keyCode: 59, modifiers: HotkeyModifiers.control)

@@ -11,6 +11,9 @@ nonisolated enum CommandFeedbackMapper {
         default:
             recovery = nil
         }
-        return .failure(error.localizedDescription, recovery: recovery)
+        return CommandFeedback(
+            message: error.localizedDescription,
+            recoveryAction: recovery
+        )
     }
 }

@@ -173,17 +173,19 @@ final class TextLookupPlugin {
         guard let application = NSWorkspace.shared.frontmostApplication,
               let primaryScreenMaxY = NSScreen.screens.first?.frame.maxY,
               let anchorPoint = fallbackAnchorPoint ?? intent.anchorPoint else { return nil }
+        let excludedBundleIdentifiers = settings.excludedApplicationBundleIdentifiers
+        let excludedApplicationPIDs: Set<pid_t> = Set(
+            NSWorkspace.shared.runningApplications.compactMap { application in
+                guard let bundleIdentifier = application.bundleIdentifier,
+                      excludedBundleIdentifiers.contains(bundleIdentifier) else { return nil }
+                return application.processIdentifier
+            }
+        )
         return TextCaptureRequest(
             id: UUID(),
             intent: intent,
             targetApplicationPID: application.processIdentifier,
-            targetApplicationBundleIdentifier: application.bundleIdentifier,
-            applicationBundleIdentifiersByPID: Dictionary(
-                uniqueKeysWithValues: NSWorkspace.shared.runningApplications.compactMap { application in
-                    application.bundleIdentifier.map { (application.processIdentifier, $0) }
-                }
-            ),
-            excludedApplicationBundleIdentifiers: settings.excludedApplicationBundleIdentifiers,
+            excludedApplicationPIDs: excludedApplicationPIDs,
             primaryScreenMaxY: primaryScreenMaxY,
             triggerAnchorPoint: anchorPoint
         )

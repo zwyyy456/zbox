@@ -70,8 +70,7 @@ struct TextLookupPresentationTests {
             term: "swift",
             sentence: "Swift keeps the original sentence.",
             sourceURL: sourceURL,
-            anchorRect: nil,
-            sourceApplicationBundleIdentifier: nil
+            anchorRect: nil
         )
         model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans")
 
@@ -105,8 +104,7 @@ struct TextLookupPresentationTests {
             term: "swift",
             sentence: "Swift is concise.",
             sourceURL: nil,
-            anchorRect: nil,
-            sourceApplicationBundleIdentifier: nil
+            anchorRect: nil
         )
         model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans")
         let firstRequest = try #require(model.translationRequest)
@@ -197,8 +195,7 @@ struct TextLookupPresentationTests {
             term: term,
             sentence: nil,
             sourceURL: nil,
-            anchorRect: nil,
-            sourceApplicationBundleIdentifier: nil
+            anchorRect: nil
         )
     }
 

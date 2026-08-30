@@ -8,9 +8,9 @@ struct CommandFeedbackTests {
         let feedback = CommandFeedbackMapper.failure(for: AccessibilityWindowError.permissionRequired)
 
         #expect(
-            feedback == .failure(
-                AccessibilityWindowError.permissionRequired.localizedDescription,
-                recovery: .openAccessibilitySettings
+            feedback == CommandFeedback(
+                message: AccessibilityWindowError.permissionRequired.localizedDescription,
+                recoveryAction: .openAccessibilitySettings
             )
         )
     }
@@ -19,7 +19,7 @@ struct CommandFeedbackTests {
     func ordinaryFailureHasNoRecoveryAction() {
         let feedback = CommandFeedbackMapper.failure(for: TestFailure())
 
-        #expect(feedback == .failure("Command failed.", recovery: nil))
+        #expect(feedback == CommandFeedback(message: "Command failed.", recoveryAction: nil))
     }
 
     @Test
@@ -27,9 +27,9 @@ struct CommandFeedbackTests {
         let feedback = CommandFeedbackMapper.failure(for: WindowManagementError.disabled)
 
         #expect(
-            feedback == .failure(
-                WindowManagementError.disabled.localizedDescription,
-                recovery: .openWindowManagementSettings
+            feedback == CommandFeedback(
+                message: WindowManagementError.disabled.localizedDescription,
+                recoveryAction: .openWindowManagementSettings
             )
         )
     }
