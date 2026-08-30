@@ -32,6 +32,7 @@ struct HotkeyRegistrationRequest {
 @MainActor
 protocol HotkeyRegistering: AnyObject {
     func replace(ids: Set<String>, with requests: [HotkeyRegistrationRequest]) throws
+    func setSuspended(_ isSuspended: Bool) throws
     func unregisterAll()
     func unregister(id: String)
 }
@@ -47,22 +48,63 @@ final class GlobalHotkeyRegistrar: HotkeyRegistering {
     }
 
     private var eventHandler: EventHandlerRef?
+    private var desiredRequests: [String: HotkeyRegistrationRequest] = [:]
     private var registrations: [String: Registration] = [:]
     private var actions: [UInt32: () -> Void] = [:]
     private var nextNumericID: UInt32 = 1
+    private var isSuspended = false
 
     func replace(
         ids: Set<String>,
         with requests: [HotkeyRegistrationRequest]
     ) throws {
+        let previousDesiredRequests = ids.compactMap { desiredRequests[$0] }
+        for id in ids { desiredRequests[id] = nil }
+        for request in requests { desiredRequests[request.id] = request }
+
+        guard !isSuspended else { return }
+
+        do {
+            try replaceActive(ids: ids, with: requests)
+        } catch {
+            for id in ids { desiredRequests[id] = nil }
+            for request in previousDesiredRequests {
+                desiredRequests[request.id] = request
+            }
+            throw error
+        }
+    }
+
+    func setSuspended(_ isSuspended: Bool) throws {
+        guard isSuspended != self.isSuspended else { return }
+
+        if isSuspended {
+            self.isSuspended = true
+            unregisterAllActive()
+            return
+        }
+
+        do {
+            for request in desiredRequests.values { try register(request) }
+            self.isSuspended = false
+        } catch {
+            unregisterAllActive()
+            throw error
+        }
+    }
+
+    private func replaceActive(
+        ids: Set<String>,
+        with requests: [HotkeyRegistrationRequest]
+    ) throws {
         let previous = ids.compactMap { registrations[$0]?.request }
-        for id in ids { unregister(id: id) }
+        for id in ids { unregisterActive(id: id) }
 
         do {
             for request in requests { try register(request) }
         } catch {
             let updateError = error
-            for request in requests { unregister(id: request.id) }
+            for request in requests { unregisterActive(id: request.id) }
             do {
                 for request in previous { try register(request) }
             } catch {
@@ -108,6 +150,12 @@ final class GlobalHotkeyRegistrar: HotkeyRegistering {
     }
 
     func unregisterAll() {
+        desiredRequests.removeAll()
+        isSuspended = false
+        unregisterAllActive()
+    }
+
+    private func unregisterAllActive() {
         for registration in registrations.values { UnregisterEventHotKey(registration.reference) }
         registrations.removeAll()
         actions.removeAll()
@@ -117,6 +165,11 @@ final class GlobalHotkeyRegistrar: HotkeyRegistering {
     }
 
     func unregister(id: String) {
+        desiredRequests[id] = nil
+        unregisterActive(id: id)
+    }
+
+    private func unregisterActive(id: String) {
         guard let registration = registrations.removeValue(forKey: id) else { return }
         UnregisterEventHotKey(registration.reference)
         actions.removeValue(forKey: registration.numericID)

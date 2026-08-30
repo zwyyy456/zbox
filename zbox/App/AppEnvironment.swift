@@ -68,7 +68,6 @@ final class AppEnvironment {
     private var rootSearchSessionID: UUID?
     private var hasStarted = false
     private var isRecordingShortcut = false
-    private var coreHotkeysNeedRestoration = false
 
     init(
         defaults: UserDefaults = .standard,
@@ -304,7 +303,6 @@ final class AppEnvironment {
             try HotkeyValidator.validateUserShortcut(hotkey)
             rootSearchHotkey = hotkey
             try applyHotkeyRegistrations()
-            coreHotkeysNeedRestoration = false
             hotkeyStore.setRootSearchHotkey(hotkey)
             statusMessage = String(localized: "Root Search shortcut updated")
         } catch {
@@ -331,7 +329,6 @@ final class AppEnvironment {
                 commandHotkeys[commandID] = nil
             }
             try applyHotkeyRegistrations()
-            coreHotkeysNeedRestoration = false
             hotkeyStore.setCommandHotkey(hotkey, for: commandID)
             statusMessage = String(localized: "Command shortcut updated")
         } catch {
@@ -350,24 +347,8 @@ final class AppEnvironment {
         guard isActive != isRecordingShortcut else { return }
         isRecordingShortcut = isActive
 
-        if isActive {
-            coreHotkeysNeedRestoration = true
-            hotkeyRegistrar.unregister(id: "root-search")
-            for target in WindowCommands.shortcutTargets {
-                hotkeyRegistrar.unregister(id: target.id.rawValue)
-            }
-            hotkeyRegistrar.unregister(id: TextLookupPlugin.hotkeyRegistrationID)
-            return
-        }
-
         do {
-            if coreHotkeysNeedRestoration {
-                try applyHotkeyRegistrations()
-            }
-            if textLookupPlugin.settings.isEnabled {
-                try textLookupPlugin.reloadConfiguration()
-            }
-            coreHotkeysNeedRestoration = false
+            try hotkeyRegistrar.setSuspended(isActive)
         } catch {
             statusMessage = error.localizedDescription
         }

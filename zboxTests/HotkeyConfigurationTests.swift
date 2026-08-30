@@ -116,6 +116,7 @@ private final class FailingHotkeyRegistrar: HotkeyRegistering {
         if shouldFail { throw TestRegistrationError.failed }
     }
 
+    func setSuspended(_ isSuspended: Bool) throws {}
     func unregisterAll() {}
     func unregister(id: String) {}
 }
