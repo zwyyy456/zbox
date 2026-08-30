@@ -14,14 +14,43 @@ nonisolated enum WindowManagementError: LocalizedError, Equatable {
 }
 
 nonisolated enum WindowCommands {
+    private struct Definition {
+        let id: CommandID
+        let title: String
+        let keywords: [String]
+        let action: WindowAction
+        let systemImage: String
+    }
+
     static let leftHalfID = CommandID("window.left-half")
     static let rightHalfID = CommandID("window.right-half")
     static let maximizeID = CommandID("window.maximize")
-    static let shortcutTargets = [
-        CommandShortcutTarget(id: leftHalfID, title: String(localized: "Left Half")),
-        CommandShortcutTarget(id: rightHalfID, title: String(localized: "Right Half")),
-        CommandShortcutTarget(id: maximizeID, title: String(localized: "Maximize")),
+    private static let definitions = [
+        Definition(
+            id: leftHalfID,
+            title: String(localized: "Left Half"),
+            keywords: ["window", "left", "resize", "tile", "窗口", "左半屏"],
+            action: .leftHalf,
+            systemImage: "rectangle.lefthalf.inset.filled"
+        ),
+        Definition(
+            id: rightHalfID,
+            title: String(localized: "Right Half"),
+            keywords: ["window", "right", "resize", "tile", "窗口", "右半屏"],
+            action: .rightHalf,
+            systemImage: "rectangle.righthalf.inset.filled"
+        ),
+        Definition(
+            id: maximizeID,
+            title: String(localized: "Maximize"),
+            keywords: ["window", "full", "resize", "zoom", "窗口", "最大化"],
+            action: .maximize,
+            systemImage: "rectangle.inset.filled"
+        ),
     ]
+    static let shortcutTargets = definitions.map {
+        CommandShortcutTarget(id: $0.id, title: $0.title)
+    }
 
     @MainActor
     static func registerAll(
@@ -29,67 +58,24 @@ nonisolated enum WindowCommands {
         controller: AccessibilityWindowController,
         isEnabled: @escaping @MainActor () -> Bool
     ) throws {
-        try register(
-            id: leftHalfID,
-            title: String(localized: "Left Half"),
-            keywords: ["window", "left", "resize", "tile", "窗口", "左半屏"],
-            action: .leftHalf,
-            in: registry,
-            controller: controller,
-            isEnabled: isEnabled
-        )
-        try register(
-            id: rightHalfID,
-            title: String(localized: "Right Half"),
-            keywords: ["window", "right", "resize", "tile", "窗口", "右半屏"],
-            action: .rightHalf,
-            in: registry,
-            controller: controller,
-            isEnabled: isEnabled
-        )
-        try register(
-            id: maximizeID,
-            title: String(localized: "Maximize"),
-            keywords: ["window", "full", "resize", "zoom", "窗口", "最大化"],
-            action: .maximize,
-            in: registry,
-            controller: controller,
-            isEnabled: isEnabled
-        )
+        for definition in definitions {
+            let descriptor = CommandDescriptor(
+                id: definition.id,
+                title: definition.title,
+                subtitle: String(localized: "Window Management"),
+                keywords: definition.keywords
+            )
+            try registry.register(descriptor) { context in
+                guard isEnabled() else { throw WindowManagementError.disabled }
+                try controller.perform(
+                    definition.action,
+                    targetPID: context.frontmostApplicationPID
+                )
+            }
+        }
     }
 
     nonisolated static func systemImage(for commandID: CommandID) -> String? {
-        switch commandID {
-        case leftHalfID:
-            "rectangle.lefthalf.inset.filled"
-        case rightHalfID:
-            "rectangle.righthalf.inset.filled"
-        case maximizeID:
-            "rectangle.inset.filled"
-        default:
-            nil
-        }
-    }
-
-    @MainActor
-    private static func register(
-        id: CommandID,
-        title: String,
-        keywords: [String],
-        action: WindowAction,
-        in registry: CommandRegistry,
-        controller: AccessibilityWindowController,
-        isEnabled: @escaping @MainActor () -> Bool
-    ) throws {
-        let descriptor = CommandDescriptor(
-            id: id,
-            title: title,
-            subtitle: String(localized: "Window Management"),
-            keywords: keywords
-        )
-        try registry.register(descriptor) { context in
-            guard isEnabled() else { throw WindowManagementError.disabled }
-            try controller.perform(action, targetPID: context.frontmostApplicationPID)
-        }
+        definitions.first { $0.id == commandID }?.systemImage
     }
 }
