@@ -1,6 +1,6 @@
 import Foundation
 
-struct ApplicationInfo: Identifiable, Hashable, Sendable {
+struct ApplicationInfo: Identifiable, Sendable {
     let id: String
     let name: String
     let bundleIdentifier: String?

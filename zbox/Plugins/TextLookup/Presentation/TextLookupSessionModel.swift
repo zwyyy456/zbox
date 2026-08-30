@@ -107,7 +107,6 @@ final class TextLookupSessionModel {
     private(set) var translationRequest: TranslationRequest?
     private(set) var translationState: TextLookupTranslationState = .sentenceUnavailable
 
-    var activeSessionID: UUID? { capture?.id }
     var resourceProvider: (any FlashDictResourceProviding)? { flashDict }
 
     init(flashDict: (any TextLookupFlashDictServicing)? = nil) {
@@ -147,8 +146,8 @@ final class TextLookupSessionModel {
         translationState = .sentenceUnavailable
     }
 
-    func accepts(_ sessionID: UUID) -> Bool {
-        activeSessionID == sessionID
+    private func accepts(_ sessionID: UUID) -> Bool {
+        capture?.id == sessionID
     }
 
     func handle(_ event: LookupSurfaceEvent) {
@@ -189,7 +188,6 @@ final class TextLookupSessionModel {
         translationRequest = TranslationRequest(
             id: UUID(),
             text: sentence,
-            sourceLanguage: nil,
             targetLanguage: Locale.Language(identifier: targetLanguageIdentifier)
         )
         translationState = .loading

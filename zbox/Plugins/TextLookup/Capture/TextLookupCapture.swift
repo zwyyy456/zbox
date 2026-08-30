@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-nonisolated struct TextLookupCapture: Sendable, Equatable {
+nonisolated struct TextLookupCapture: Sendable {
     let id: UUID
     let term: String
     let sentence: String?
@@ -36,17 +36,18 @@ nonisolated struct TextCaptureRequest: Sendable {
 }
 
 nonisolated struct TextLookupSelectionCandidate: Sendable {
+    private static let maximumAge: TimeInterval = 3
+
     let capture: TextLookupCapture
     let targetApplicationPID: pid_t
     let createdAt: Date
 
     func isValid(
         at date: Date,
-        frontmostApplicationPID: pid_t?,
-        maximumAge: TimeInterval = 3
+        frontmostApplicationPID: pid_t?
     ) -> Bool {
         frontmostApplicationPID == targetApplicationPID
-            && date.timeIntervalSince(createdAt) <= maximumAge
+            && date.timeIntervalSince(createdAt) <= Self.maximumAge
     }
 }
 

@@ -27,20 +27,6 @@ struct TextLookupPresentationTests {
     }
 
     @Test @MainActor
-    func sessionAcceptsOnlyItsCurrentCapture() {
-        let model = TextLookupSessionModel()
-        let firstID = UUID()
-        let secondID = UUID()
-
-        model.beginLookup(with: capture(id: firstID, term: "first"), targetLanguageIdentifier: "zh-Hans")
-        model.beginLookup(with: capture(id: secondID, term: "second"), targetLanguageIdentifier: "zh-Hans")
-
-        #expect(!model.accepts(firstID))
-        #expect(model.accepts(secondID))
-        #expect(model.capture?.term == "second")
-    }
-
-    @Test @MainActor
     func explicitCaptureClearsThePreviousSession() {
         let model = TextLookupSessionModel()
         model.beginLookup(
@@ -51,7 +37,7 @@ struct TextLookupPresentationTests {
         model.beginCapture()
 
         #expect(model.isCapturing)
-        #expect(model.capture == nil)
+        #expect(model.capture?.id == nil)
         #expect(model.captureError == nil)
         if case .idle = model.dictionaryState {
             // Expected while text is being captured.
@@ -114,13 +100,10 @@ struct TextLookupPresentationTests {
         model.completeTranslation(
             TranslationResult(
                 requestID: firstRequest.id,
-                sourceLanguage: Locale.Language(identifier: "en"),
-                targetLanguage: firstRequest.targetLanguage,
                 translatedText: "stale"
             )
         )
 
-        #expect(model.activeSessionID == capture.id)
         #expect(secondRequest.id != firstRequest.id)
         if case .loading = model.translationState {
             // Expected: the stale completion was ignored.

@@ -2,7 +2,7 @@ import Foundation
 import NaturalLanguage
 
 nonisolated enum TextLookupTextProcessor {
-    struct CleanedSelection: Equatable, Sendable {
+    struct CleanedSelection: Sendable {
         let term: String
         let leadingUTF16Length: Int
         let utf16Length: Int

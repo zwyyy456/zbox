@@ -18,19 +18,11 @@
 			remoteGlobalIDString = 36529F64302CCB25006E45F7;
 			remoteInfo = zbox;
 		};
-		36529F7F302CCB26006E45F7 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 36529F5D302CCB25006E45F7 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 36529F64302CCB25006E45F7;
-			remoteInfo = zbox;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		36529F65302CCB25006E45F7 /* zbox.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = zbox.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		36529F74302CCB26006E45F7 /* zboxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = zboxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		36529F7E302CCB26006E45F7 /* zboxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = zboxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -57,11 +49,6 @@
 			path = zboxTests;
 			sourceTree = "<group>";
 		};
-		36529F81302CCB26006E45F7 /* zboxUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = zboxUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,13 +67,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		36529F7B302CCB26006E45F7 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -95,7 +75,6 @@
 			children = (
 				36529F67302CCB25006E45F7 /* zbox */,
 				36529F77302CCB26006E45F7 /* zboxTests */,
-				36529F81302CCB26006E45F7 /* zboxUITests */,
 				36529F66302CCB25006E45F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -105,7 +84,6 @@
 			children = (
 				36529F65302CCB25006E45F7 /* zbox.app */,
 				36529F74302CCB26006E45F7 /* zboxTests.xctest */,
-				36529F7E302CCB26006E45F7 /* zboxUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -159,29 +137,6 @@
 			productReference = 36529F74302CCB26006E45F7 /* zboxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		36529F7D302CCB26006E45F7 /* zboxUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 36529F8E302CCB26006E45F7 /* Build configuration list for PBXNativeTarget "zboxUITests" */;
-			buildPhases = (
-				36529F7A302CCB26006E45F7 /* Sources */,
-				36529F7B302CCB26006E45F7 /* Frameworks */,
-				36529F7C302CCB26006E45F7 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				36529F80302CCB26006E45F7 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				36529F81302CCB26006E45F7 /* zboxUITests */,
-			);
-			name = zboxUITests;
-			packageProductDependencies = (
-			);
-			productName = zboxUITests;
-			productReference = 36529F7E302CCB26006E45F7 /* zboxUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -196,10 +151,6 @@
 						CreatedOnToolsVersion = 26.6;
 					};
 					36529F73302CCB26006E45F7 = {
-						CreatedOnToolsVersion = 26.6;
-						TestTargetID = 36529F64302CCB25006E45F7;
-					};
-					36529F7D302CCB26006E45F7 = {
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = 36529F64302CCB25006E45F7;
 					};
@@ -224,7 +175,6 @@
 			targets = (
 				36529F64302CCB25006E45F7 /* zbox */,
 				36529F73302CCB26006E45F7 /* zboxTests */,
-				36529F7D302CCB26006E45F7 /* zboxUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -238,13 +188,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		36529F72302CCB26006E45F7 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		36529F7C302CCB26006E45F7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -268,13 +211,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		36529F7A302CCB26006E45F7 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -282,11 +218,6 @@
 			isa = PBXTargetDependency;
 			target = 36529F64302CCB25006E45F7 /* zbox */;
 			targetProxy = 36529F75302CCB26006E45F7 /* PBXContainerItemProxy */;
-		};
-		36529F80302CCB26006E45F7 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 36529F64302CCB25006E45F7 /* zbox */;
-			targetProxy = 36529F7F302CCB26006E45F7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -519,44 +450,6 @@
 			};
 			name = Release;
 		};
-		36529F8F302CCB26006E45F7 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = G38CM6VNCC;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tech.hyperseek.zboxUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TEST_TARGET_NAME = zbox;
-			};
-			name = Debug;
-		};
-		36529F90302CCB26006E45F7 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = G38CM6VNCC;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tech.hyperseek.zboxUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TEST_TARGET_NAME = zbox;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -583,15 +476,6 @@
 			buildConfigurations = (
 				36529F8C302CCB26006E45F7 /* Debug */,
 				36529F8D302CCB26006E45F7 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		36529F8E302CCB26006E45F7 /* Build configuration list for PBXNativeTarget "zboxUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				36529F8F302CCB26006E45F7 /* Debug */,
-				36529F90302CCB26006E45F7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

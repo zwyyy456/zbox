@@ -135,13 +135,13 @@ struct TextLookupPanelView: View {
             return
         }
         if var configuration = translationConfiguration {
-            configuration.source = request.sourceLanguage
+            configuration.source = nil
             configuration.target = request.targetLanguage
             configuration.invalidate()
             translationConfiguration = configuration
         } else {
             translationConfiguration = .init(
-                source: request.sourceLanguage,
+                source: nil,
                 target: request.targetLanguage
             )
         }
@@ -169,8 +169,6 @@ struct TextLookupPanelView: View {
             return .success(
                 TranslationResult(
                     requestID: request.id,
-                    sourceLanguage: response.sourceLanguage,
-                    targetLanguage: response.targetLanguage,
                     translatedText: response.targetText
                 )
             )

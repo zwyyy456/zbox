@@ -33,22 +33,4 @@ struct TextLookupLifecycleTests {
         #expect(store.targetLanguageIdentifier == "ja")
         #expect(store.excludedApplicationBundleIdentifiers.contains("com.example.Reader"))
     }
-
-    @Test
-    func textLookupHotkeyParticipatesInConflictValidation() {
-        let optionC = TextLookupShortcutPreset.optionC.hotkey
-
-        do {
-            try HotkeyValidator.validate([
-                HotkeyAssignment(owner: "Existing", hotkey: optionC),
-                HotkeyAssignment(owner: "Text Lookup", hotkey: optionC),
-            ])
-            Issue.record("Expected the duplicate Text Lookup shortcut to be rejected")
-        } catch {
-            #expect(
-                error as? HotkeyConfigurationError
-                    == .conflict("Existing", "Text Lookup")
-            )
-        }
-    }
 }

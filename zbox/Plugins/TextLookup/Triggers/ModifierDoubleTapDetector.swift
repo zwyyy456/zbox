@@ -1,18 +1,15 @@
 import Foundation
 
 nonisolated struct ModifierDoubleTapDetector: Sendable {
+    private static let maximumInterval: TimeInterval = 0.35
+
     private struct CompletedTap: Sendable {
         let keyCode: UInt16
         let timestamp: TimeInterval
     }
 
-    private let maximumInterval: TimeInterval
     private var pressedKeyCode: UInt16?
     private var lastTap: CompletedTap?
-
-    init(maximumInterval: TimeInterval = 0.35) {
-        self.maximumInterval = maximumInterval
-    }
 
     mutating func flagsChanged(
         keyCode: UInt16,
@@ -42,7 +39,7 @@ nonisolated struct ModifierDoubleTapDetector: Sendable {
 
         if let lastTap,
            lastTap.keyCode == keyCode,
-           timestamp - lastTap.timestamp <= maximumInterval {
+           timestamp - lastTap.timestamp <= Self.maximumInterval {
             self.lastTap = nil
             return true
         }

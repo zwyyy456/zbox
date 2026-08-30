@@ -73,7 +73,7 @@ struct TextLookupCaptureTests {
 
     @Test
     func detectsOnlyCompleteUninterruptedDoubleOptionTap() {
-        var detector = ModifierDoubleTapDetector(maximumInterval: 0.35)
+        var detector = ModifierDoubleTapDetector()
 
         let firstDown = detector.flagsChanged(keyCode: 58, optionIsDown: true, hasOtherModifiers: false, timestamp: 1.0)
         let firstUp = detector.flagsChanged(keyCode: 58, optionIsDown: false, hasOtherModifiers: false, timestamp: 1.05)

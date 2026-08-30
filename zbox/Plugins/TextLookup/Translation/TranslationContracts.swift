@@ -1,15 +1,12 @@
 import Foundation
 
-nonisolated struct TranslationRequest: Equatable, Sendable {
+nonisolated struct TranslationRequest: Sendable {
     let id: UUID
     let text: String
-    let sourceLanguage: Locale.Language?
     let targetLanguage: Locale.Language
 }
 
-nonisolated struct TranslationResult: Equatable, Sendable {
+nonisolated struct TranslationResult: Sendable {
     let requestID: UUID
-    let sourceLanguage: Locale.Language
-    let targetLanguage: Locale.Language
     let translatedText: String
 }
