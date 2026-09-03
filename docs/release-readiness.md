@@ -1,8 +1,10 @@
 # zbox 发布与真实系统验收参考
 
-- 权威性：Reference
-- 加载时机：Developer ID 分发、系统能力或 Text Lookup 真实环境验收时按需读取
+- 权威性：Operational Checklist
+- 加载方式：Developer ID 分发、系统能力或 Text Lookup 真实环境验收时按需读取
 - 状态：Active
+- 最后更新：2026-08-29
+- 职责：汇总普通构建与单元测试无法证明的发布候选和真实系统检查，不定义产品或工程规则
 
 本文只保留无法由普通构建和单元测试证明的当前验收事项。已完成实施过程和历史证据位于 `docs/archive/`。
 

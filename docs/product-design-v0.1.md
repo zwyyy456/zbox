@@ -1,10 +1,12 @@
 # zbox 产品设计文档 v0.1
 
+> 权威性：Normative Product Baseline
+> 加载方式：涉及核心产品范围、命令中心行为或 M1 验收边界时读取
 > 状态：Active（当前产品基线）
 > 初始日期：2026-08-13
-> 最后校正：2026-08-26
-> 适用范围：M1 核心命令中心、Text Lookup 内置独立扩展 v0.1
-> 文档职责：定义当前产品范围、用户行为与验收边界；工程边界见根目录 `engineering-guidelines.md`。
+> 最后校正：2026-09-03
+> 适用范围：M1 核心命令中心
+> 文档职责：定义核心命令中心的当前产品范围、用户行为与验收边界；Text Lookup 产品约定见 `product/text-lookup.md`，工程边界见根目录 `engineering-guidelines.md`。
 
 ## 1. 产品定义
 
@@ -114,7 +116,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zbox 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
 | FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zbox 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
-| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts、Window Management 三个核心 Tab，并将 Text Lookup 作为内置独立扩展的独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，扩展设置由本文件第 12 节定义 |
+| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts、Window Management 三个核心 Tab，并将 Text Lookup 作为内置独立扩展的独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，扩展设置由 `product/text-lookup.md` 定义 |
 | FR-09 | P1 | 英文与简体中文界面 | Settings、菜单栏、Root Search、Command、错误与权限说明使用同一 String Catalog 真源，不混用未本地化硬编码文案 |
 
 ### 7.1 搜索行为
@@ -147,7 +149,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 
 ## 8. MVP 范围
 
-本节只界定 M1 核心命令中心。Text Lookup 不并入 M1 完成定义；它作为内置独立扩展单独实施和验收。
+本节只界定 M1 核心命令中心。Text Lookup 不并入 M1 完成定义；它作为内置独立扩展按 `product/text-lookup.md` 单独实施和验收。
 
 ### 8.1 包含
 
@@ -193,10 +195,10 @@ FR-07 和 FR-08 已进入 M1 实施基线；仍需真实系统或分发环境的
 | 阶段 | 产品目标 |
 | --- | --- |
 | M2 System Toolkit | Text Lookup v0.1 已进入当前产品；后续候选为 Clipboard、Display、Workspace |
-| M3 Internal Extensions | 用第二个真实内置扩展检验共用生命周期和边界 |
+| M3 Internal Extensions | Calculator 作为第二个真实内置扩展，检验共用 Command 入口和独立窗口边界 |
 | M4 Plugin Preview | 再决定独立 Runtime、权限和 SDK |
 
-Text Lookup 作为内置独立扩展已经验证了单 App target 内的功能边界，但不构成动态插件系统。只有真实功能需要复用或隔离时，才引入新的 Package、进程或公共插件接口。
+Text Lookup 与 Calculator 作为内置独立扩展验证单 App target 内的功能边界，但不构成动态插件系统；其当前产品约定分别见 `product/text-lookup.md` 与 `product/calculator.md`。只有真实功能需要复用或隔离时，才引入新的 Package、进程或公共插件接口。
 
 ## 11. M1 已决问题
 
@@ -211,17 +213,3 @@ Text Lookup 作为内置独立扩展已经验证了单 App target 内的功能�
 | OQ-07 | Direct Hotkey 成功静默；失败使用不激活 zbox 的轻量反馈 Panel。 |
 | OQ-08 | 用户快捷键使用真实录制，不保留旧预设枚举兼容；Root Search 无有效持久化值时回落默认快捷键，Command 回落未分配。 |
 | OQ-09 | 用户可见产品名暂统一为小写 `zbox`；后续名称调整通过 String Catalog 统一完成。 |
-
-## 12. Text Lookup v0.1
-
-Text Lookup 是随主 App 静态编译、拥有独立启停生命周期、状态和设置边界的当前内置独立扩展。它不是 macOS App Extension 或动态插件系统，也不建立第三方 Runtime、SDK 或插件市场。
-
-- 用户可通过选区自动触发、选区快捷键确认或显式指针快捷键发起取词；安全输入、排除应用和不支持的文本表面必须明确拒绝。
-- 取词窗口显示当前单词、尽力提取的原句和来源、FlashDict 释义、Apple 本地翻译及义项级建卡状态。悬浮窗口不主动抢走当前应用焦点。
-- FlashDict 必须已经运行。zbox 不自动启动、不轮询，也不建立本地词典 fallback；失败提供可理解的状态和用户主动重试入口。
-- 建卡以用户选择的义项为准，并携带当次冻结的原句与来源 URL。只有 FlashDict 返回实际成功后才能显示“已添加”。
-- Apple Translation 只处理当前原句；切换词条、原句或目标语言后，旧结果不能覆盖当前会话。首版不提供第三方翻译服务入口。
-- 捕获的单词、原句和来源只存在于当前会话，除非用户明确创建闪卡；不建立取词历史，不上传内容，也不把正文写入普通日志。
-- Accessibility 被拒绝时提供系统设置入口；兼容复制只在用户启用后作为单次受控操作，并避免覆盖用户随后产生的剪贴板内容。
-
-真实应用兼容、Apple 语言模型、Developer ID 分发、外接显示器和真实建卡验收按需读取 `release-readiness.md`。

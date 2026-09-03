@@ -1,9 +1,14 @@
 # zbox 工程规范
 
+- 权威性：Normative
+- 加载方式：涉及 Command、快捷键、窗口、Text Lookup、平台、安全或并发边界时读取
+- 状态：Active
+- 职责：定义 zbox 专用的长期工程与架构边界；产品行为由对应产品约定定义
+
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings` 与 `Plugins/TextLookup` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins/TextLookup` 是现有内置独立扩展的实现目录，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/TextLookup` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -23,6 +28,7 @@
 
 ## Text Lookup 边界
 
+- Text Lookup 的当前产品范围与用户行为由 `docs/product/text-lookup.md` 定义；本节只定义其实现 ownership、平台 seam、并发和数据生命周期。
 - Text Lookup 是随主 App 静态编译的内置独立扩展，不是 macOS App Extension 或动态插件系统。`TextLookupPlugin` 拥有取词生命周期和当前会话；`TextLookupSessionModel` 拥有悬浮窗口可观察状态。`AppEnvironment` 只负责组合、启停和共享平台能力，不吸收完整取词流程。
 - Accessibility 捕获、兼容复制、FlashDict IntegrationKit 和 Apple Translation 是独立平台边界。业务层只消费稳定值和明确结果，不持有 AX、pasteboard、跨进程或 Translation session 对象。
 - 每次捕获先建立新的 session/request identity，并取消旧捕获、查词、翻译和建卡任务；成功与失败结果都必须匹配当前 identity 后才能提交。
@@ -31,9 +37,15 @@
 - 捕获文本、原句、来源 URL、释义和翻译不持久化，也不进入普通日志。停用功能或关闭会话时释放相关内存状态。
 - NSPanel 定位以锚点、鼠标位置和当前屏幕可用区域为输入；全屏、Space、多显示器和不同应用兼容性属于真实系统验证边界。
 
+## Calculator 边界
+
+- Calculator 的当前产品范围与数值语义由 `docs/product/calculator.md` 定义；`CalculatorPlugin` 拥有窗口和会话内计算状态，`AppEnvironment` 只负责组合并把打开入口注册到核心 Command Registry。
+- 运算引擎保持无 UI、AppKit 或持久化依赖的值语义；窗口与可观察状态保持 Main Actor 隔离。
+- Calculator 不增加后台生命周期、权限、网络、动态插件 Runtime 或公共 SDK。只有出现真实的新数值需求时才扩展运算类型和表示范围。
+
 ## 验证边界
 
-- Command Registry、SearchEngine、WindowGeometry、Hotkey 配置以及 Text Lookup 的纯文本、会话和生命周期规则使用 Swift Testing 保护。
+- Command Registry、SearchEngine、WindowGeometry、Hotkey 配置、Calculator 运算语义以及 Text Lookup 的纯文本、会话和生命周期规则使用 Swift Testing 保护。
 - Carbon 快捷键、NSPanel 焦点/Space、Accessibility、登录项、外接显示器、真实应用启动和 Text Lookup 应用兼容性以构建、运行和人工矩阵验证。
 - Text Lookup 的系统兼容、翻译模型、FlashDict 跨进程与真实建卡按需使用 `docs/release-readiness.md`。
 - 文档专属改动只做引用、重复、冲突和 diff 检查，不要求构建。
