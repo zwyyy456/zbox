@@ -23,6 +23,8 @@ final class AppEnvironment {
 
     @ObservationIgnored
     let textLookupPlugin: TextLookupPlugin
+    @ObservationIgnored
+    let calculatorPlugin = CalculatorPlugin()
 
     private var commandRegistry = CommandRegistry()
     private var applicationURLsByCommandID: [CommandID: URL] = [:]
@@ -125,6 +127,7 @@ final class AppEnvironment {
         rootSearchSessionID = nil
         commandFeedbackPanelController.hide()
         textLookupPlugin.stop()
+        calculatorPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -162,6 +165,7 @@ final class AppEnvironment {
             try SettingsCommands.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .general)
             }
+            try calculatorPlugin.register(in: registry)
             for application in applications {
                 try ApplicationCommands.register(
                     application,
@@ -288,6 +292,7 @@ final class AppEnvironment {
     func systemImage(for commandID: CommandID) -> String? {
         WindowCommands.systemImage(for: commandID)
             ?? SettingsCommands.systemImage(for: commandID)
+            ?? calculatorPlugin.systemImage(for: commandID)
     }
 
     func commandHotkey(for commandID: CommandID) -> Hotkey? {
