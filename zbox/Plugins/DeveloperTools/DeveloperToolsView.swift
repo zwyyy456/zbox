@@ -14,6 +14,7 @@ struct DeveloperToolsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text(plugin.selection.title).font(.title2)
                 switch plugin.selection {
+                case .json: DeveloperTextToolView(session: plugin.jsonSession, copy: plugin.copy).id(plugin.selection)
                 case .uuid: uuidView
                 case .url: DeveloperTextToolView(session: plugin.urlSession, copy: plugin.copy).id(plugin.selection)
                 case .base64: DeveloperTextToolView(session: plugin.base64Session, copy: plugin.copy).id(plugin.selection)

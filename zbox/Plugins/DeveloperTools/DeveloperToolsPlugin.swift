@@ -4,11 +4,12 @@ import SwiftUI
 @Observable
 final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     enum Tool: String, CaseIterable, Identifiable {
-        case uuid, url, base64
+        case json, uuid, url, base64
 
         var id: String { rawValue }
         var title: String {
             switch self {
+            case .json: String(localized: "JSON Format / Validate")
             case .uuid: String(localized: "UUID Generator")
             case .url: String(localized: "URL Encode / Decode")
             case .base64: String(localized: "Base64 Encode / Decode")
@@ -16,6 +17,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
         }
         var icon: String {
             switch self {
+            case .json: "curlybraces"
             case .uuid: "number"
             case .url: "link"
             case .base64: "textformat.abc"
@@ -30,7 +32,8 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
             + Tool.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
     }
 
-    var selection: Tool = .uuid
+    var selection: Tool = .json
+    var jsonSession = DeveloperTextSession(kind: .json)
     var urlSession = DeveloperTextSession(kind: .url)
     var base64Session = DeveloperTextSession(kind: .base64)
     var uuidCount = 1
@@ -84,6 +87,8 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         uuids = []
         copyError = nil
+        jsonSession.invalidate()
+        jsonSession = DeveloperTextSession(kind: .json)
         urlSession.invalidate()
         base64Session.invalidate()
         urlSession = DeveloperTextSession(kind: .url)

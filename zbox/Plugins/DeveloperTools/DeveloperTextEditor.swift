@@ -5,6 +5,7 @@ struct DeveloperTextEditor: NSViewRepresentable {
     @Binding var text: String
     var isEditable = true
     var label: String
+    var selectionRequest: (id: UUID, offset: Int)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -31,6 +32,14 @@ struct DeveloperTextEditor: NSViewRepresentable {
     func updateNSView(_ view: NSScrollView, context: Context) {
         context.coordinator.parent = self
         let editor = view.documentView as! NSTextView
+        if let request = selectionRequest, request.id != context.coordinator.selectionID {
+            context.coordinator.selectionID = request.id
+            let offset = min(request.offset, editor.string.utf16.count)
+            let range = NSRange(location: offset, length: 0)
+            editor.setSelectedRange(range)
+            editor.scrollRangeToVisible(range)
+            editor.window?.makeFirstResponder(editor)
+        }
         if editor.string != text {
             editor.string = text
             editor.undoManager?.removeAllActions()
@@ -38,6 +47,7 @@ struct DeveloperTextEditor: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
+        var selectionID: UUID?
         var parent: DeveloperTextEditor
         init(_ parent: DeveloperTextEditor) { self.parent = parent }
         func textDidChange(_ notification: Notification) {
