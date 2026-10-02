@@ -8,6 +8,7 @@ final class DisplayPlugin {
     private let defaults: UserDefaults
     private let controller = DisplayController()
     let change = DisplayChange(controller: DisplayController())
+    let presets: DisplayPresetStore
     private(set) var isEnabled: Bool
     private(set) var displays: [DisplayInfo] = []
     var statusMessage: String?
@@ -15,7 +16,19 @@ final class DisplayPlugin {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        presets = DisplayPresetStore(defaults: defaults)
         isEnabled = defaults.bool(forKey: "display.enabled")
+    }
+
+    var shortcutTargets: [CommandShortcutTarget] {
+        presets.presets.map { CommandShortcutTarget(id: $0.commandID, title: String(localized: "Apply Display Preset: \($0.name)")) }
+    }
+
+    func snapshot() -> DisplayPreset {
+        refresh()
+        return DisplayPreset(name: "", selections: displays.map {
+            DisplaySelection(displayID: $0.id, displayName: $0.name, mode: $0.current)
+        })
     }
 
     func start() {
@@ -53,6 +66,17 @@ final class DisplayPlugin {
     func refresh() { displays = controller.read() }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
+        for preset in presets.presets {
+            try registry.register(CommandDescriptor(id: preset.commandID,
+                title: String(localized: "Apply Display Preset: \(preset.name)"),
+                subtitle: preset.selections.map(\.displayName).joined(separator: ", "),
+                keywords: ["display", "preset", "显示器", "预设", preset.name])) { [weak self] _ in
+                try openSettings()
+                guard let self, isEnabled else { return }
+                try change.begin(preset.selections)
+                refresh()
+            }
+        }
         try registry.register(CommandDescriptor(id: Self.manageCommandID, title: String(localized: "Manage Displays"),
             subtitle: nil, keywords: ["display", "resolution", "HiDPI", "显示器", "分辨率"])) { _ in try openSettings() }
     }

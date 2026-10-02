@@ -54,7 +54,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -92,7 +92,8 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
-        displayPlugin = DisplayPlugin(defaults: defaults)
+        let displayPlugin = DisplayPlugin(defaults: defaults)
+        self.displayPlugin = displayPlugin
         let workspacePlugin = WorkspacePlugin(defaults: defaults)
         self.workspacePlugin = workspacePlugin
         screenshotPlugin = ScreenshotPlugin(defaults: defaults, clipboardCoordinator: clipboardCoordinator)
@@ -123,7 +124,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -437,6 +438,37 @@ final class AppEnvironment {
 
     func setDisplayEnabled(_ enabled: Bool) {
         displayPlugin.setEnabled(enabled)
+        if !displayPlugin.isEnabled {
+            for target in displayPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
+            return
+        }
+        do { try applyHotkeyRegistrations() }
+        catch {
+            displayPlugin.setEnabled(false)
+            displayPlugin.statusMessage = error.localizedDescription
+        }
+    }
+
+    func applyDisplayPreset(_ preset: DisplayPreset) { executeDirectCommand(preset.commandID) }
+
+    func saveDisplayPreset(_ preset: DisplayPreset) -> Bool {
+        do {
+            try displayPlugin.presets.save(preset)
+            reloadApplications()
+            displayPlugin.statusMessage = nil
+            return true
+        } catch { displayPlugin.statusMessage = error.localizedDescription; return false }
+    }
+
+    func deleteDisplayPreset(_ preset: DisplayPreset) {
+        do {
+            try displayPlugin.presets.delete(preset.id)
+            hotkeyRegistrar.unregister(id: preset.commandID.rawValue)
+            commandHotkeys[preset.commandID] = nil
+            commandHotkeyErrors[preset.commandID] = nil
+            hotkeyStore.setCommandHotkey(nil, for: preset.commandID)
+            reloadApplications()
+        } catch { displayPlugin.statusMessage = error.localizedDescription }
     }
 
     func setWorkspaceEnabled(_ enabled: Bool) {
@@ -619,6 +651,15 @@ final class AppEnvironment {
                 hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
             })
+        }
+        if displayPlugin.isEnabled {
+            for target in displayPlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         if workspacePlugin.isEnabled {
             for target in workspacePlugin.shortcutTargets {

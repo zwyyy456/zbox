@@ -9,6 +9,9 @@ nonisolated struct DisplayModeSpec: Codable, Hashable, Sendable {
     let refreshMillihertz: Int
 
     var isHiDPI: Bool { pixelWidth > width && pixelHeight > height }
+    var resolution: DisplayModeSpec {
+        DisplayModeSpec(width: width, height: height, pixelWidth: pixelWidth, pixelHeight: pixelHeight, refreshMillihertz: 0)
+    }
     var resolutionLabel: String { "\(width) × \(height)" }
     var refreshLabel: String {
         refreshMillihertz == 0 ? String(localized: "System managed")
