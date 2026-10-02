@@ -11,7 +11,7 @@ final class TextLookupPlugin {
     private let hotkeyRegistrar: any HotkeyRegistering
     private let capturer: any TextCapturing
     private let isAccessibilityTrusted: @MainActor () -> Bool
-    private let clipboardCapturer = ClipboardSelectionCapturer()
+    private let clipboardCapturer: ClipboardSelectionCapturer
     private let triggerMonitor = TextLookupTriggerMonitor()
     private let session: TextLookupSessionModel
 
@@ -32,10 +32,12 @@ final class TextLookupPlugin {
 
     init(
         settings: TextLookupSettingsStore,
+        clipboardCoordinator: ClipboardAccessCoordinator,
         hotkeyRegistrar: any HotkeyRegistering,
         capturer: any TextCapturing = AccessibilityTextCapturer(),
         isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {
+        clipboardCapturer = ClipboardSelectionCapturer(coordinator: clipboardCoordinator)
         self.settings = settings
         self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer

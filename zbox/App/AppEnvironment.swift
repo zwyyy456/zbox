@@ -8,6 +8,7 @@ final class AppEnvironment {
         static let showApplicationPaths = "search.show-application-paths"
     }
 
+    private let clipboardCoordinator: ClipboardAccessCoordinator
     private let applicationCatalog = ApplicationCatalog()
     private let applicationLauncher = ApplicationLauncher()
     private let applicationIconProvider = ApplicationIconProvider()
@@ -76,11 +77,14 @@ final class AppEnvironment {
         defaults: UserDefaults = .standard,
         hotkeyRegistrar: any HotkeyRegistering = GlobalHotkeyRegistrar()
     ) {
+        let clipboardCoordinator = ClipboardAccessCoordinator()
+        self.clipboardCoordinator = clipboardCoordinator
         let accessibilityAuthorization = AccessibilityAuthorization()
         let hotkeyStore = HotkeyConfigurationStore(defaults: defaults)
         let textLookupSettings = TextLookupSettingsStore(defaults: defaults)
         let textLookupPlugin = TextLookupPlugin(
             settings: textLookupSettings,
+            clipboardCoordinator: clipboardCoordinator,
             hotkeyRegistrar: hotkeyRegistrar,
             isAccessibilityTrusted: { accessibilityAuthorization.isTrusted }
         )

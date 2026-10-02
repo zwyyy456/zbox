@@ -3,11 +3,17 @@ import CoreGraphics
 
 @MainActor
 final class ClipboardSelectionCapturer {
+    private let coordinator: ClipboardAccessCoordinator
+
+    init(coordinator: ClipboardAccessCoordinator) { self.coordinator = coordinator }
+
     private struct Snapshot {
         let items: [[NSPasteboard.PasteboardType: Data]]
     }
 
     func capture(_ request: TextCaptureRequest) async throws -> TextLookupCapture {
+        coordinator.beginTemporaryAccess()
+        defer { coordinator.endTemporaryAccess() }
         let pasteboard = NSPasteboard.general
         let snapshot = snapshot(of: pasteboard)
         let initialChangeCount = pasteboard.changeCount
