@@ -102,6 +102,8 @@ final class WorkspacePlugin {
 
     func prepareCapture(replacing: WorkspaceLayout? = nil) throws {
         guard isEnabled else { throw WorkspaceError.disabled }
+        guard !isRestoring else { throw WorkspaceRestoreError.busy }
+        statusMessage = nil
         capture = try WorkspaceWindowAccess.capture(replacing: replacing)
     }
 
@@ -113,7 +115,10 @@ final class WorkspacePlugin {
                 keywords: ["workspace", "restore", "工作区", "恢复", layout.name])) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
-                if try prepareRestore(layout) { try openSettings() }
+                if try prepareRestore(layout) {
+                    do { try openSettings() }
+                    catch { displayMapping = nil; throw error }
+                }
             }
         }
         try registry.register(CommandDescriptor(id: Self.captureCommandID,
@@ -122,7 +127,8 @@ final class WorkspacePlugin {
             guard let self else { return }
             guard isEnabled else { try openSettings(); return }
             try prepareCapture()
-            try openSettings()
+            do { try openSettings() }
+            catch { capture = nil; throw error }
         }
         try registry.register(CommandDescriptor(id: Self.manageCommandID,
             title: String(localized: "Manage Workspaces"), subtitle: nil,

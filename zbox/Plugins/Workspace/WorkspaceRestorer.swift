@@ -22,6 +22,7 @@ struct WorkspaceRestorer {
                  report: (WorkspaceRestoreResult) -> Void) async throws {
         var successful = Set<String>()
         for entry in layout.entries {
+            await Task.yield()
             try Task.checkCancellation()
             guard AXIsProcessTrusted() else { throw AccessibilityWindowError.permissionRequired }
             let targetID = mapping[entry.displayID] ?? entry.displayID
@@ -92,6 +93,7 @@ struct WorkspaceRestorer {
             if let value = AccessibilityWindows.attribute(kAXMainWindowAttribute, of: app),
                CFGetTypeID(value) == AXUIElementGetTypeID() {
                 let main = unsafeDowncast(value, to: AXUIElement.self)
+                AXUIElementSetMessagingTimeout(main, 1)
                 if WorkspaceWindowAccess.exclusion(of: main, pid: application.processIdentifier) == nil { return main }
             }
             let windows = WorkspaceWindowAccess.windows(for: application.processIdentifier)

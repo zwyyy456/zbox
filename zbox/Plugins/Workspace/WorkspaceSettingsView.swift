@@ -17,7 +17,7 @@ struct WorkspaceSettingsView: View {
                     Button("Open Accessibility Settings", action: environment.openAccessibilitySettings)
                 }
                 if let message = plugin.statusMessage ?? plugin.store.errorMessage {
-                    SettingsErrorView(message: message)
+                    Text(message).font(.caption).foregroundStyle(.secondary)
                 }
             }
             if plugin.isRestoring || !plugin.results.isEmpty {
@@ -39,7 +39,7 @@ struct WorkspaceSettingsView: View {
             }
             Section("Workspaces") {
                 Button("Save Current Workspace") { capture() }
-                    .disabled(!plugin.isEnabled)
+                    .disabled(!plugin.isEnabled || plugin.isRestoring)
                 if plugin.store.layouts.isEmpty {
                     Text("No saved workspaces.").foregroundStyle(.secondary)
                 }
@@ -54,13 +54,15 @@ struct WorkspaceSettingsView: View {
                         Button("Restore") { environment.restoreWorkspace(layout) }
                             .disabled(!plugin.isEnabled || plugin.isRestoring)
                         Menu {
-                            Button("Edit") { editing = layout }
+                            Button("Edit") { plugin.statusMessage = nil; editing = layout }
                             Button("Update from Current Layout") { capture(replacing: layout) }
-                                .disabled(!plugin.isEnabled)
+                                .disabled(!plugin.isEnabled || plugin.isRestoring)
                         } label: { Image(systemName: "ellipsis") }
                         .menuStyle(.borderlessButton).fixedSize()
                         .accessibilityLabel("Workspace Actions")
+                        .disabled(plugin.isRestoring)
                         Button("Delete", role: .destructive) { environment.deleteWorkspace(layout) }
+                            .disabled(plugin.isRestoring)
                     }
                 }
             }
@@ -72,10 +74,10 @@ struct WorkspaceSettingsView: View {
             }
         }
         .sheet(item: $plugin.capture) { snapshot in
-            WorkspaceCaptureView(snapshot: snapshot) { layout in environment.saveWorkspace(layout) }
+            WorkspaceCaptureView(snapshot: snapshot, errorMessage: plugin.statusMessage) { layout in environment.saveWorkspace(layout) }
         }
         .sheet(item: $editing) { layout in
-            WorkspaceEditor(layout: layout) { updated in
+            WorkspaceEditor(layout: layout, errorMessage: plugin.statusMessage) { updated in
                 environment.saveWorkspace(updated)
             }
         }
@@ -89,12 +91,14 @@ struct WorkspaceSettingsView: View {
 private struct WorkspaceEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State var layout: WorkspaceLayout
-    let save: (WorkspaceLayout) -> Void
+    let errorMessage: String?
+    let save: (WorkspaceLayout) -> Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Edit Workspace").font(.headline)
             TextField("Name", text: $layout.name)
+            if let errorMessage { SettingsErrorView(message: errorMessage) }
             Text("Each application restores its current main window, not a specific document.")
                 .font(.caption).foregroundStyle(.secondary)
             List {
@@ -120,8 +124,7 @@ private struct WorkspaceEditor: View {
                 Button("Cancel", role: .cancel) { dismiss() }
                 Button("Save") {
                     layout.name = layout.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    save(layout)
-                    dismiss()
+                    if save(layout) { dismiss() }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(layout.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || layout.entries.isEmpty)
@@ -134,12 +137,14 @@ private struct WorkspaceEditor: View {
 private struct WorkspaceCaptureView: View {
     @Environment(\.dismiss) private var dismiss
     let snapshot: WorkspaceCapture
-    let save: (WorkspaceLayout) -> Void
+    let errorMessage: String?
+    let save: (WorkspaceLayout) -> Bool
     @State private var name: String
     @State private var selection: [String: UUID]
     @State private var foreground: String?
 
-    init(snapshot: WorkspaceCapture, save: @escaping (WorkspaceLayout) -> Void) {
+    init(snapshot: WorkspaceCapture, errorMessage: String?, save: @escaping (WorkspaceLayout) -> Bool) {
+        self.errorMessage = errorMessage
         self.snapshot = snapshot
         self.save = save
         _name = State(initialValue: snapshot.replacing?.name ?? "")
@@ -148,7 +153,8 @@ private struct WorkspaceCaptureView: View {
             guard existing?.contains(app.bundleID) ?? true, let first = app.windows.first else { return nil }
             return (app.bundleID, first.id)
         }))
-        _foreground = State(initialValue: snapshot.replacing?.foregroundBundleID)
+        let foreground = snapshot.replacing?.foregroundBundleID
+        _foreground = State(initialValue: snapshot.applications.contains { $0.id == foreground } ? foreground : nil)
     }
 
     private var entries: [WorkspaceEntry] {
@@ -159,6 +165,7 @@ private struct WorkspaceCaptureView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Save Current Workspace").font(.headline)
             TextField("Name", text: $name)
+            if let errorMessage { SettingsErrorView(message: errorMessage) }
             Text("Each application restores its current main window, not a specific document.")
                 .font(.caption).foregroundStyle(.secondary)
             List {
@@ -171,7 +178,7 @@ private struct WorkspaceCaptureView: View {
                         if selection[app.id] != nil {
                             Picker("Layout window", selection: Binding(get: { selection[app.id] }, set: { selection[app.id] = $0 })) {
                                 ForEach(app.windows) { window in
-                                    Text("\(window.title) — \(window.entry.displayName)").tag(Optional(window.id))
+                                    Text(verbatim: "\(window.title) — \(window.entry.displayName)").tag(Optional(window.id))
                                 }
                             }
                         }
@@ -195,8 +202,7 @@ private struct WorkspaceCaptureView: View {
                     let layout = WorkspaceLayout(id: snapshot.replacing?.id ?? UUID(),
                         name: name.trimmingCharacters(in: .whitespacesAndNewlines), entries: entries,
                         foregroundBundleID: entries.contains { $0.bundleID == foreground } ? foreground : nil)
-                    save(layout)
-                    dismiss()
+                    if save(layout) { dismiss() }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entries.isEmpty)
@@ -222,7 +228,7 @@ private struct WorkspaceDisplayMappingView: View {
                     Picker(entry.displayName, selection: Binding(get: { mapping[entry.displayID] }, set: { mapping[entry.displayID] = $0 })) {
                         Text("Choose…").tag(String?.none)
                         Text("Skip applications").tag(Optional(""))
-                        ForEach(request.displays) { display in
+                        ForEach(request.displays.filter { WorkspaceDisplay.matching($0.id, in: request.displays) != nil }) { display in
                             Text(display.name).tag(Optional(display.id))
                         }
                     }

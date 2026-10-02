@@ -21,6 +21,25 @@ struct WorkspaceCommandTests {
         #expect(plugin.shortcutTargets.map(\.id) == [layout.commandID])
     }
 
+    @Test func cancelledRestoreDoesNotAccessApplicationsOrPublishResults() async throws {
+        let entry = WorkspaceEntry(bundleID: "test.workspace.nonexistent", applicationName: "Test",
+            applicationURL: URL(filePath: "/Applications/WorkspaceTestDoesNotExist.app"),
+            displayID: "display", displayName: "Display", frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+        var reported = false
+        let task = Task { @MainActor in
+            try await WorkspaceRestorer().restore(WorkspaceLayout(name: "Test", entries: [entry]), mapping: [:]) { _ in
+                reported = true
+            }
+        }
+        task.cancel()
+        do {
+            try await task.value
+            Issue.record("Expected cancellation before platform access")
+        } catch is CancellationError {
+            #expect(!reported)
+        }
+    }
+
     @Test func displayMatchingRequiresOneExactIdentity() {
         let first = WorkspaceDisplay(id: "first", name: "Monitor", frame: .zero, visibleFrame: .zero)
         let second = WorkspaceDisplay(id: "second", name: "Monitor", frame: .zero, visibleFrame: .zero)

@@ -47,7 +47,9 @@ enum WorkspaceWindowAccess {
     static func windows(for pid: pid_t) -> [AXUIElement] {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 1)
-        return AccessibilityWindows.attribute(kAXWindowsAttribute, of: app) as? [AXUIElement] ?? []
+        let windows = AccessibilityWindows.attribute(kAXWindowsAttribute, of: app) as? [AXUIElement] ?? []
+        for window in windows { AXUIElementSetMessagingTimeout(window, 1) }
+        return windows
     }
 
     static func exclusion(of window: AXUIElement, pid: pid_t) -> String? {
@@ -86,17 +88,25 @@ enum WorkspaceWindowAccess {
         guard let primaryMaxY = NSScreen.screens.first?.frame.maxY else { throw AccessibilityWindowError.noScreen }
         var applications: [WorkspaceCaptureApplication] = []
         var notices: [String] = []
-        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+        let running = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
+        for app in running {
             guard app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
                   let bundleID = app.bundleIdentifier, let url = app.bundleURL else { continue }
             let name = app.localizedName ?? bundleID
+            guard running.filter({ $0.bundleIdentifier == bundleID }).count == 1 else {
+                notices.append("\(name): \(WorkspaceRestoreError.ambiguousApplication.localizedDescription)")
+                continue
+            }
             var candidates: [WorkspaceCaptureWindow] = []
             for window in windows(for: app.processIdentifier) {
                 if let reason = exclusion(of: window, pid: app.processIdentifier) {
                     notices.append("\(name): \(reason)")
                     continue
                 }
-                let axFrame = try AccessibilityWindows.frame(of: window)
+                guard let axFrame = try? AccessibilityWindows.frame(of: window) else {
+                    notices.append("\(name): \(String(localized: "Window frame is unavailable"))")
+                    continue
+                }
                 let frame = WindowGeometry.cocoaRect(fromAXRect: axFrame, primaryScreenMaxY: primaryMaxY)
                 guard let index = WindowGeometry.screenIndex(containing: frame, screenFrames: displays.map(\.frame)) else { continue }
                 let display = displays[index]
@@ -110,6 +120,7 @@ enum WorkspaceWindowAccess {
                 applications.append(WorkspaceCaptureApplication(bundleID: bundleID, name: name, windows: candidates))
             }
         }
+        guard AXIsProcessTrusted() else { throw AccessibilityWindowError.permissionRequired }
         return WorkspaceCapture(replacing: replacing,
             applications: applications.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending },
             notices: Array(Set(notices)).sorted())

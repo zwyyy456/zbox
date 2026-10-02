@@ -30,6 +30,7 @@ final class AppEnvironment {
     let screenshotPlugin: ScreenshotPlugin
     @ObservationIgnored
     let calculatorPlugin = CalculatorPlugin()
+    @ObservationIgnored
     let workspacePlugin: WorkspacePlugin
 
     private var commandRegistry = CommandRegistry()
@@ -449,13 +450,16 @@ final class AppEnvironment {
         executeDirectCommand(layout.commandID)
     }
 
-    func saveWorkspace(_ layout: WorkspaceLayout) {
+    func saveWorkspace(_ layout: WorkspaceLayout) -> Bool {
         do {
             try workspacePlugin.store.save(layout)
             reloadApplications()
-            try applyHotkeyRegistrations()
             workspacePlugin.statusMessage = nil
-        } catch { workspacePlugin.statusMessage = error.localizedDescription }
+            return true
+        } catch {
+            workspacePlugin.statusMessage = error.localizedDescription
+            return false
+        }
     }
 
     func deleteWorkspace(_ layout: WorkspaceLayout) {
