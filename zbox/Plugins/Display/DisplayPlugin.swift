@@ -7,6 +7,7 @@ final class DisplayPlugin {
     static let manageCommandID = CommandID("display.manage")
     private let defaults: UserDefaults
     private let controller = DisplayController()
+    let change = DisplayChange(controller: DisplayController())
     private(set) var isEnabled: Bool
     private(set) var displays: [DisplayInfo] = []
     var statusMessage: String?
@@ -27,14 +28,26 @@ final class DisplayPlugin {
     }
 
     func stop() {
+        change.revert()
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
         screenObserver = nil
     }
 
     func setEnabled(_ enabled: Bool) {
+        if !enabled {
+            change.revert()
+            guard change.pending == nil else { return }
+        }
         isEnabled = enabled
         defaults.set(enabled, forKey: "display.enabled")
         if enabled { start() } else { stop() }
+    }
+
+    func apply(_ selections: [DisplaySelection]) {
+        guard isEnabled else { statusMessage = DisplayError.disabled.localizedDescription; return }
+        do { try change.begin(selections); statusMessage = nil }
+        catch { statusMessage = error.localizedDescription }
+        refresh()
     }
 
     func refresh() { displays = controller.read() }

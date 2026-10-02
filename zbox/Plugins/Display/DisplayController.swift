@@ -47,7 +47,13 @@ nonisolated enum DisplayError: LocalizedError {
 }
 
 @MainActor
-struct DisplayController {
+protocol DisplayConfiguring {
+    func read() -> [DisplayInfo]
+    func apply(_ selections: [DisplaySelection], permanent: Bool) throws
+}
+
+@MainActor
+struct DisplayController: DisplayConfiguring {
     func read() -> [DisplayInfo] {
         NSScreen.screens.compactMap { screen in
             guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
@@ -65,6 +71,42 @@ struct DisplayController {
                     return $0.refreshMillihertz > $1.refreshMillihertz
                 })
         }
+    }
+
+    func apply(_ selections: [DisplaySelection], permanent: Bool) throws {
+        var resolved: [(CGDirectDisplayID, CGDisplayMode)] = []
+        for selection in selections {
+            let matches = NSScreen.screens.compactMap { screen -> CGDirectDisplayID? in
+                guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+                      let uuid = CGDisplayCreateUUIDFromDisplayID(number.uint32Value)?.takeRetainedValue(),
+                      CFUUIDCreateString(nil, uuid) as String == selection.displayID else { return nil }
+                return number.uint32Value
+            }
+            guard matches.count == 1, let displayID = matches.first else { throw DisplayError.unavailable }
+            let current = CGDisplayCopyDisplayMode(displayID)
+            let candidates = modes(for: displayID)
+            let mode = current.flatMap { Self.spec($0) == selection.mode ? $0 : nil }
+                ?? candidates.first { Self.spec($0) == selection.mode }
+            guard let mode else { throw DisplayError.modeUnavailable }
+            resolved.append((displayID, mode))
+        }
+        var configuration: CGDisplayConfigRef?
+        try check(CGBeginDisplayConfiguration(&configuration))
+        guard let configuration else { throw DisplayError.configurationFailed(CGError.failure.rawValue) }
+        do {
+            for (id, mode) in resolved {
+                try check(CGConfigureDisplayWithDisplayMode(configuration, id, mode, nil))
+            }
+        } catch {
+            CGCancelDisplayConfiguration(configuration)
+            throw error
+        }
+        // Complete consumes the configuration even when it reports failure.
+        try check(CGCompleteDisplayConfiguration(configuration, permanent ? .permanently : .forAppOnly))
+    }
+
+    private func check(_ result: CGError) throws {
+        guard result == .success else { throw DisplayError.configurationFailed(result.rawValue) }
     }
 
     private func modes(for id: CGDirectDisplayID) -> [CGDisplayMode] {
