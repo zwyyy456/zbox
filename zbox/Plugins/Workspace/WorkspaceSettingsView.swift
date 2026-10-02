@@ -20,6 +20,23 @@ struct WorkspaceSettingsView: View {
                     SettingsErrorView(message: message)
                 }
             }
+            if plugin.isRestoring || !plugin.results.isEmpty {
+                Section("Latest Restoration") {
+                    if plugin.isRestoring {
+                        HStack {
+                            ProgressView().controlSize(.small)
+                            Text(plugin.restoringName ?? "")
+                            Spacer()
+                            Button("Cancel", action: plugin.cancelRestore)
+                        }
+                    }
+                    ForEach(plugin.results) { result in
+                        LabeledContent(result.applicationName) {
+                            Text(result.message).foregroundStyle(result.succeeded ? Color.secondary : Color.red)
+                        }
+                    }
+                }
+            }
             Section("Workspaces") {
                 Button("Save Current Workspace") { capture() }
                     .disabled(!plugin.isEnabled)
@@ -34,6 +51,8 @@ struct WorkspaceSettingsView: View {
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer()
+                        Button("Restore") { environment.restoreWorkspace(layout) }
+                            .disabled(!plugin.isEnabled || plugin.isRestoring)
                         Menu {
                             Button("Edit") { editing = layout }
                             Button("Update from Current Layout") { capture(replacing: layout) }
@@ -47,6 +66,11 @@ struct WorkspaceSettingsView: View {
             }
         }
         .settingsPane()
+        .sheet(item: $plugin.displayMapping) { request in
+            WorkspaceDisplayMappingView(request: request) { mapping in
+                plugin.restore(request.layout, mapping: mapping)
+            }
+        }
         .sheet(item: $plugin.capture) { snapshot in
             WorkspaceCaptureView(snapshot: snapshot) { layout in environment.saveWorkspace(layout) }
         }
@@ -179,5 +203,39 @@ private struct WorkspaceCaptureView: View {
             }
         }
         .padding(20).frame(width: 560, height: 460)
+    }
+}
+
+private struct WorkspaceDisplayMappingView: View {
+    @Environment(\.dismiss) private var dismiss
+    let request: WorkspaceDisplayMapping
+    let restore: ([String: String]) -> Void
+    @State private var mapping: [String: String] = [:]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Choose Displays").font(.headline)
+            Text("Some saved displays are unavailable. Choose a display or skip their applications for this restoration only.")
+                .foregroundStyle(.secondary)
+            Form {
+                ForEach(request.missing) { entry in
+                    Picker(entry.displayName, selection: Binding(get: { mapping[entry.displayID] }, set: { mapping[entry.displayID] = $0 })) {
+                        Text("Choose…").tag(String?.none)
+                        Text("Skip applications").tag(Optional(""))
+                        ForEach(request.displays) { display in
+                            Text(display.name).tag(Optional(display.id))
+                        }
+                    }
+                }
+            }
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                Button("Restore") { restore(mapping); dismiss() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(request.missing.contains { mapping[$0.displayID] == nil })
+            }
+        }
+        .padding(20).frame(width: 520)
     }
 }

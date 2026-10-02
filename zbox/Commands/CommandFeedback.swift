@@ -4,6 +4,7 @@ nonisolated struct CommandFeedback: Equatable, Sendable {
 }
 
 nonisolated enum CommandRecoveryAction: Equatable, Sendable {
+    case openWorkspaceSettings
     case openAccessibilitySettings
     case openWindowManagementSettings
 }

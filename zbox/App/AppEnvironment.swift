@@ -51,7 +51,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -89,7 +89,8 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
-        workspacePlugin = WorkspacePlugin(defaults: defaults)
+        let workspacePlugin = WorkspacePlugin(defaults: defaults)
+        self.workspacePlugin = workspacePlugin
         screenshotPlugin = ScreenshotPlugin(defaults: defaults, clipboardCoordinator: clipboardCoordinator)
         let accessibilityAuthorization = AccessibilityAuthorization()
         clipboardHistoryPlugin = ClipboardHistoryPlugin(defaults: defaults, coordinator: clipboardCoordinator,
@@ -118,7 +119,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -126,6 +127,13 @@ final class AppEnvironment {
         guard !hasStarted else { return }
         hasStarted = true
 
+        workspacePlugin.onCompletion = { [weak self] message, permissionLost in
+            guard let self else { return }
+            if permissionLost { reconcileAccessibilityDependentFeatures() }
+            if let message {
+                commandFeedbackPanelController.show(CommandFeedback(message: message, recoveryAction: .openWorkspaceSettings))
+            }
+        }
         reconcileAccessibilityDependentFeatures()
         windowManagementPlugin.start()
         clipboardHistoryPlugin.start()
@@ -153,6 +161,7 @@ final class AppEnvironment {
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
         screenshotPlugin.stop()
+        workspacePlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -320,6 +329,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if commandID.rawValue.hasPrefix("workspace.") { return "rectangle.3.group" }
         if ScreenshotPlugin.shortcutTargets.contains(where: { $0.id == commandID }) { return "camera.viewfinder" }
         if commandID == ClipboardHistoryPlugin.commandID { return "clipboard" }
         return WindowCommands.systemImage(for: commandID)
@@ -422,13 +432,28 @@ final class AppEnvironment {
             return
         }
         workspacePlugin.setEnabled(enabled)
-        workspacePlugin.statusMessage = nil
+        if !enabled {
+            for target in workspacePlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
+            return
+        }
+        do {
+            try applyHotkeyRegistrations()
+            workspacePlugin.statusMessage = nil
+        } catch {
+            workspacePlugin.setEnabled(false)
+            workspacePlugin.statusMessage = error.localizedDescription
+        }
+    }
+
+    func restoreWorkspace(_ layout: WorkspaceLayout) {
+        executeDirectCommand(layout.commandID)
     }
 
     func saveWorkspace(_ layout: WorkspaceLayout) {
         do {
             try workspacePlugin.store.save(layout)
             reloadApplications()
+            try applyHotkeyRegistrations()
             workspacePlugin.statusMessage = nil
         } catch { workspacePlugin.statusMessage = error.localizedDescription }
     }
@@ -523,6 +548,9 @@ final class AppEnvironment {
         switch action {
         case .openAccessibilitySettings:
             openAccessibilitySettings()
+        case .openWorkspaceSettings:
+            do { try openSettings(tab: .workspace) }
+            catch { commandFeedback = CommandFeedbackMapper.failure(for: error) }
         case .openWindowManagementSettings:
             do {
                 try openSettings(tab: .windowManagement)
@@ -542,7 +570,7 @@ final class AppEnvironment {
         windowManagementPlugin.reconcileAuthorization()
         guard !isAccessibilityTrusted else { return }
 
-        workspacePlugin.setEnabled(false)
+        setWorkspaceEnabled(false)
         let disabledTextLookup = textLookupPlugin.settings.isEnabled
         if disabledTextLookup {
             textLookupPlugin.settings.setEnabled(false)
@@ -574,6 +602,15 @@ final class AppEnvironment {
                 hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
             })
+        }
+        if workspacePlugin.isEnabled {
+            for target in workspacePlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         if screenshotPlugin.isEnabled {
             for target in ScreenshotPlugin.shortcutTargets {

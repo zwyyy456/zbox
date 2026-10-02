@@ -14,18 +14,15 @@ enum ApplicationLaunchError: LocalizedError {
 @MainActor
 struct ApplicationLauncher {
     func launch(_ application: ApplicationInfo) async throws {
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-
         do {
-            _ = try await NSWorkspace.shared.openApplication(
-                at: application.url,
-                configuration: configuration
-            )
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            throw ApplicationLaunchError.unableToOpen(application.name)
-        }
+            _ = try await open(at: application.url, activates: true)
+        } catch is CancellationError { throw CancellationError() }
+        catch { throw ApplicationLaunchError.unableToOpen(application.name) }
+    }
+
+    func open(at url: URL, activates: Bool) async throws -> NSRunningApplication {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = activates
+        return try await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
     }
 }

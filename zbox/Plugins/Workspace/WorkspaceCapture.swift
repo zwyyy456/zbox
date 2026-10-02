@@ -1,11 +1,16 @@
 import AppKit
 import ApplicationServices
 
-struct WorkspaceDisplay: Identifiable {
+nonisolated struct WorkspaceDisplay: Identifiable {
     let id: String
     let name: String
     let frame: CGRect
     let visibleFrame: CGRect
+
+    static func matching(_ id: String, in displays: [WorkspaceDisplay]) -> WorkspaceDisplay? {
+        let matches = displays.filter { $0.id == id }
+        return matches.count == 1 ? matches.first : nil
+    }
 
     @MainActor static func current() -> [WorkspaceDisplay] {
         NSScreen.screens.compactMap { screen in
