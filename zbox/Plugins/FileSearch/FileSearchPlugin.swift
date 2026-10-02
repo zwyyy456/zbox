@@ -9,6 +9,11 @@ final class FileSearchPlugin {
     let settings = FileSearchSettings()
     private(set) var isEnabled: Bool
     var statusMessage: String?
+    var rootStatus: [UUID: String] = [:]
+    let index = FileIndexStore()
+    private let scanner = FileIndexScanner()
+    @ObservationIgnored private var scanTasks: [UUID: Task<Void, Never>] = [:]
+
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
@@ -19,17 +24,58 @@ final class FileSearchPlugin {
         if !enabled { stop() }
         isEnabled = enabled
         defaults.set(enabled, forKey: "filesearch.enabled")
+        if enabled { start() }
     }
 
-    func stop() {}
+    func start() {
+        guard isEnabled else { return }
+        for root in settings.roots { rescan(root) }
+    }
+
+    func stop() {
+        for task in scanTasks.values { task.cancel() }
+        rootStatus = [:]
+    }
+
+    func rescan(_ root: FileSearchRoot) {
+        guard isEnabled else { return }
+        let previous = scanTasks[root.id]
+        previous?.cancel()
+        rootStatus[root.id] = String(localized: "Building index…")
+        scanTasks[root.id] = Task { [weak self] in
+            await previous?.value
+            guard let self, !Task.isCancelled, isEnabled else { return }
+            do {
+                let count = try await scanner.scan(root, store: index)
+                try Task.checkCancellation()
+                rootStatus[root.id] = String(localized: "Indexed \(count) items")
+            } catch is CancellationError { return }
+            catch {
+                guard !Task.isCancelled else { return }
+                rootStatus[root.id] = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.scanIncomplete.localizedDescription
+            }
+        }
+    }
 
     func save(_ root: FileSearchRoot) {
-        do { try settings.save(root); statusMessage = nil }
+        do { try settings.save(root); statusMessage = nil; rescan(root) }
         catch { statusMessage = error.localizedDescription }
     }
 
     func remove(_ root: FileSearchRoot) {
-        do { try settings.remove(root.id); statusMessage = nil }
+        do {
+            try settings.remove(root.id)
+            let previous = scanTasks[root.id]
+            previous?.cancel()
+            rootStatus[root.id] = nil
+            scanTasks[root.id] = Task { [weak self] in
+                await previous?.value
+                guard let self, !Task.isCancelled else { return }
+                do { try await index.remove(root: root.id) }
+                catch { statusMessage = FileSearchError.storage.localizedDescription }
+            }
+            statusMessage = nil
+        }
         catch { statusMessage = error.localizedDescription }
     }
 

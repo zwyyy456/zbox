@@ -151,6 +151,7 @@ final class AppEnvironment {
         reconcileAccessibilityDependentFeatures()
         windowManagementPlugin.start()
         if displayPlugin.isEnabled { displayPlugin.start() }
+        fileSearchPlugin.start()
         clipboardHistoryPlugin.start()
         reloadApplications()
         isLaunchAtLoginEnabled = launchAtLoginController.isEnabled

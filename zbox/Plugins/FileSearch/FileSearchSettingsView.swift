@@ -11,6 +11,7 @@ struct FileSearchSettingsView: View {
                 ForEach(plugin.settings.roots) { root in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(root.url.path).textSelection(.enabled)
+                        if let status = plugin.rootStatus[root.id] { Text(status).font(.caption).foregroundStyle(.secondary) }
                         Toggle("Include Hidden Files", isOn: Binding(get: { root.includesHidden }, set: {
                             var updated = root; updated.includesHidden = $0; plugin.save(updated)
                         }))
@@ -24,6 +25,7 @@ struct FileSearchSettingsView: View {
                             }
                         }
                         HStack {
+                            Button("Rescan") { plugin.rescan(root) }.disabled(!plugin.isEnabled)
                             Button("Exclude Subfolder") { plugin.excludeFolder(from: root) }
                             Spacer()
                             Button("Remove Folder", role: .destructive) { plugin.remove(root) }
