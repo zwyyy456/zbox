@@ -35,6 +35,7 @@ final class AppEnvironment {
     @ObservationIgnored
     let displayPlugin: DisplayPlugin
 
+    let fileSearchPlugin: FileSearchPlugin
     let snippetsPlugin: SnippetsPlugin
     let quicklinksPlugin: QuicklinksPlugin
 
@@ -57,7 +58,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -95,6 +96,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        fileSearchPlugin = FileSearchPlugin(defaults: defaults)
         let snippetsPlugin = SnippetsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         self.snippetsPlugin = snippetsPlugin
         let quicklinksPlugin = QuicklinksPlugin(defaults: defaults)
@@ -131,7 +133,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -170,6 +172,7 @@ final class AppEnvironment {
         rootSearchSessionID = nil
         commandFeedbackPanelController.hide()
         textLookupPlugin.stop()
+        fileSearchPlugin.stop()
         snippetsPlugin.stop()
         quicklinksPlugin.stop()
         calculatorPlugin.stop()
@@ -210,6 +213,9 @@ final class AppEnvironment {
             try windowManagementPlugin.register(in: registry)
             try SettingsCommands.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .general)
+            }
+            try fileSearchPlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .fileSearch)
             }
             try snippetsPlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .snippets)
@@ -354,6 +360,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if commandID == FileSearchPlugin.commandID { return "doc.text.magnifyingglass" }
         if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
         if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
         if commandID.rawValue.hasPrefix("display.") { return "display" }
@@ -450,6 +457,15 @@ final class AppEnvironment {
         refreshAccessibilityState()
         windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
+        }
+    }
+
+    func setFileSearchEnabled(_ enabled: Bool) {
+        fileSearchPlugin.setEnabled(enabled)
+        do { try applyHotkeyRegistrations(); fileSearchPlugin.statusMessage = nil }
+        catch {
+            fileSearchPlugin.setEnabled(!enabled)
+            fileSearchPlugin.statusMessage = error.localizedDescription
         }
     }
 
@@ -734,6 +750,12 @@ final class AppEnvironment {
             requests.append(HotkeyRegistrationRequest(id: ClipboardHistoryPlugin.commandID.rawValue,
                 hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
+            })
+        }
+        if fileSearchPlugin.isEnabled, let hotkey = commandHotkeys[FileSearchPlugin.commandID] {
+            requests.append(HotkeyRegistrationRequest(id: FileSearchPlugin.commandID.rawValue,
+                hotkey: hotkey, label: FileSearchPlugin.shortcutTarget.title) { [weak self] in
+                self?.executeDirectCommand(FileSearchPlugin.commandID)
             })
         }
         if snippetsPlugin.isEnabled {

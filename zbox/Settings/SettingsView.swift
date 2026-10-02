@@ -13,6 +13,9 @@ struct SettingsView: View {
             ShortcutSettingsView(environment: environment)
                 .settingsTab(SettingsTab.shortcuts)
 
+            FileSearchSettingsView(environment: environment)
+                .settingsTab(SettingsTab.fileSearch)
+
             SnippetsSettingsView(environment: environment)
                 .settingsTab(SettingsTab.snippets)
 
