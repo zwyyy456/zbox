@@ -4,12 +4,13 @@ import SwiftUI
 @Observable
 final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     enum Tool: String, CaseIterable, Identifiable {
-        case json, uuid, url, base64
+        case json, timestamp, uuid, url, base64
 
         var id: String { rawValue }
         var title: String {
             switch self {
             case .json: String(localized: "JSON Format / Validate")
+            case .timestamp: String(localized: "Timestamp Converter")
             case .uuid: String(localized: "UUID Generator")
             case .url: String(localized: "URL Encode / Decode")
             case .base64: String(localized: "Base64 Encode / Decode")
@@ -18,6 +19,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
         var icon: String {
             switch self {
             case .json: "curlybraces"
+            case .timestamp: "clock"
             case .uuid: "number"
             case .url: "link"
             case .base64: "textformat.abc"
@@ -36,6 +38,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     var jsonSession = DeveloperTextSession(kind: .json)
     var urlSession = DeveloperTextSession(kind: .url)
     var base64Session = DeveloperTextSession(kind: .base64)
+    var timestampSession = DeveloperTimestampSession()
     var uuidCount = 1
     var uppercaseUUIDs = false
     private(set) var uuids: [UUID] = []
@@ -85,6 +88,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     func stop() { window?.close() }
 
     func windowWillClose(_ notification: Notification) {
+        timestampSession = DeveloperTimestampSession()
         uuids = []
         copyError = nil
         jsonSession.invalidate()

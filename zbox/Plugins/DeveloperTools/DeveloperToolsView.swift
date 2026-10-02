@@ -15,6 +15,7 @@ struct DeveloperToolsView: View {
                 Text(plugin.selection.title).font(.title2)
                 switch plugin.selection {
                 case .json: DeveloperTextToolView(session: plugin.jsonSession, copy: plugin.copy).id(plugin.selection)
+                case .timestamp: DeveloperTimestampView(session: plugin.timestampSession, copy: plugin.copy)
                 case .uuid: uuidView
                 case .url: DeveloperTextToolView(session: plugin.urlSession, copy: plugin.copy).id(plugin.selection)
                 case .base64: DeveloperTextToolView(session: plugin.base64Session, copy: plugin.copy).id(plugin.selection)
