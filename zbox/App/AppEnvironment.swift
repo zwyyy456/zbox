@@ -27,6 +27,8 @@ final class AppEnvironment {
     @ObservationIgnored
     let clipboardHistoryPlugin: ClipboardHistoryPlugin
     @ObservationIgnored
+    let screenshotPlugin: ScreenshotPlugin
+    @ObservationIgnored
     let calculatorPlugin = CalculatorPlugin()
 
     private var commandRegistry = CommandRegistry()
@@ -48,7 +50,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -86,6 +88,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        screenshotPlugin = ScreenshotPlugin(defaults: defaults, clipboardCoordinator: clipboardCoordinator)
         let accessibilityAuthorization = AccessibilityAuthorization()
         clipboardHistoryPlugin = ClipboardHistoryPlugin(defaults: defaults, coordinator: clipboardCoordinator,
                                                         authorization: accessibilityAuthorization)
@@ -113,7 +116,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: WindowCommands.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -147,6 +150,7 @@ final class AppEnvironment {
         calculatorPlugin.stop()
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
+        screenshotPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -181,6 +185,9 @@ final class AppEnvironment {
                 try self?.openSettings(tab: .general)
             }
             try calculatorPlugin.register(in: registry)
+            try screenshotPlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .screenshot)
+            }
             try clipboardHistoryPlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .clipboardHistory)
             }
@@ -308,6 +315,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if ScreenshotPlugin.shortcutTargets.contains(where: { $0.id == commandID }) { return "camera.viewfinder" }
         if commandID == ClipboardHistoryPlugin.commandID { return "clipboard" }
         return WindowCommands.systemImage(for: commandID)
             ?? SettingsCommands.systemImage(for: commandID)
@@ -399,6 +407,21 @@ final class AppEnvironment {
         refreshAccessibilityState()
         windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
+        }
+    }
+
+    func setScreenshotEnabled(_ enabled: Bool) {
+        screenshotPlugin.setEnabled(enabled)
+        if !enabled {
+            for target in ScreenshotPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
+            return
+        }
+        do {
+            try applyHotkeyRegistrations()
+            shortcutRegistrationError = nil
+        } catch {
+            screenshotPlugin.setEnabled(false)
+            shortcutRegistrationError = error.localizedDescription
         }
     }
 
@@ -516,6 +539,15 @@ final class AppEnvironment {
                 hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
             })
+        }
+        if screenshotPlugin.isEnabled {
+            for target in ScreenshotPlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue))
         try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)

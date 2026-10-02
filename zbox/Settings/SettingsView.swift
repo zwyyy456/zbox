@@ -21,13 +21,18 @@ struct SettingsView: View {
                                          shortcutError: environment.shortcutRegistrationError)
                 .settingsTab(SettingsTab.clipboardHistory)
 
+            ScreenshotSettingsView(plugin: environment.screenshotPlugin,
+                                   onEnabledChanged: environment.setScreenshotEnabled,
+                                   shortcutError: environment.shortcutRegistrationError)
+                .settingsTab(SettingsTab.screenshot)
+
             Form {
                 TextLookupSettingsView(environment: environment)
             }
             .settingsPane()
             .settingsTab(SettingsTab.textLookup)
         }
-        .frame(width: 600, height: 520)
+        .frame(width: 760, height: 560)
     }
 }
 
