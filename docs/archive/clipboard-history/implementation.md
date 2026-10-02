@@ -21,3 +21,9 @@
 - 独立面板支持上下键、Control-N/P、Return、Command-Return 和 Escape；保存 CommandContext 的目标应用，激活并复核前台身份后才发送粘贴。
 - 权限缺失与目标失效提供明确状态，保留仅复制入口；不推断目标已经消费内容。
 - CommandRegistry、HotkeyConfiguration、SearchKeyboardAction 单元测试及 Debug 构建通过。真实跨 App 激活和粘贴未执行，待人工验收。
+
+## 阶段 4：图片与历史管理
+
+- 支持单张 PNG/TIFF，解码前限制字节数和像素数，后台生成受限尺寸预览。
+- 接通类型筛选、置顶、保留期限、容量淘汰与排除应用设置。
+- 隔离剪贴板图片过滤、数据库容量和置顶保护测试通过；未读取实际剪贴板或执行 UI 测试。

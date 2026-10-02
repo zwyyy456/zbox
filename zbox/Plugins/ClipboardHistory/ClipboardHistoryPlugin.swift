@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 @Observable
@@ -19,7 +20,17 @@ final class ClipboardHistoryPlugin {
     private(set) var statusMessage: String?
     private(set) var entries: [ClipboardEntry] = []
     var query = ""
-    var selectedID: UUID?
+    var selectedID: UUID? { didSet { updatePreview() } }
+    var filter = ClipboardHistoryFilter.all
+    private(set) var previewImage: NSImage?
+    private var previewTask: Task<Void, Never>?
+    var retentionDays: Int {
+        didSet {
+            defaults.set(retentionDays, forKey: "plugin.clipboard-history.retention-days")
+            do { try refresh() } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+        }
+    }
+    private(set) var excludedApplications: Set<String>
     @ObservationIgnored private var panel: NSPanel?
 
     init(defaults: UserDefaults = .standard, coordinator: ClipboardAccessCoordinator,
@@ -28,11 +39,18 @@ final class ClipboardHistoryPlugin {
         self.coordinator = coordinator
         self.authorization = authorization
         isEnabled = defaults.bool(forKey: "plugin.clipboard-history.enabled")
+        let days = defaults.integer(forKey: "plugin.clipboard-history.retention-days")
+        retentionDays = [1, 7, 30].contains(days) ? days : 7
+        excludedApplications = Set(defaults.stringArray(forKey: "plugin.clipboard-history.excluded-apps") ?? [
+            "com.apple.Passwords", "com.apple.keychainaccess", "com.1password.1password",
+            "com.agilebits.onepassword7", "com.bitwarden.desktop",
+        ])
     }
 
     var filteredEntries: [ClipboardEntry] {
-        guard !query.isEmpty else { return entries }
-        return entries.filter { $0.text.localizedStandardContains(query) }
+        entries.filter { entry in
+            (query.isEmpty || entry.text.localizedStandardContains(query)) && filter.includes(entry)
+        }
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
@@ -68,9 +86,15 @@ final class ClipboardHistoryPlugin {
         recordingTask = Task { [weak self] in
             var lastCount = NSPasteboard.general.changeCount
             var revision = self?.coordinator.revision
+            var lastCleanup = Date.now
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .milliseconds(500)) } catch { break }
                 guard let self, isEnabled else { break }
+                if Date.now.timeIntervalSince(lastCleanup) >= 60 {
+                    do { try refresh() }
+                    catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+                    lastCleanup = .now
+                }
                 let board = NSPasteboard.general
                 if revision != coordinator.revision || coordinator.temporaryAccessCount > 0 {
                     revision = coordinator.revision
@@ -86,6 +110,7 @@ final class ClipboardHistoryPlugin {
                                                            sourceBundleID: source)
                     guard source == NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
                           let payload, !Task.isCancelled else { continue }
+                    try store?.prune(days: retentionDays)
                     try store?.add(payload)
                     try refresh()
                     statusMessage = nil
@@ -123,9 +148,50 @@ final class ClipboardHistoryPlugin {
         start()
     }
 
-    private var excludedApplications: Set<String> {
-        ["com.apple.Passwords", "com.apple.keychainaccess", "com.1password.1password",
-         "com.agilebits.onepassword7", "com.bitwarden.desktop"]
+    func addExcludedApplication(_ bundleID: String) {
+        guard !bundleID.isEmpty else { return }
+        excludedApplications.insert(bundleID)
+        defaults.set(excludedApplications.sorted(), forKey: "plugin.clipboard-history.excluded-apps")
+    }
+
+    func removeExcludedApplication(_ bundleID: String) {
+        excludedApplications.remove(bundleID)
+        defaults.set(excludedApplications.sorted(), forKey: "plugin.clipboard-history.excluded-apps")
+    }
+
+    func chooseExcludedApplication() {
+        let picker = NSOpenPanel()
+        picker.allowedContentTypes = [.application]
+        picker.directoryURL = URL(fileURLWithPath: "/Applications")
+        picker.allowsMultipleSelection = false
+        guard picker.runModal() == .OK, let url = picker.url,
+              let id = Bundle(url: url)?.bundleIdentifier else { return }
+        addExcludedApplication(id)
+    }
+
+    private func updatePreview() {
+        previewTask?.cancel()
+        previewImage = nil
+        guard let id = selectedID, let entry = entries.first(where: { $0.id == id }),
+              ["png", "tiff"].contains(entry.kind) else { return }
+        do {
+            guard let payload = try store?.payload(for: id) else { return }
+            previewTask = Task { [weak self] in
+                do {
+                    let thumbnail = try await ClipboardImage.thumbnail(payload.data)
+                    try Task.checkCancellation()
+                    guard self?.selectedID == id else { return }
+                    self?.previewImage = NSImage(data: thumbnail)
+                } catch is CancellationError { return }
+                catch { self?.statusMessage = String(localized: "The image preview could not be loaded.") }
+            }
+        } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+    }
+
+    func togglePin() {
+        guard let entry = entries.first(where: { $0.id == selectedID }) else { return }
+        do { try store?.setPinned(!entry.pinned, for: entry.id); try refresh() }
+        catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
     private func prepareStore() throws {
@@ -140,6 +206,7 @@ final class ClipboardHistoryPlugin {
     }
 
     private func refresh() throws {
+        try store?.prune(days: retentionDays)
         entries = try store?.entries() ?? []
         if !filteredEntries.contains(where: { $0.id == selectedID }) {
             selectedID = filteredEntries.first?.id
@@ -176,7 +243,13 @@ final class ClipboardHistoryPlugin {
     private func write(_ payload: ClipboardPayload) throws {
         let board = NSPasteboard.general
         board.prepareForNewContents(with: .currentHostOnly)
-        guard board.setString(payload.text, forType: .string) else {
+        let copied: Bool
+        if ["png", "tiff"].contains(payload.kind) {
+            copied = board.setData(payload.data, forType: payload.kind == "png" ? .png : .tiff)
+        } else {
+            copied = board.setString(payload.text, forType: .string)
+        }
+        guard copied else {
             throw ClipboardHistoryError.unsupported
         }
         coordinator.didWrite(changeCount: board.changeCount)
@@ -221,6 +294,8 @@ final class ClipboardHistoryPlugin {
     func dismiss() {
         pasteTask?.cancel()
         pasteTask = nil
+        previewTask?.cancel()
+        previewImage = nil
         targetApplication = nil
         panel?.orderOut(nil)
     }
@@ -231,6 +306,7 @@ final class ClipboardHistoryPlugin {
         do { try prepareStore() }
         catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
         query = ""
+        filter = .all
         selectedID = entries.first?.id
         if panel == nil {
             let panel = ClipboardHistoryPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480),

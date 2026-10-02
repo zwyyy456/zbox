@@ -7,7 +7,7 @@ nonisolated struct ClipboardPayload: Sendable {
     let sourceBundleID: String?
 }
 
-nonisolated enum ClipboardHistoryError: LocalizedError {
+nonisolated enum ClipboardHistoryError: LocalizedError, Equatable {
     case accessRequired, unsupported, tooLarge, changed, storageFull, targetUnavailable, pastePermissionRequired
 
     var errorDescription: String? {
@@ -55,6 +55,14 @@ enum ClipboardReader {
         guard let items = pasteboard.pasteboardItems, items.count == 1,
               !types.contains(NSPasteboard.PasteboardType.fileURL.rawValue) else {
             throw ClipboardHistoryError.unsupported
+        }
+        for type in [NSPasteboard.PasteboardType.png, .tiff] where types.contains(type.rawValue) {
+            guard let data = pasteboard.data(forType: type) else { throw ClipboardHistoryError.unsupported }
+            let (width, height) = try ClipboardImage.dimensions(of: data)
+            guard count == pasteboard.changeCount else { throw ClipboardHistoryError.changed }
+            return ClipboardPayload(kind: type == .png ? "png" : "tiff",
+                text: String(localized: "Image") + " (\(width) × \(height))", data: data,
+                sourceBundleID: declaredSource?.isEmpty == false ? declaredSource : sourceBundleID)
         }
         guard let text = pasteboard.string(forType: .string), !text.isEmpty else {
             throw ClipboardHistoryError.unsupported

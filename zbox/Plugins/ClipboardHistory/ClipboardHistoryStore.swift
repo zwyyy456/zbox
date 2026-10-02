@@ -71,6 +71,20 @@ final class ClipboardHistoryStore {
             existing.copiedAt = date
             existing.sourceBundleID = payload.sourceBundleID
         } else {
+            let all = try records()
+            var count = all.count
+            var bytes = all.reduce(0) { $0 + $1.byteCount }
+            var victims: [ClipboardRecord] = []
+            for record in all.reversed() where !record.pinned {
+                guard count >= 500 || bytes + payload.data.count > 100 * 1_024 * 1_024 else { break }
+                victims.append(record)
+                count -= 1
+                bytes -= record.byteCount
+            }
+            guard count < 500, bytes + payload.data.count <= 100 * 1_024 * 1_024 else {
+                throw ClipboardHistoryError.storageFull
+            }
+            for record in victims { context.delete(record) }
             context.insert(ClipboardRecord(payload, at: date))
         }
         try save()
@@ -80,6 +94,21 @@ final class ClipboardHistoryStore {
         guard let record = try record(id) else { return nil }
         return ClipboardPayload(kind: record.kind, text: record.text, data: record.data,
                                 sourceBundleID: record.sourceBundleID)
+    }
+
+    func setPinned(_ pinned: Bool, for id: UUID) throws {
+        if let item = try record(id) { item.pinned = pinned }
+        try save()
+    }
+
+    func prune(days: Int, now: Date = .now) throws {
+        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
+        let expired = try context.fetch(FetchDescriptor<ClipboardRecord>(predicate: #Predicate {
+            !$0.pinned && $0.copiedAt < cutoff
+        }))
+        guard !expired.isEmpty else { return }
+        for item in expired { context.delete(item) }
+        try save()
     }
 
     func delete(_ id: UUID) throws {

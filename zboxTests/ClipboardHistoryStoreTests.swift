@@ -27,4 +27,35 @@ struct ClipboardHistoryStoreTests {
         try reopened.clear()
         #expect(try reopened.entries().isEmpty)
     }
+
+    @Test
+    func evictsUnpinnedItemsAndPrunesWithoutRemovingPins() throws {
+        let store = try ClipboardHistoryStore(inMemory: true)
+        let start = Date(timeIntervalSince1970: 1_000_000)
+        for index in 0..<500 {
+            let text = "fixture-\(index)"
+            try store.add(ClipboardPayload(kind: "text", text: text, data: Data(text.utf8), sourceBundleID: nil),
+                          at: start.addingTimeInterval(Double(index)))
+        }
+        let original = try store.entries()
+        let oldest = try #require(original.last)
+        try store.setPinned(true, for: oldest.id)
+        let next = ClipboardPayload(kind: "text", text: "next", data: Data("next".utf8), sourceBundleID: nil)
+        try store.add(next, at: start.addingTimeInterval(501))
+        let after = try store.entries()
+        #expect(after.count == 500)
+        #expect(after.contains { $0.id == oldest.id })
+        #expect(!after.contains { $0.text == "fixture-1" })
+        for entry in after { try store.setPinned(true, for: entry.id) }
+        #expect(throws: ClipboardHistoryError.storageFull) {
+            try store.add(ClipboardPayload(kind: "text", text: "rejected", data: Data("rejected".utf8), sourceBundleID: nil))
+        }
+        #expect(try store.entries().count == 500)
+        for entry in after where entry.id != oldest.id { try store.setPinned(false, for: entry.id) }
+        try store.prune(days: 7, now: start.addingTimeInterval(9 * 86_400))
+        #expect(try store.entries().map(\.id) == [oldest.id])
+        try store.clear()
+        #expect(try store.entries().isEmpty)
+    }
+
 }

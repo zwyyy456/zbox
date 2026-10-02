@@ -33,4 +33,25 @@ struct ClipboardReaderTests {
         access.didWrite(changeCount: 42)
         #expect(access.ignoredChangeCount == 42)
     }
+
+    @Test
+    func acceptsPNGAndRejectsInvalidOrOversizedImages() throws {
+        let representation = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 8, bitsPerPixel: 32))
+        let data = try #require(representation.representation(using: .png, properties: [:]))
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        board.setData(data, forType: .png)
+        let payload = try #require(try ClipboardReader.read(from: board, excluding: [], sourceBundleID: nil))
+        #expect(payload.kind == "png")
+        #expect(payload.data == data)
+        #expect(throws: ClipboardHistoryError.unsupported) {
+            _ = try ClipboardImage.dimensions(of: Data("not an image".utf8))
+        }
+        #expect(throws: ClipboardHistoryError.tooLarge) {
+            _ = try ClipboardImage.dimensions(of: Data(count: ClipboardImage.byteLimit + 1))
+        }
+    }
+
 }
