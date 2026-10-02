@@ -5,7 +5,7 @@ struct ScreenshotEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let document = plugin.document {
-                ScreenshotDocumentView(document: document).disabled(plugin.isExporting)
+                ScreenshotDocumentView(document: document).disabled(plugin.isExporting || plugin.isUploading)
                 Divider()
                 HStack {
                     Picker("Format", selection: $plugin.format) {
@@ -14,9 +14,18 @@ struct ScreenshotEditorView: View {
                     Spacer()
                     Button("Copy Image", action: plugin.copyImage).keyboardShortcut("c", modifiers: .command)
                     Button("Save…", action: plugin.saveImage).keyboardShortcut("s", modifiers: .command)
+                    Button("Upload", action: plugin.uploadImage)
                     Button("Done", action: plugin.copyImage).keyboardShortcut(.return, modifiers: .command)
-                }.padding().disabled(plugin.isExporting)
+                }.padding().disabled(plugin.isExporting || plugin.isUploading)
             }
+            if plugin.isUploading {
+                HStack {
+                    Text(plugin.uploadHostName).lineLimit(1)
+                    ProgressView(value: plugin.uploadProgress)
+                    Button("Cancel Upload", action: plugin.cancelUpload)
+                }.padding()
+            }
+            if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink).padding(8) }
             if plugin.isExporting { ProgressView().controlSize(.small).padding(8) }
             if let message = plugin.statusMessage {
                 Text(message).font(.callout).foregroundStyle(.secondary).padding()

@@ -10,6 +10,7 @@ struct ScreenshotSettingsView: View {
             Text("Captures only when you run a screenshot command. Screen Recording permission is required.")
                 .foregroundStyle(.secondary)
             Button("Open Screen Recording Settings", action: plugin.openScreenRecordingSettings)
+            ScreenshotHostingView(settings: plugin.hosting, plugin: plugin)
             if let status = plugin.statusMessage { Text(status).foregroundStyle(.secondary) }
             if let shortcutError { SettingsErrorView(message: shortcutError) }
         }.settingsPane()

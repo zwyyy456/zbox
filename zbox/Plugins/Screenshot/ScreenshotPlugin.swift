@@ -10,6 +10,7 @@ final class ScreenshotPlugin {
     static var shortcutTargets: [CommandShortcutTarget] {
         ScreenshotMode.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
     }
+    let hosting: ScreenshotHostingSettings
     private let defaults: UserDefaults
     let clipboardCoordinator: ClipboardAccessCoordinator
     private let selection = ScreenshotSelection()
@@ -22,9 +23,16 @@ final class ScreenshotPlugin {
     private(set) var isExporting = false
     var format = ScreenshotFormat.png
     private var exportTask: Task<Void, Never>?
+    private var uploadTask: Task<Void, Never>?
+    private var uploadID: UUID?
+    private(set) var isUploading = false
+    private(set) var uploadProgress = 0.0
+    private(set) var uploadedURL: URL?
+    private(set) var uploadHostName = ""
 
     init(defaults: UserDefaults = .standard, clipboardCoordinator: ClipboardAccessCoordinator) {
         self.defaults = defaults
+        hosting = ScreenshotHostingSettings(defaults: defaults)
         self.clipboardCoordinator = clipboardCoordinator
         isEnabled = defaults.bool(forKey: "plugin.screenshot.enabled")
     }
@@ -48,6 +56,8 @@ final class ScreenshotPlugin {
 
     func stop() {
         cancelCapture()
+        cancelUpload()
+        uploadedURL = nil
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil
@@ -102,6 +112,87 @@ final class ScreenshotPlugin {
         }
     }
 
+    func uploadImage() {
+        guard let document, !isUploading, !isExporting else { return }
+        beginUpload(image: document.image, edit: document.edit, format: format)
+    }
+
+    func uploadTestImage() {
+        guard !isUploading, !isExporting else { return }
+        guard let context = CGContext(data: nil, width: 160, height: 80, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+        context.setFillColor(CGColor(red: 0.1, green: 0.4, blue: 0.8, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 160, height: 80))
+        guard let image = context.makeImage() else { return }
+        beginUpload(image: image, edit: ScreenshotEdit(crop: CGRect(x: 0, y: 0, width: 160, height: 80)), format: .png)
+    }
+
+    func cancelUpload() {
+        uploadID = nil
+        uploadTask?.cancel()
+        uploadTask = nil
+        isUploading = false
+        uploadProgress = 0
+    }
+
+    func copyUploadedLink() {
+        guard let uploadedURL else { return }
+        let board = NSPasteboard.general
+        board.prepareForNewContents(with: .currentHostOnly)
+        defer { clipboardCoordinator.didWrite(changeCount: board.changeCount) }
+        if board.setString(uploadedURL.absoluteString, forType: .string) {
+            statusMessage = String(localized: "Link copied.")
+        }
+    }
+
+    private func beginUpload(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat) {
+        guard let profile = hosting.selected else {
+            statusMessage = String(localized: "Choose an image host in Screenshot settings first.")
+            return
+        }
+        let credentials: ScreenshotHostCredentials
+        do {
+            try profile.validate()
+            credentials = try ScreenshotCredentialStore.load(profile.id)
+            try credentials.validate(for: profile.provider)
+        } catch {
+            statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.keychain.localizedDescription
+            return
+        }
+        let id = UUID()
+        let filename = "Screenshot-" + id.uuidString.lowercased() + "." + format.rawValue
+        uploadID = id
+        isUploading = true
+        uploadProgress = 0
+        uploadHostName = profile.name
+        uploadedURL = nil
+        statusMessage = nil
+        uploadTask = Task { [weak self] in
+            do {
+                let data = try await ScreenshotRenderer.export(image: image, edit: edit, format: format)
+                try Task.checkCancellation()
+                let url = try await ScreenshotUploader.upload(profile: profile, credentials: credentials,
+                    image: data, format: format, filename: filename) { [weak self] value in
+                        Task { @MainActor [weak self] in
+                            guard self?.uploadID == id else { return }
+                            self?.uploadProgress = value
+                        }
+                    }
+                try Task.checkCancellation()
+                guard let self, uploadID == id else { return }
+                uploadedURL = url
+                isUploading = false
+                uploadID = nil
+                statusMessage = String(localized: "Upload complete. The link is ready to copy.")
+            } catch {
+                guard !Task.isCancelled, let self, uploadID == id else { return }
+                isUploading = false
+                uploadID = nil
+                statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.network.localizedDescription
+            }
+        }
+    }
+
     func openScreenRecordingSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
@@ -110,6 +201,8 @@ final class ScreenshotPlugin {
 
     private func capture(_ mode: ScreenshotMode) {
         cancelCapture()
+        cancelUpload()
+        uploadedURL = nil
         exportTask?.cancel()
         isExporting = false
         window?.orderOut(nil)
