@@ -17,7 +17,9 @@ final class FileSearchPlugin {
     var sort = FileSearchSort.relevance { didSet { search() } }
     private(set) var page = FileSearchPage()
     private(set) var isSearching = false
-    var selectedID: String?
+    var selectedID: String? { didSet { actions.closePreview() } }
+    var resultsFocused = false
+    private let actions: FileSearchActions
     var searchError: String?
     @ObservationIgnored private var queryTask: Task<Void, Never>?
     @ObservationIgnored private var panel: FileSearchPanel?
@@ -28,7 +30,8 @@ final class FileSearchPlugin {
     @ObservationIgnored private var scanTasks: [UUID: Task<Void, Never>] = [:]
 
 
-    init(defaults: UserDefaults) {
+    init(defaults: UserDefaults, coordinator: ClipboardAccessCoordinator) {
+        actions = FileSearchActions(coordinator: coordinator)
         self.defaults = defaults
         isEnabled = defaults.bool(forKey: "filesearch.enabled")
     }
@@ -155,6 +158,7 @@ final class FileSearchPlugin {
     }
 
     func dismiss() {
+        actions.closePreview()
         isVisible = false
         queryTask?.cancel()
         queryTask = nil
@@ -162,6 +166,23 @@ final class FileSearchPlugin {
         page = FileSearchPage()
         selectedID = nil
         isSearching = false
+    }
+
+    func perform(_ action: FileSearchActions.Action) {
+        guard let file = selectedFile, let root = settings.roots.first(where: { $0.id == file.rootID }) else { return }
+        do {
+            guard root.isAvailable() else { throw FileSearchError.missingFile }
+            try actions.perform(action, url: root.url.appending(path: file.path))
+            searchError = nil
+            if action == .open || action == .reveal { dismiss() }
+        } catch {
+            searchError = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.actionFailed.localizedDescription
+            rescan(root)
+        }
+    }
+
+    func escape() {
+        if !actions.closePreview() { dismiss() }
     }
 
     func moveSelection(_ offset: Int) {
@@ -182,7 +203,9 @@ final class FileSearchPlugin {
                 styleMask: [.titled, .closable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.title = String(localized: "File Search")
             panel.navigate = { [weak self] in self?.moveSelection($0) }
-            panel.dismiss = { [weak self] in self?.dismiss() }
+            panel.dismiss = { [weak self] in self?.escape() }
+            panel.performAction = { [weak self] in self?.perform($0) }
+            panel.canPreview = { [weak self] in self?.resultsFocused == true }
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.minSize = NSSize(width: 650, height: 380)
             panel.isReleasedWhenClosed = false

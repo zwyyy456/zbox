@@ -2,12 +2,13 @@ import SwiftUI
 
 struct FileSearchView: View {
     @Bindable var plugin: FileSearchPlugin
-    @FocusState private var searchFocused: Bool
+    private enum Focus { case search, results }
+    @FocusState private var focus: Focus?
 
     var body: some View {
         VStack(spacing: 12) {
             TextField("Search file names — ext:pdf, type:folder, path:project", text: $plugin.query)
-                .textFieldStyle(.roundedBorder).focused($searchFocused)
+                .textFieldStyle(.roundedBorder).focused($focus, equals: .search)
             HStack {
                 Picker("Search Folder", selection: $plugin.scope) {
                     Text("All Search Folders").tag("")
@@ -40,13 +41,29 @@ struct FileSearchView: View {
                     Text(file.modified, format: .dateTime.year().month().day())
                         .font(.caption).frame(width: 100, alignment: .trailing)
                 }.tag(file.id)
+                .contextMenu {
+                    Button("Open") { plugin.selectedID = file.id; plugin.perform(.open) }
+                    Button("Show in Finder") { plugin.selectedID = file.id; plugin.perform(.reveal) }
+                    Button("Copy File") { plugin.selectedID = file.id; plugin.perform(.copyFile) }
+                    Button("Copy Path") { plugin.selectedID = file.id; plugin.perform(.copyPath) }
+                    Button("Quick Look") { plugin.selectedID = file.id; plugin.perform(.preview) }
+                }
             }
+            .focused($focus, equals: .results)
             HStack {
                 if plugin.isSearching { ProgressView().controlSize(.small) }
                 Text(plugin.page.hasMore ? String(localized: "Showing the best 200 matches. Narrow your search for more.") : String(localized: "\(plugin.page.files.count) matches"))
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer()
+                Button("Quick Look") { plugin.perform(.preview) }.disabled(plugin.selectedFile == nil)
+                Menu("Actions") {
+                    Button("Open") { plugin.perform(.open) }
+                    Button("Show in Finder") { plugin.perform(.reveal) }
+                    Button("Copy File") { plugin.perform(.copyFile) }
+                    Button("Copy Path") { plugin.perform(.copyPath) }
+                }.disabled(plugin.selectedFile == nil)
             }
+            Text("Opening or previewing cloud files may download them.").font(.caption).foregroundStyle(.secondary)
             if plugin.query.isEmpty && plugin.typeFilter.isEmpty && plugin.extensionFilter.isEmpty {
                 Text("Enter a file name or choose a filter. Add search folders in Settings.").font(.caption)
             }
@@ -56,23 +73,35 @@ struct FileSearchView: View {
             }
         }
         .padding(16)
-        .onAppear { searchFocused = true }
+        .onAppear { focus = .search }
+        .onChange(of: focus) { plugin.resultsFocused = focus == .results }
     }
 }
 
 @MainActor final class FileSearchPanel: NSPanel {
     var navigate: ((Int) -> Void)?
     var dismiss: (() -> Void)?
+    var performAction: ((FileSearchActions.Action) -> Void)?
+    var canPreview: (() -> Bool)?
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
     override func close() { dismiss?(); super.close() }
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, (firstResponder as? NSTextView)?.hasMarkedText() != true {
+            let modifiers = event.modifierFlags.intersection([.command, .control, .shift, .option])
+            if [36, 76].contains(event.keyCode), modifiers == .command { performAction?(.reveal); return }
+            if event.keyCode == 8, modifiers == [.command, .shift] { performAction?(.copyPath); return }
+            if event.keyCode == 8, modifiers == .command, (firstResponder as? NSTextView)?.selectedRange().length ?? 0 == 0 {
+                performAction?(.copyFile); return
+            }
+            if event.keyCode == 49, modifiers.isEmpty, canPreview?() == true { performAction?(.preview); return }
+        }
         if event.type == .keyDown, (firstResponder as? NSTextView)?.hasMarkedText() != true,
            let action = SearchKeyboardMapper.action(keyCode: event.keyCode, charactersIgnoringModifiers: event.charactersIgnoringModifiers, modifierFlags: event.modifierFlags) {
             switch action {
             case .moveSelection(let offset): navigate?(offset); return
             case .dismiss: dismiss?(); return
-            case .execute: break
+            case .execute: performAction?(.open); return
             }
         }
         super.sendEvent(event)
