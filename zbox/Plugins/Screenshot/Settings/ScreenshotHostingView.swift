@@ -13,6 +13,11 @@ struct ScreenshotHostingView: View {
                 Text("None").tag(nil as UUID?)
                 ForEach(settings.profiles) { Text($0.name).tag(Optional($0.id)) }
             }
+            Toggle("Upload automatically when finishing edits", isOn: $settings.automaticallyUpload)
+                .disabled(settings.selected == nil)
+            Picker("Copy Link As", selection: $settings.linkFormat) {
+                ForEach(ScreenshotLinkFormat.allCases) { Text($0.title).tag($0) }
+            }
             HStack {
                 Button("Add Host…") { editing = ScreenshotHostingProfile() }
                 Button("Edit…") { editing = settings.selected }.disabled(settings.selected == nil)
@@ -26,6 +31,7 @@ struct ScreenshotHostingView: View {
                 ProgressView(value: plugin.uploadProgress)
                 Button("Cancel Upload", action: plugin.cancelUpload)
             }
+            if plugin.canRetryUpload { Button("Retry Last Upload", action: plugin.retryUpload) }
             if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink) }
             if let error = errorMessage ?? settings.errorMessage { Text(error).foregroundStyle(.red) }
         }

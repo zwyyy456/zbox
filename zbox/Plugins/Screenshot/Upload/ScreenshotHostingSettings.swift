@@ -7,13 +7,24 @@ final class ScreenshotHostingSettings {
     private let defaults: UserDefaults
     private(set) var profiles: [ScreenshotHostingProfile] = []
     private(set) var errorMessage: String?
+    var automaticallyUpload: Bool {
+        didSet { defaults.set(automaticallyUpload, forKey: "plugin.screenshot.hosting.auto-upload") }
+    }
+    var linkFormat: ScreenshotLinkFormat {
+        didSet { defaults.set(linkFormat.rawValue, forKey: "plugin.screenshot.hosting.link-format") }
+    }
     var selectedID: UUID? {
-        didSet { defaults.set(selectedID?.uuidString, forKey: "plugin.screenshot.hosting.selected") }
+        didSet {
+            defaults.set(selectedID?.uuidString, forKey: "plugin.screenshot.hosting.selected")
+            if selectedID == nil { automaticallyUpload = false }
+        }
     }
     var selected: ScreenshotHostingProfile? { profiles.first { $0.id == selectedID } }
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
+        automaticallyUpload = defaults.bool(forKey: "plugin.screenshot.hosting.auto-upload")
+        linkFormat = ScreenshotLinkFormat(rawValue: defaults.string(forKey: "plugin.screenshot.hosting.link-format") ?? "") ?? .url
         selectedID = defaults.string(forKey: "plugin.screenshot.hosting.selected").flatMap(UUID.init(uuidString:))
         if let data = defaults.data(forKey: "plugin.screenshot.hosting.profiles") {
             do { profiles = try JSONDecoder().decode([ScreenshotHostingProfile].self, from: data) }

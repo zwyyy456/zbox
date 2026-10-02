@@ -15,7 +15,7 @@ struct ScreenshotEditorView: View {
                     Button("Copy Image", action: plugin.copyImage).keyboardShortcut("c", modifiers: .command)
                     Button("Save…", action: plugin.saveImage).keyboardShortcut("s", modifiers: .command)
                     Button("Upload", action: plugin.uploadImage)
-                    Button("Done", action: plugin.copyImage).keyboardShortcut(.return, modifiers: .command)
+                    Button(plugin.completionTitle, action: plugin.finishEditing).keyboardShortcut(.return, modifiers: .command)
                 }.padding().disabled(plugin.isExporting || plugin.isUploading)
             }
             if plugin.isUploading {
@@ -25,6 +25,7 @@ struct ScreenshotEditorView: View {
                     Button("Cancel Upload", action: plugin.cancelUpload)
                 }.padding()
             }
+            if plugin.canRetryUpload { Button("Retry Last Upload", action: plugin.retryUpload).padding(8) }
             if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink).padding(8) }
             if plugin.isExporting { ProgressView().controlSize(.small).padding(8) }
             if let message = plugin.statusMessage {

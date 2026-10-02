@@ -6,6 +6,7 @@ struct ScreenshotCanvas: NSViewRepresentable {
     func makeNSView(context: Context) -> ScreenshotCanvasView { ScreenshotCanvasView() }
     func updateNSView(_ view: ScreenshotCanvasView, context: Context) {
         view.document = document
+        view.isEnabled = context.environment.isEnabled
         // Reading edit here makes SwiftUI invalidate the canvas after undo/redo.
         view.edit = document.edit
         view.needsDisplay = true
@@ -13,6 +14,7 @@ struct ScreenshotCanvas: NSViewRepresentable {
 }
 
 final class ScreenshotCanvasView: NSView {
+    var isEnabled = true
     var document: ScreenshotDocument?
     var edit: ScreenshotEdit?
     private var pending: ScreenshotMark?
@@ -27,16 +29,17 @@ final class ScreenshotCanvasView: NSView {
                        y: edit.crop.minY + min(max(point.y, 0), bounds.height) * edit.crop.height / bounds.height)
     }
     override func mouseDown(with event: NSEvent) {
+        guard isEnabled else { return }
         window?.makeFirstResponder(self)
         anchor = imagePoint(event)
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let document, let anchor else { return }
+        guard isEnabled, let document, let anchor else { return }
         pending = ScreenshotMark(tool: document.tool, start: anchor, end: imagePoint(event), text: document.text)
         needsDisplay = true
     }
     override func mouseUp(with event: NSEvent) {
-        guard let document, let anchor else { return }
+        guard isEnabled, let document, let anchor else { return }
         document.commit(ScreenshotMark(tool: document.tool, start: anchor, end: imagePoint(event), text: document.text))
         self.anchor = nil
         pending = nil

@@ -34,3 +34,11 @@
 - [七牛上传凭证](https://developer.qiniu.com/kodo/1208/upload-token)与[直传文件](https://developer.qiniu.com/kodo/1312/upload)
 - [又拍云鉴权](https://help.upyun.com/knowledge-base/object_storage_authorization/)
 - [SM.MS 迁移说明](https://s.ee/docs/developers/smms-compatibility/)与[S.EE 上传接口](https://s.ee/docs/api/UploadFile/)
+
+## 阶段 4：自动上传与任务收尾
+
+- 自动上传默认关闭；启用后“完成”明确显示为“完成并上传”，只上传最终合成图。支持 URL／Markdown 输出及上传期间的新剪贴板内容保护。
+- 失败或手动取消后只保留当前会话的导出字节、原图床配置和对象名，显式重试重新签名；配置发生变化时提示重新发起上传。无启动重传、自动重试或后台队列。
+- 停用、关闭编辑器或开始新截图会取消旧任务；旧进度、错误和成功结果须匹配任务身份才可更新。取消不宣称删除已到达远端的图片。
+- 上传中禁用 SwiftUI 编辑控件及 AppKit 画布手势；任务结束释放任务引用。
+- 隔离剪贴板测试确认等待期间的新复制不会被上传结果覆盖，Markdown 回写会通知历史协调对象；图床协议测试和最终 Debug 构建通过。真实网络取消／重试仍待人工验收。
