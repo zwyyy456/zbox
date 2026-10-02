@@ -136,51 +136,7 @@ private struct ShortcutSettingsView: View {
     }
 }
 
-private struct WindowManagementSettingsView: View {
-    let environment: AppEnvironment
-
-    var body: some View {
-        @Bindable var environment = environment
-
-        Form {
-            Section("Window Management") {
-                Toggle(
-                    "Enable Window Management",
-                    isOn: Binding(
-                        get: { environment.isWindowManagementEnabled },
-                        set: { environment.setWindowManagementEnabled($0) }
-                    )
-                )
-                Text("Window Management uses Accessibility only to move and resize the frontmost application window.")
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Accessibility") {
-                LabeledContent(
-                    "Permission",
-                    value: environment.isAccessibilityTrusted
-                        ? String(localized: "Granted")
-                        : String(localized: "Required")
-                )
-                HStack {
-                    Button("Request Permission") {
-                        environment.requestAccessibilityPermission()
-                    }
-                    Button("Open System Settings") {
-                        environment.openAccessibilitySettings()
-                    }
-                }
-            }
-
-            if let error = environment.windowManagementError {
-                SettingsErrorView(message: error)
-            }
-        }
-        .settingsPane()
-    }
-}
-
-private struct SettingsErrorView: View {
+struct SettingsErrorView: View {
     let message: String
 
     var body: some View {
@@ -190,7 +146,7 @@ private struct SettingsErrorView: View {
     }
 }
 
-private extension View {
+extension View {
     func settingsPane() -> some View {
         formStyle(.grouped)
             .padding(.horizontal, 16)

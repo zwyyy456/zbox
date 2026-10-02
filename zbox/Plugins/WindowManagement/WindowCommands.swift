@@ -1,10 +1,5 @@
 import Foundation
 
-nonisolated struct CommandShortcutTarget: Identifiable, Sendable {
-    let id: CommandID
-    let title: String
-}
-
 nonisolated enum WindowManagementError: LocalizedError, Equatable {
     case disabled
 

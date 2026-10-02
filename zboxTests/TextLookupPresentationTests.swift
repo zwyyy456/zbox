@@ -46,9 +46,14 @@ struct TextLookupPresentationTests {
         }
     }
 
-    @Test @MainActor
-    func createsFlashcardFromFrozenSelectionWithOriginalContext() async throws {
-        let flashDict = FlashDictServiceSpy()
+    @Test(arguments: [
+        FlashcardCreationResult.added(cardID: UUID()),
+        .existing(cardID: UUID()),
+        .rejectedQuota,
+        .failed(message: "Creation failed."),
+    ]) @MainActor
+    func createsFlashcardFromFrozenSelectionWithOriginalContext(result: FlashcardCreationResult) async throws {
+        let flashDict = FlashDictServiceSpy(creationResult: result)
         let model = TextLookupSessionModel(flashDict: flashDict)
         let sourceURL = try #require(URL(string: "https://example.com/article"))
         let capture = TextLookupCapture(
@@ -70,7 +75,7 @@ struct TextLookupPresentationTests {
             senseHTML: "<p>moving quickly</p>",
             senseIndex: 0,
             subsenseSelector: nil,
-            resourceTagsVersion: 1,
+            resourceTagsVersion: 2,
             cssTagsHTML: nil,
             scriptTagsHTML: nil
         )
@@ -80,6 +85,20 @@ struct TextLookupPresentationTests {
         #expect(context.sentence == capture.sentence)
         #expect(context.sourceURL == sourceURL)
         #expect(context.userNote == nil)
+        let sentSeed = try #require(await flashDict.createdSeed)
+        #expect(sentSeed.term == seed.term)
+        #expect(sentSeed.senseHTML == seed.senseHTML)
+        #expect(sentSeed.dictionaryStableID == seed.dictionaryStableID)
+        let expected: SenseSelectionState = switch result {
+        case .added, .existing: .added
+        case .rejectedQuota: .rejectedQuota
+        case .failed(let message): .failed(message: message)
+        }
+        for _ in 0..<100 {
+            if model.selectionStates["sense-1"] == expected { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(model.selectionStates["sense-1"] == expected)
     }
 
     @Test @MainActor
@@ -246,7 +265,6 @@ private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
     }
 
     func createFlashcard(
-        deliveryID: UUID,
         seed: FlashcardSeed,
         context: FlashcardCreationContext
     ) async throws -> FlashcardCreationResult {
@@ -256,11 +274,17 @@ private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
 
 private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
     private(set) var createdContext: FlashcardCreationContext?
+    private(set) var createdSeed: FlashcardSeed?
+    private let creationResult: FlashcardCreationResult
     private(set) var lookupTerms: [String] = []
     private var termToFailOnce: String?
 
-    init(failOnceFor term: String? = nil) {
+    init(
+        failOnceFor term: String? = nil,
+        creationResult: FlashcardCreationResult = .added(cardID: UUID())
+    ) {
         termToFailOnce = term
+        self.creationResult = creationResult
     }
 
     func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
@@ -283,11 +307,11 @@ private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
     }
 
     func createFlashcard(
-        deliveryID: UUID,
         seed: FlashcardSeed,
         context: FlashcardCreationContext
     ) async throws -> FlashcardCreationResult {
         createdContext = context
-        return .added(cardID: UUID())
+        createdSeed = seed
+        return creationResult
     }
 }

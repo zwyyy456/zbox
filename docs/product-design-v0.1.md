@@ -4,8 +4,8 @@
 > 加载方式：涉及核心产品范围、命令中心行为或 M1 验收边界时读取
 > 状态：Active（当前产品基线）
 > 初始日期：2026-08-13
-> 最后校正：2026-09-03
-> 适用范围：M1 核心命令中心
+> 最后校正：2026-10-02
+> 适用范围：M1 命令中心与 Window Management 内置插件
 > 文档职责：定义核心命令中心的当前产品范围、用户行为与验收边界；Text Lookup 产品约定见 `product/text-lookup.md`，工程边界见根目录 `engineering-guidelines.md`。
 
 ## 1. 产品定义
@@ -25,7 +25,11 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 - 全局快捷键在用户当前工作的 Space 上显示 Root Search；
 - Settings 使用独立窗口，可通过 Root Search、菜单栏或 `Command-,` 打开。
 
-### 1.2 MVP 要验证的核心假设
+### 1.2 核心与内置插件
+
+核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
+
+### 1.3 MVP 要验证的核心假设
 
 1. 用户能够比 Dock、Spotlight 或菜单操作更快地完成应用启动和窗口整理。
 2. `Command` 可以成为搜索和直接快捷键共同使用的产品抽象。
@@ -116,7 +120,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zbox 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
 | FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zbox 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
-| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts、Window Management 三个核心 Tab，并将 Text Lookup 作为内置独立扩展的独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，扩展设置由 `product/text-lookup.md` 定义 |
+| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts 两个核心 Tab，并为 Window Management、Text Lookup 内置插件提供独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md` 和 `product/text-lookup.md` 定义 |
 | FR-09 | P1 | 英文与简体中文界面 | Settings、菜单栏、Root Search、Command、错误与权限说明使用同一 String Catalog 真源，不混用未本地化硬编码文案 |
 
 ### 7.1 搜索行为
@@ -128,15 +132,9 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 - 排名保持字面标题高于全拼别名、全拼别名高于首字母别名、首字母别名高于模糊匹配；同分结果保持固定顺序。
 - 暂不加入 frecency、别名学习或搜索历史排序。
 
-### 7.2 窗口行为
+### 7.2 窗口管理插件
 
-- 操作用户唤起 zbox 前的前台应用窗口，而不是 Root Search Panel。
-- Left/Right Half 和 Maximize 使用窗口所在显示器的可用区域，避开菜单栏和 Dock。
-- MVP 支持标准、可调整大小的应用窗口。
-- 特殊窗口和跨显示器恢复不在范围内，但外接显示器上的基本定位应正确。
-- Window Management 默认关闭。关闭时窗口 Command 仍可搜索，但不执行窗口操作，也不注册对应直接快捷键。
-- Accessibility 系统提示只由用户在 Settings 中显式启用功能或请求权限时触发；普通 Command 执行只返回错误和真实恢复入口。
-- 权限被撤销时立即关闭依赖功能并停止其运行能力，保留用户的其它配置；重新授权后由用户再次启用，不自动恢复监听或快捷键。
+Window Management 以内置插件提供窗口命令，其启停、权限、目标窗口及显示器行为见 [Window Management 产品约定](product/window-management.md)。它仍属于 M1 交付与验收范围。
 
 ### 7.3 App 生命周期
 
@@ -149,14 +147,14 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 
 ## 8. MVP 范围
 
-本节只界定 M1 核心命令中心。Text Lookup 不并入 M1 完成定义；它作为内置独立扩展按 `product/text-lookup.md` 单独实施和验收。
+本节界定 M1 命令中心及随附的 Window Management 内置插件。Text Lookup 不并入 M1 完成定义；它作为内置独立扩展按 `product/text-lookup.md` 单独实施和验收。
 
 ### 8.1 包含
 
 - Root Search Panel；
 - 应用搜索、启动和激活；
 - Command Registry 与内置命令；
-- 三个窗口命令；
+- Window Management 内置插件的三个窗口命令；
 - Root Search 全局快捷键；
 - 命令快捷键；
 - 最小 Settings；
@@ -195,10 +193,10 @@ FR-07 和 FR-08 已进入 M1 实施基线；仍需真实系统或分发环境的
 | 阶段 | 产品目标 |
 | --- | --- |
 | M2 System Toolkit | Text Lookup v0.1 已进入当前产品；后续候选为 Clipboard、Display、Workspace |
-| M3 Internal Extensions | Calculator 作为第二个真实内置扩展，检验共用 Command 入口和独立窗口边界 |
+| M3 Internal Extensions | Window Management、Text Lookup 和 Calculator 以真实功能检验内置插件边界 |
 | M4 Plugin Preview | 再决定独立 Runtime、权限和 SDK |
 
-Text Lookup 与 Calculator 作为内置独立扩展验证单 App target 内的功能边界，但不构成动态插件系统；其当前产品约定分别见 `product/text-lookup.md` 与 `product/calculator.md`。只有真实功能需要复用或隔离时，才引入新的 Package、进程或公共插件接口。
+Window Management、Text Lookup 与 Calculator 作为内置独立扩展验证单 App target 内的功能边界，但不构成动态插件系统；其当前产品约定分别见 `product/window-management.md`、`product/text-lookup.md` 与 `product/calculator.md`。只有真实功能需要复用或隔离时，才引入新的 Package、进程或公共插件接口。
 
 ## 11. M1 已决问题
 

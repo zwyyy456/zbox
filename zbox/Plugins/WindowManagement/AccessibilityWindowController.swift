@@ -41,14 +41,6 @@ final class AccessibilityWindowController {
         self.authorization = authorization
     }
 
-    func requestPermission() {
-        authorization.request()
-    }
-
-    func openSystemSettings() {
-        authorization.openSystemSettings()
-    }
-
     func perform(_ action: WindowAction, targetPID: pid_t?) throws {
         guard authorization.isTrusted else {
             throw AccessibilityWindowError.permissionRequired

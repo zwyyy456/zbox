@@ -5,7 +5,6 @@ import Observation
 @Observable
 final class AppEnvironment {
     private enum Key {
-        static let windowManagementEnabled = "window-management.enabled"
         static let showApplicationPaths = "search.show-application-paths"
     }
 
@@ -15,7 +14,6 @@ final class AppEnvironment {
     private let searchEngine = SearchEngine()
     private let hotkeyRegistrar: any HotkeyRegistering
     private let accessibilityAuthorization: AccessibilityAuthorization
-    private let windowController: AccessibilityWindowController
     private let settingsWindowOpener = SettingsWindowOpener()
     private let launchAtLoginController = LaunchAtLoginController()
     private let hotkeyStore: HotkeyConfigurationStore
@@ -23,6 +21,8 @@ final class AppEnvironment {
 
     @ObservationIgnored
     let textLookupPlugin: TextLookupPlugin
+    @ObservationIgnored
+    let windowManagementPlugin: WindowManagementPlugin
     @ObservationIgnored
     let calculatorPlugin = CalculatorPlugin()
 
@@ -38,10 +38,8 @@ final class AppEnvironment {
     private(set) var applicationReloadError: String?
     private(set) var launchAtLoginError: String?
     private(set) var shortcutRegistrationError: String?
-    private(set) var windowManagementError: String?
     private(set) var textLookupError: String?
     private(set) var isLaunchAtLoginEnabled = false
-    private(set) var isWindowManagementEnabled: Bool
     private(set) var isAccessibilityTrusted: Bool
     private(set) var showsApplicationPathsInSearchResults: Bool
     private(set) var commandFeedback: CommandFeedback?
@@ -89,12 +87,16 @@ final class AppEnvironment {
 
         self.hotkeyRegistrar = hotkeyRegistrar
         self.accessibilityAuthorization = accessibilityAuthorization
-        windowController = AccessibilityWindowController(authorization: accessibilityAuthorization)
+        windowManagementPlugin = WindowManagementPlugin(
+            defaults: defaults,
+            hotkeyRegistrar: hotkeyRegistrar,
+            controller: AccessibilityWindowController(authorization: accessibilityAuthorization),
+            isAccessibilityTrusted: { accessibilityAuthorization.isTrusted }
+        )
         self.hotkeyStore = hotkeyStore
         self.defaults = defaults
         self.textLookupPlugin = textLookupPlugin
         rootSearchHotkey = hotkeyStore.rootSearchHotkey()
-        isWindowManagementEnabled = defaults.bool(forKey: Key.windowManagementEnabled)
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
@@ -107,6 +109,7 @@ final class AppEnvironment {
         hasStarted = true
 
         reconcileAccessibilityDependentFeatures()
+        windowManagementPlugin.start()
         reloadApplications()
         isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
@@ -128,6 +131,7 @@ final class AppEnvironment {
         commandFeedbackPanelController.hide()
         textLookupPlugin.stop()
         calculatorPlugin.stop()
+        windowManagementPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -157,11 +161,7 @@ final class AppEnvironment {
         var applicationURLs: [CommandID: URL] = [:]
 
         do {
-            try WindowCommands.registerAll(
-                in: registry,
-                controller: windowController,
-                isEnabled: { [weak self] in self?.isWindowManagementEnabled == true }
-            )
+            try windowManagementPlugin.register(in: registry)
             try SettingsCommands.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .general)
             }
@@ -305,6 +305,10 @@ final class AppEnvironment {
 
         do {
             try HotkeyValidator.validateUserShortcut(hotkey)
+            // Resume the old registrations before replacing them so failure can roll back.
+            if isRecordingShortcut {
+                try hotkeyRegistrar.setSuspended(false)
+            }
             rootSearchHotkey = hotkey
             try applyHotkeyRegistrations()
             hotkeyStore.setRootSearchHotkey(hotkey)
@@ -326,10 +330,11 @@ final class AppEnvironment {
         do {
             if let hotkey {
                 try HotkeyValidator.validateUserShortcut(hotkey)
-                commandHotkeys[commandID] = hotkey
-            } else {
-                commandHotkeys[commandID] = nil
             }
+            if isRecordingShortcut {
+                try hotkeyRegistrar.setSuspended(false)
+            }
+            commandHotkeys[commandID] = hotkey
             try applyHotkeyRegistrations()
             hotkeyStore.setCommandHotkey(hotkey, for: commandID)
             shortcutRegistrationError = nil
@@ -373,26 +378,8 @@ final class AppEnvironment {
 
     func setWindowManagementEnabled(_ isEnabled: Bool) {
         refreshAccessibilityState()
-
-        guard isEnabled else {
-            disableWindowManagement()
-            windowManagementError = nil
-            return
-        }
-        guard isAccessibilityTrusted else {
-            windowManagementError = String(localized: "Accessibility permission is required to enable Window Management.")
-            return
-        }
-        guard !isWindowManagementEnabled else { return }
-
-        isWindowManagementEnabled = true
-        do {
+        windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
-            defaults.set(true, forKey: Key.windowManagementEnabled)
-            windowManagementError = nil
-        } catch {
-            isWindowManagementEnabled = false
-            windowManagementError = error.localizedDescription
         }
     }
 
@@ -432,12 +419,12 @@ final class AppEnvironment {
     }
 
     func requestAccessibilityPermission() {
-        windowController.requestPermission()
+        accessibilityAuthorization.request()
         refreshAccessibilityState()
     }
 
     func openAccessibilitySettings() {
-        windowController.openSystemSettings()
+        accessibilityAuthorization.openSystemSettings()
     }
 
     func performCommandRecovery(_ action: CommandRecoveryAction) {
@@ -460,14 +447,10 @@ final class AppEnvironment {
 
     func reconcileAccessibilityDependentFeatures() {
         refreshAccessibilityState()
+        windowManagementPlugin.reconcileAuthorization()
         guard !isAccessibilityTrusted else { return }
 
-        let disabledWindowManagement = isWindowManagementEnabled
         let disabledTextLookup = textLookupPlugin.settings.isEnabled
-        if disabledWindowManagement {
-            disableWindowManagement()
-            windowManagementError = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
-        }
         if disabledTextLookup {
             textLookupPlugin.settings.setEnabled(false)
             textLookupPlugin.stop()
@@ -489,23 +472,12 @@ final class AppEnvironment {
             }
         )
 
-        if isWindowManagementEnabled, accessibilityAuthorization.isTrusted {
-            for target in WindowCommands.shortcutTargets {
-                guard let hotkey = commandHotkey(for: target.id) else { continue }
-                requests.append(
-                    HotkeyRegistrationRequest(
-                        id: target.id.rawValue,
-                        hotkey: hotkey,
-                        label: HotkeyFormatter.displayName(for: hotkey)
-                    ) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    }
-                )
-            }
+        requests += windowManagementPlugin.hotkeyRequests(for: commandHotkeys) { [weak self] commandID in
+            self?.executeDirectCommand(commandID)
         }
 
-        let coreIDs = Set(["root-search"] + WindowCommands.shortcutTargets.map(\.id.rawValue))
-        try hotkeyRegistrar.replace(ids: coreIDs, with: requests)
+        let commandRegistrationIDs = Set(["root-search"] + WindowCommands.shortcutTargets.map(\.id.rawValue))
+        try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)
     }
 
     private func validateHotkeyAssignments(
@@ -530,14 +502,6 @@ final class AppEnvironment {
 
     private func refreshAccessibilityState() {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
-    }
-
-    private func disableWindowManagement() {
-        isWindowManagementEnabled = false
-        defaults.set(false, forKey: Key.windowManagementEnabled)
-        for target in WindowCommands.shortcutTargets {
-            hotkeyRegistrar.unregister(id: target.id.rawValue)
-        }
     }
 
     private func executeDirectCommand(_ commandID: CommandID) {

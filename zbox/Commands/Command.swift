@@ -49,3 +49,8 @@ nonisolated struct CommandContext: Sendable {
     let source: CommandSource
     let frontmostApplicationPID: Int32?
 }
+
+nonisolated struct CommandShortcutTarget: Identifiable, Sendable {
+    let id: CommandID
+    let title: String
+}

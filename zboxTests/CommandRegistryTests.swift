@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import zbox
 
@@ -58,11 +59,15 @@ struct CommandRegistryTests {
     func disabledWindowCommandsRemainDiscoverableButDoNotExecute() async throws {
         let registry = CommandRegistry()
 
-        try WindowCommands.registerAll(
-            in: registry,
-            controller: AccessibilityWindowController(),
-            isEnabled: { false }
+        let suite = "CommandRegistryTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let plugin = WindowManagementPlugin(
+            defaults: defaults,
+            hotkeyRegistrar: GlobalHotkeyRegistrar(),
+            isAccessibilityTrusted: { false }
         )
+        try plugin.register(in: registry)
 
         #expect(registry.descriptors.map(\.id) == WindowCommands.shortcutTargets.map(\.id))
         do {

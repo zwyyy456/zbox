@@ -92,6 +92,44 @@ struct HotkeyConfigurationTests {
         #expect(environment.rootSearchHotkey == previous)
         #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == previous)
     }
+
+    @Test(arguments: [false, true])
+    func recordingFailureKeepsPreviousShortcutAndRestoresRegistrations(failOnResume: Bool) throws {
+        let suiteName = "HotkeyConfigurationTests.recording.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let registrar = RecordingHotkeyRegistrar()
+        let environment = AppEnvironment(defaults: defaults, hotkeyRegistrar: registrar)
+        let previous = Hotkey.defaultRootSearch
+        let replacement = Hotkey(keyCode: 35, modifiers: HotkeyModifiers.command | HotkeyModifiers.shift)
+        let other = Hotkey(keyCode: 8, modifiers: HotkeyModifiers.option)
+        try registrar.replace(ids: ["other"], with: [
+            HotkeyRegistrationRequest(id: "other", hotkey: other, label: "Other", action: {})
+        ])
+        environment.setRootSearchHotkey(previous)
+        registrar.rejectedHotkey = replacement
+        registrar.failNextResume = failOnResume
+
+        environment.setShortcutRecordingActive(true)
+        environment.setRootSearchHotkey(replacement)
+        environment.setShortcutRecordingActive(false)
+
+        #expect(environment.rootSearchHotkey == previous)
+        #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == previous)
+        #expect(environment.rootSearchHotkeyError != nil)
+        #expect(registrar.active["root-search"] == previous)
+        #expect(!registrar.isSuspended)
+        #expect(registrar.active["other"] == other)
+
+        registrar.rejectedHotkey = nil
+        environment.setShortcutRecordingActive(true)
+        environment.setRootSearchHotkey(replacement)
+        environment.setShortcutRecordingActive(false)
+        #expect(environment.rootSearchHotkey == replacement)
+        #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == replacement)
+        #expect(registrar.active["root-search"] == replacement)
+        #expect(registrar.active["other"] == other)
+    }
 }
 
 @MainActor
@@ -111,4 +149,55 @@ private enum TestRegistrationError: LocalizedError {
     case failed
 
     var errorDescription: String? { "Registration failed." }
+}
+
+@MainActor
+private final class RecordingHotkeyRegistrar: HotkeyRegistering {
+    var rejectedHotkey: Hotkey?
+    var failNextResume = false
+    private(set) var isSuspended = false
+    private var desired: [String: Hotkey] = [:]
+    private(set) var active: [String: Hotkey] = [:]
+
+    func replace(ids: Set<String>, with requests: [HotkeyRegistrationRequest]) throws {
+        var replacement = desired
+        for id in ids { replacement[id] = nil }
+        for request in requests { replacement[request.id] = request.hotkey }
+        if !isSuspended {
+            guard !replacement.values.contains(where: { $0 == rejectedHotkey }) else {
+                throw TestRegistrationError.failed
+            }
+            active = replacement
+        }
+        desired = replacement
+    }
+
+    func setSuspended(_ suspended: Bool) throws {
+        guard suspended != isSuspended else { return }
+        if suspended {
+            active = [:]
+            isSuspended = true
+        } else {
+            if failNextResume {
+                failNextResume = false
+                throw TestRegistrationError.failed
+            }
+            guard !desired.values.contains(where: { $0 == rejectedHotkey }) else {
+                throw TestRegistrationError.failed
+            }
+            active = desired
+            isSuspended = false
+        }
+    }
+
+    func unregisterAll() {
+        desired = [:]
+        active = [:]
+        isSuspended = false
+    }
+
+    func unregister(id: String) {
+        desired[id] = nil
+        active[id] = nil
+    }
 }

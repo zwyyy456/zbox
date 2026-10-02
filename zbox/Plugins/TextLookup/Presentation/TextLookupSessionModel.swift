@@ -9,7 +9,6 @@ nonisolated protocol TextLookupFlashDictServicing:
     func lookup(term: String, requestID: UUID) async throws -> LookupDocument
 
     func createFlashcard(
-        deliveryID: UUID,
         seed: FlashcardSeed,
         context: FlashcardCreationContext
     ) async throws -> FlashcardCreationResult
@@ -276,14 +275,13 @@ final class TextLookupSessionModel {
         cardTasks[selectionID] = Task { [weak self, flashDict] in
             do {
                 let result = try await flashDict.createFlashcard(
-                    deliveryID: UUID(),
                     seed: selection.cardSeed,
                     context: context
                 )
                 try Task.checkCancellation()
                 guard let self, self.accepts(sessionID) else { return }
                 selectionStates[selectionID] = switch result {
-                case .added: .added
+                case .added, .existing: .added
                 case .rejectedQuota: .rejectedQuota
                 case .failed(let message): .failed(message: message)
                 }
@@ -321,7 +319,7 @@ final class TextLookupSessionModel {
         case .noResult: .noResult
         case .incompatibleProtocol: .incompatibleProtocol
         case .requestFailed(let message): .requestFailed(message)
-        case .resourceUnavailable, .translationUnavailable, .invalidRequest: .requestFailed(nil)
+        case .resourceUnavailable, .invalidRequest: .requestFailed(nil)
         }
     }
 }
