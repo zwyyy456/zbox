@@ -4,7 +4,7 @@
 > 加载方式：涉及核心产品范围、命令中心行为或 M1 验收边界时读取
 > 状态：Active（当前产品基线）
 > 初始日期：2026-08-13
-> 最后校正：2026-10-02
+> 最后校正：2026-10-03
 > 适用范围：M1 命令中心与 Window Management 内置插件
 > 文档职责：定义核心命令中心的当前产品范围、用户行为与验收边界；Text Lookup 产品约定见 `product/text-lookup.md`，工程边界见根目录 `engineering-guidelines.md`。
 
@@ -27,7 +27,7 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 
 ### 1.2 核心与内置插件
 
-核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
+核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
 
 ### 1.3 MVP 要验证的核心假设
 
@@ -120,7 +120,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zbox 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
 | FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zbox 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
-| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts 两个核心 Tab，并为 Window Management、Text Lookup、Clipboard History、Screenshot、Workspace、Display 内置插件提供独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md` 和 `product/display.md` 定义 |
+| FR-08 | P1 | 基础设置 | 使用 General、Shortcuts 两个核心 Tab，并为 Window Management、Text Lookup、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets 内置插件提供独立 Tab；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md`、`product/display.md`、`product/quicklinks.md` 和 `product/snippets.md` 定义 |
 | FR-09 | P1 | 英文与简体中文界面 | Settings、菜单栏、Root Search、Command、错误与权限说明使用同一 String Catalog 真源，不混用未本地化硬编码文案 |
 
 ### 7.1 搜索行为
@@ -219,3 +219,5 @@ Screenshot 作为默认关闭的内置插件独立实施和验收，包含用户
 Workspace 作为默认关闭的内置插件，保存并恢复每个应用一个普通主窗口的布局；产品约定见 `product/workspace.md`，不改变 M1 完成定义。
 
 Display 作为默认关闭的内置插件，管理现有显示模式、刷新率、预设及切换确认；原生 HiDPI 配置需要管理员授权并在重启后验证。产品约定见 `product/display.md`，不改变 M1 完成定义。
+
+Quicklinks 与 Snippets 作为默认关闭的内置插件，分别管理快捷入口及可复制／粘贴的纯文本模板；产品约定见 `product/quicklinks.md` 与 `product/snippets.md`，不改变 M1 完成定义。

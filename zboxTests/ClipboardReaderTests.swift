@@ -18,7 +18,7 @@ struct ClipboardReaderTests {
         #expect(throws: ClipboardHistoryError.tooLarge) {
             _ = try ClipboardReader.read(from: board, excluding: [], sourceBundleID: nil)
         }
-        for marker in ClipboardReader.ignoredTypes {
+        for marker in ClipboardContentPolicy.ignoredTypes {
             board.clearContents()
             board.setString("private fixture", forType: .string)
             board.setData(Data(), forType: .init(marker))

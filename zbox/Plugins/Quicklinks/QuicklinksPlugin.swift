@@ -54,12 +54,12 @@ final class QuicklinksPlugin {
                 styleMask: [.titled, .closable, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.title = String(localized: "Quicklinks")
             panel.onDismiss = { [weak self] in self?.stop() }
-            panel.contentView = NSHostingView(rootView: QuicklinkParameterView(plugin: self))
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             panel.center()
             self.panel = panel
         }
+        panel?.contentView = NSHostingView(rootView: QuicklinkParameterView(plugin: self))
         panel?.makeKeyAndOrderFront(nil)
     }
 

@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/Quicklinks`、`Plugins/Snippets` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -76,6 +76,12 @@
 - Calculator 的当前产品范围与数值语义由 `docs/product/calculator.md` 定义；`CalculatorPlugin` 拥有窗口和会话内计算状态，`AppEnvironment` 只负责组合并把打开入口注册到核心 Command Registry。
 - 运算引擎保持无 UI、AppKit 或持久化依赖的值语义；窗口与可观察状态保持 Main Actor 隔离。
 - Calculator 不增加后台生命周期、权限、网络、动态插件 Runtime 或公共 SDK。只有出现真实的新数值需求时才扩展运算类型和表示范围。
+
+## Quicklinks 与 Snippets 边界
+
+- 产品行为分别由 `docs/product/quicklinks.md` 与 `docs/product/snippets.md` 定义。插件拥有条目、独立 JSON 存储、临时面板与命令；AppEnvironment 只组合设置、Registry 和快捷键。两者不建立通用模板框架或持久化框架。
+- QuicklinkTemplate 与 SnippetTemplate 保持纯值语义。前者约束 URL 占位符位置并编码参数，后者只做一次模板展开；系统打开、剪贴板读取和写入留在对应副作用边界。
+- ClipboardPasteController 与 ClipboardContentPolicy 位于 Platform，由 Clipboard History 和 Snippets 共同使用。平台层不依赖插件错误或面板类型；粘贴任务归各插件所有，取消与停用后不提交旧结果。
 
 ## 验证边界
 

@@ -83,7 +83,11 @@ final class SnippetsPlugin {
     func copySelection() {
         guard isEnabled, let item = selectedItem else { return }
         pasteTask?.cancel()
-        do { try write(item.body); stop() }
+        do {
+            let text = try SnippetTemplate(item.body).render { try SnippetClipboard.read() }
+            try write(text)
+            stop()
+        }
         catch { statusMessage = error.localizedDescription }
     }
 
@@ -98,6 +102,9 @@ final class SnippetsPlugin {
             statusMessage = ClipboardPasteError.targetUnavailable.localizedDescription
             return
         }
+        let text: String
+        do { text = try SnippetTemplate(item.body).render { try SnippetClipboard.read() } }
+        catch { statusMessage = error.localizedDescription; return }
         needsPastePermission = false
         pasteTask?.cancel()
         panel?.orderOut(nil)
@@ -107,7 +114,7 @@ final class SnippetsPlugin {
                 try Task.checkCancellation()
                 guard let self, isEnabled else { return }
                 guard authorization.isTrusted else { throw ClipboardPasteError.permissionRequired }
-                try write(item.body)
+                try write(text)
                 try ClipboardPasteController.paste(into: targetApplication)
                 stop()
             } catch is CancellationError {

@@ -44,17 +44,40 @@ private struct SnippetEditor: View {
     @State var item: Snippet
     let save: (Snippet) -> Bool
     @State private var error: String?
+    @State private var selection: TextSelection?
+    @FocusState private var bodyFocused: Bool
+
+    private func insert(_ token: String) {
+        let range: Range<String.Index>
+        if let selection, case .selection(let selectedRange) = selection.indices { range = selectedRange }
+        else { range = item.body.endIndex..<item.body.endIndex }
+        let offset = item.body.distance(from: item.body.startIndex, to: range.lowerBound)
+        item.body.replaceSubrange(range, with: token)
+        let cursor = item.body.index(item.body.startIndex, offsetBy: offset + token.count)
+        selection = TextSelection(insertionPoint: cursor)
+        bodyFocused = true
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("Name", text: $item.name)
             TextField("Keywords (separated by spaces)", text: $item.keywords)
             TextField("Group (optional)", text: $item.group)
-            Text("Snippet Text").font(.headline)
-            TextEditor(text: $item.body)
+            HStack {
+                Text("Snippet Text").font(.headline)
+                Spacer()
+                Menu("Insert Variable") {
+                    Button("Date (yyyy-MM-dd)") { insert("{{date}}") }
+                    Button("Time (HH:mm)") { insert("{{time}}") }
+                    Button("Clipboard Text") { insert("{{clipboard}}") }
+                }
+            }
+            TextEditor(text: $item.body, selection: $selection)
+                .focused($bodyFocused)
                 .font(.system(.body, design: .monospaced))
                 .accessibilityLabel("Snippet Text")
                 .border(.quaternary)
+            Text("Variables expand only when copied or pasted. Prefix {{ with a backslash to keep it literal.").font(.caption).foregroundStyle(.secondary)
             if let error { SettingsErrorView(message: error) }
             HStack {
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)

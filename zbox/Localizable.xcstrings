@@ -4454,6 +4454,476 @@
           }
         }
       }
+    },
+    "Add Quicklink": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加快捷入口"
+          }
+        }
+      }
+    },
+    "Choose File or Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择文件或文件夹"
+          }
+        }
+      }
+    },
+    "Enable Quicklinks": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用快捷入口"
+          }
+        }
+      }
+    },
+    "Enter a search value.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入搜索内容。"
+          }
+        }
+      }
+    },
+    "Enter a valid URL or choose a file or folder.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入有效网址，或选择文件或文件夹。"
+          }
+        }
+      }
+    },
+    "File or Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件或文件夹"
+          }
+        }
+      }
+    },
+    "Insert {query} where the search value belongs.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在需要填入搜索内容的位置插入 {query}。"
+          }
+        }
+      }
+    },
+    "Keywords (separated by spaces)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关键词（以空格分隔）"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开"
+          }
+        }
+      }
+    },
+    "Parameter Prompt": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参数提示"
+          }
+        }
+      }
+    },
+    "Parameterized URL": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "带参数的网址"
+          }
+        }
+      }
+    },
+    "Quicklinks": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷入口"
+          }
+        }
+      }
+    },
+    "Quicklinks could not be read. The saved file has been preserved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取快捷入口，已保留原有数据文件。"
+          }
+        }
+      }
+    },
+    "Search Quicklinks": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索快捷入口"
+          }
+        }
+      }
+    },
+    "Search value": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索内容"
+          }
+        }
+      }
+    },
+    "Target": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标"
+          }
+        }
+      }
+    },
+    "The changes could not be saved. Check the storage location and try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存修改，请检查存储位置后重试。"
+          }
+        }
+      }
+    },
+    "The system could not open this quicklink. Check its address and installed app.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统无法打开此入口，请检查地址及对应应用是否已安装。"
+          }
+        }
+      }
+    },
+    "This file or folder no longer exists. Choose its new location in Settings.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此文件或文件夹已不存在，请在设置中重新选择位置。"
+          }
+        }
+      }
+    },
+    "Type": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "类型"
+          }
+        }
+      }
+    },
+    "URL": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网址"
+          }
+        }
+      }
+    },
+    "Use {query} in an HTTP(S) URL path or query value, not in its host, parameter name, or fragment.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请将 {query} 放在 HTTP(S) 网址的路径或参数值中，不可放在域名、参数名或片段标识中。"
+          }
+        }
+      }
+    },
+    "Add Snippet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加文本片段"
+          }
+        }
+      }
+    },
+    "All Groups": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部分组"
+          }
+        }
+      }
+    },
+    "Allow clipboard access in System Settings to use the clipboard variable.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在系统设置中允许访问剪贴板，再使用剪贴板变量。"
+          }
+        }
+      }
+    },
+    "Clipboard Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板文本"
+          }
+        }
+      }
+    },
+    "Date (yyyy-MM-dd)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期（yyyy-MM-dd）"
+          }
+        }
+      }
+    },
+    "Delete Snippet?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除此文本片段？"
+          }
+        }
+      }
+    },
+    "Enable Snippets": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用文本片段"
+          }
+        }
+      }
+    },
+    "Enter a name and snippet text.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入名称和片段正文。"
+          }
+        }
+      }
+    },
+    "Group": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分组"
+          }
+        }
+      }
+    },
+    "Group (optional)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分组（可选）"
+          }
+        }
+      }
+    },
+    "Insert Variable": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入变量"
+          }
+        }
+      }
+    },
+    "No snippets found.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到文本片段。"
+          }
+        }
+      }
+    },
+    "Return to paste • ⌘Return to copy • Esc to close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回车粘贴 · ⌘回车复制 · Esc 关闭"
+          }
+        }
+      }
+    },
+    "Search Snippets": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索文本片段"
+          }
+        }
+      }
+    },
+    "Snippet Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "片段正文"
+          }
+        }
+      }
+    },
+    "Snippets": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本片段"
+          }
+        }
+      }
+    },
+    "Snippets could not be read. The saved file has been preserved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取文本片段，已保留原有数据文件。"
+          }
+        }
+      }
+    },
+    "The clipboard changed. Execute the snippet again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板已变化，请重新执行片段。"
+          }
+        }
+      }
+    },
+    "The clipboard does not contain available plain text.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板中没有可用的纯文本。"
+          }
+        }
+      }
+    },
+    "The clipboard is marked private or temporary and cannot be inserted into a snippet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板内容带有私密或临时标记，不能插入文本片段。"
+          }
+        }
+      }
+    },
+    "The clipboard text exceeds the 1 MiB limit.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板文本超过 1 MiB 限制。"
+          }
+        }
+      }
+    },
+    "The snippet could not be copied. Try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法复制文本片段，请重试。"
+          }
+        }
+      }
+    },
+    "Time (HH:mm)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间（HH:mm）"
+          }
+        }
+      }
+    },
+    "Variables expand only when copied or pasted. Prefix {{ with a backslash to keep it literal.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "变量仅在复制或粘贴时展开。在 {{ 前加反斜杠可保留原文。"
+          }
+        }
+      }
+    },
+    "The original app is unavailable or has changed. Copy the item and paste it manually.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原应用已不可用或前台应用已变化，请复制后手动粘贴。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

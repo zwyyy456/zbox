@@ -3,12 +3,15 @@ import SwiftUI
 struct QuicklinkParameterView: View {
     @Bindable var plugin: QuicklinksPlugin
     @FocusState private var focused: Bool
+    private var prompt: String {
+        if let value = plugin.parameterItem?.parameterPrompt, !value.isEmpty { return value }
+        return String(localized: "Search value")
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(plugin.parameterItem?.name ?? "").font(.headline)
             Text((try? plugin.parameterItem?.destination().host) ?? "").foregroundStyle(.secondary)
-            TextField(plugin.parameterItem?.parameterPrompt?.isEmpty == false
-                ? plugin.parameterItem!.parameterPrompt! : String(localized: "Search value"), text: $plugin.query)
+            TextField(prompt, text: $plugin.query)
                 .focused($focused)
                 .onSubmit { plugin.openParameterizedLink() }
             if let error = plugin.parameterError { SettingsErrorView(message: error) }
