@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum SettingsTab: Hashable {
+    case quicklinks
     case display
     case workspace
     case general
@@ -12,6 +13,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var title: String {
         switch self {
+        case .quicklinks: String(localized: "Quicklinks")
         case .display: String(localized: "Display")
         case .workspace: String(localized: "Workspace")
         case .general: String(localized: "General")
@@ -25,6 +27,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var systemImage: String {
         switch self {
+        case .quicklinks: "link"
         case .display: "display"
         case .workspace: "rectangle.3.group"
         case .general: "gearshape"

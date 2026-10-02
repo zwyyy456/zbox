@@ -35,6 +35,8 @@ final class AppEnvironment {
     @ObservationIgnored
     let displayPlugin: DisplayPlugin
 
+    let quicklinksPlugin: QuicklinksPlugin
+
     private var commandRegistry = CommandRegistry()
     private var applicationURLsByCommandID: [CommandID: URL] = [:]
     private(set) var applications: [ApplicationInfo] = []
@@ -54,7 +56,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -92,6 +94,8 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        let quicklinksPlugin = QuicklinksPlugin(defaults: defaults)
+        self.quicklinksPlugin = quicklinksPlugin
         let displayPlugin = DisplayPlugin(defaults: defaults)
         self.displayPlugin = displayPlugin
         let workspacePlugin = WorkspacePlugin(defaults: defaults)
@@ -124,7 +128,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -201,6 +205,9 @@ final class AppEnvironment {
             try windowManagementPlugin.register(in: registry)
             try SettingsCommands.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .general)
+            }
+            try quicklinksPlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .quicklinks)
             }
             try calculatorPlugin.register(in: registry)
             try displayPlugin.register(in: registry) { [weak self] in
@@ -339,6 +346,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
         if commandID.rawValue.hasPrefix("display.") { return "display" }
         if commandID.rawValue.hasPrefix("workspace.") { return "rectangle.3.group" }
         if ScreenshotPlugin.shortcutTargets.contains(where: { $0.id == commandID }) { return "camera.viewfinder" }
@@ -434,6 +442,36 @@ final class AppEnvironment {
         windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
         }
+    }
+
+    func setQuicklinksEnabled(_ enabled: Bool) {
+        quicklinksPlugin.setEnabled(enabled)
+        do { try applyHotkeyRegistrations(); quicklinksPlugin.statusMessage = nil }
+        catch {
+            quicklinksPlugin.setEnabled(!enabled)
+            quicklinksPlugin.statusMessage = error.localizedDescription
+        }
+        reloadApplications()
+    }
+
+    func saveQuicklink(_ item: Quicklink) -> Bool {
+        do {
+            try quicklinksPlugin.store.save(item)
+            reloadApplications()
+            quicklinksPlugin.statusMessage = nil
+            return true
+        } catch { quicklinksPlugin.statusMessage = error.localizedDescription; return false }
+    }
+
+    func deleteQuicklink(_ item: Quicklink) {
+        do {
+            try quicklinksPlugin.store.delete(item.id)
+            hotkeyRegistrar.unregister(id: item.commandID.rawValue)
+            commandHotkeys[item.commandID] = nil
+            commandHotkeyErrors[item.commandID] = nil
+            hotkeyStore.setCommandHotkey(nil, for: item.commandID)
+            reloadApplications()
+        } catch { quicklinksPlugin.statusMessage = error.localizedDescription }
     }
 
     func setDisplayEnabled(_ enabled: Bool) {
@@ -654,6 +692,15 @@ final class AppEnvironment {
                 hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
             })
+        }
+        if quicklinksPlugin.isEnabled {
+            for target in quicklinksPlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         if displayPlugin.isEnabled {
             for target in displayPlugin.shortcutTargets {
