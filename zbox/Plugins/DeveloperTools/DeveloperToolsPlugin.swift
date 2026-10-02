@@ -4,17 +4,21 @@ import SwiftUI
 @Observable
 final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     enum Tool: String, CaseIterable, Identifiable {
-        case uuid
+        case uuid, url, base64
 
         var id: String { rawValue }
         var title: String {
             switch self {
             case .uuid: String(localized: "UUID Generator")
+            case .url: String(localized: "URL Encode / Decode")
+            case .base64: String(localized: "Base64 Encode / Decode")
             }
         }
         var icon: String {
             switch self {
             case .uuid: "number"
+            case .url: "link"
+            case .base64: "textformat.abc"
             }
         }
         var commandID: CommandID { CommandID("developer-tools.\(rawValue)") }
@@ -27,6 +31,8 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     }
 
     var selection: Tool = .uuid
+    var urlSession = DeveloperTextSession(kind: .url)
+    var base64Session = DeveloperTextSession(kind: .base64)
     var uuidCount = 1
     var uppercaseUUIDs = false
     private(set) var uuids: [UUID] = []
@@ -78,6 +84,12 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         uuids = []
         copyError = nil
+        urlSession.invalidate()
+        base64Session.invalidate()
+        urlSession = DeveloperTextSession(kind: .url)
+        base64Session = DeveloperTextSession(kind: .base64)
+        window?.contentView = nil
+        window = nil
     }
 
     private func show(tool: Tool?) {
