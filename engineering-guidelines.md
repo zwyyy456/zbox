@@ -59,6 +59,12 @@
 - 上传是用户配置并触发的独立网络边界；平台协议、Keychain、URLSession 留在插件内，不建立通用上传 Runtime。重试保留同一导出快照，停止后拒绝旧任务的成功、错误及进度结果。
 - 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，所有自身回写通知现有协调对象。
 
+## Workspace 边界
+
+- 产品行为由 `docs/product/workspace.md` 定义。插件拥有本地布局、捕获选择和恢复任务；AppEnvironment 组合命令与共享快捷键。
+- Workspace 和 Window Management 共享平台窗口读写，不互相依赖启停。AX 对象保持 Main Actor 隔离；布局规则保持值语义。
+- 工作区 UUID 稳定标识命令，删除同时注销和删除快捷键；停止任务后不提交旧结果。
+
 ## Calculator 边界
 
 - Calculator 的当前产品范围与数值语义由 `docs/product/calculator.md` 定义；`CalculatorPlugin` 拥有窗口和会话内计算状态，`AppEnvironment` 只负责组合并把打开入口注册到核心 Command Registry。

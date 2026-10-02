@@ -13,6 +13,9 @@ struct SettingsView: View {
             ShortcutSettingsView(environment: environment)
                 .settingsTab(SettingsTab.shortcuts)
 
+            WorkspaceSettingsView(environment: environment)
+                .settingsTab(SettingsTab.workspace)
+
             WindowManagementSettingsView(environment: environment)
                 .settingsTab(SettingsTab.windowManagement)
 

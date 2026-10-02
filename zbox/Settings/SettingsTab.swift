@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum SettingsTab: Hashable {
+    case workspace
     case general
     case shortcuts
     case windowManagement
@@ -10,6 +11,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var title: String {
         switch self {
+        case .workspace: String(localized: "Workspace")
         case .general: String(localized: "General")
         case .shortcuts: String(localized: "Shortcuts")
         case .windowManagement: String(localized: "Window Management")
@@ -21,6 +23,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var systemImage: String {
         switch self {
+        case .workspace: "rectangle.3.group"
         case .general: "gearshape"
         case .shortcuts: "keyboard"
         case .windowManagement: "macwindow"

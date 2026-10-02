@@ -30,6 +30,7 @@ final class AppEnvironment {
     let screenshotPlugin: ScreenshotPlugin
     @ObservationIgnored
     let calculatorPlugin = CalculatorPlugin()
+    let workspacePlugin: WorkspacePlugin
 
     private var commandRegistry = CommandRegistry()
     private var applicationURLsByCommandID: [CommandID: URL] = [:]
@@ -88,6 +89,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        workspacePlugin = WorkspacePlugin(defaults: defaults)
         screenshotPlugin = ScreenshotPlugin(defaults: defaults, clipboardCoordinator: clipboardCoordinator)
         let accessibilityAuthorization = AccessibilityAuthorization()
         clipboardHistoryPlugin = ClipboardHistoryPlugin(defaults: defaults, coordinator: clipboardCoordinator,
@@ -185,6 +187,9 @@ final class AppEnvironment {
                 try self?.openSettings(tab: .general)
             }
             try calculatorPlugin.register(in: registry)
+            try workspacePlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .workspace)
+            }
             try screenshotPlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .screenshot)
             }
@@ -410,6 +415,35 @@ final class AppEnvironment {
         }
     }
 
+    func setWorkspaceEnabled(_ enabled: Bool) {
+        refreshAccessibilityState()
+        guard !enabled || isAccessibilityTrusted else {
+            workspacePlugin.statusMessage = String(localized: "Accessibility permission is required to move windows.")
+            return
+        }
+        workspacePlugin.setEnabled(enabled)
+        workspacePlugin.statusMessage = nil
+    }
+
+    func saveWorkspace(_ layout: WorkspaceLayout) {
+        do {
+            try workspacePlugin.store.save(layout)
+            reloadApplications()
+            workspacePlugin.statusMessage = nil
+        } catch { workspacePlugin.statusMessage = error.localizedDescription }
+    }
+
+    func deleteWorkspace(_ layout: WorkspaceLayout) {
+        do {
+            try workspacePlugin.store.delete(layout.id)
+            hotkeyRegistrar.unregister(id: layout.commandID.rawValue)
+            commandHotkeys[layout.commandID] = nil
+            commandHotkeyErrors[layout.commandID] = nil
+            hotkeyStore.setCommandHotkey(nil, for: layout.commandID)
+            reloadApplications()
+        } catch { workspacePlugin.statusMessage = error.localizedDescription }
+    }
+
     func setScreenshotEnabled(_ enabled: Bool) {
         screenshotPlugin.setEnabled(enabled)
         if !enabled {
@@ -508,6 +542,7 @@ final class AppEnvironment {
         windowManagementPlugin.reconcileAuthorization()
         guard !isAccessibilityTrusted else { return }
 
+        workspacePlugin.setEnabled(false)
         let disabledTextLookup = textLookupPlugin.settings.isEnabled
         if disabledTextLookup {
             textLookupPlugin.settings.setEnabled(false)
