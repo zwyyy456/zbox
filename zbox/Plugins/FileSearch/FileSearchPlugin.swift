@@ -1,4 +1,4 @@
-import AppKit
+import SwiftUI
 import Observation
 
 @MainActor @Observable
@@ -10,6 +10,19 @@ final class FileSearchPlugin {
     private(set) var isEnabled: Bool
     var statusMessage: String?
     var rootStatus: [UUID: String] = [:]
+    var query = "" { didSet { search() } }
+    var scope = "" { didSet { search() } }
+    var typeFilter = "" { didSet { search() } }
+    var extensionFilter = "" { didSet { search() } }
+    var sort = FileSearchSort.relevance { didSet { search() } }
+    private(set) var page = FileSearchPage()
+    private(set) var isSearching = false
+    var selectedID: String?
+    var searchError: String?
+    @ObservationIgnored private var queryTask: Task<Void, Never>?
+    @ObservationIgnored private var panel: FileSearchPanel?
+    private var isVisible = false
+    var selectedFile: IndexedFile? { page.files.first { $0.id == selectedID } ?? page.files.first }
     let index = FileIndexStore()
     private let scanner = FileIndexScanner()
     @ObservationIgnored private var scanTasks: [UUID: Task<Void, Never>] = [:]
@@ -33,6 +46,7 @@ final class FileSearchPlugin {
     }
 
     func stop() {
+        dismiss()
         for task in scanTasks.values { task.cancel() }
         rootStatus = [:]
     }
@@ -49,6 +63,7 @@ final class FileSearchPlugin {
                 let count = try await scanner.scan(root, store: index)
                 try Task.checkCancellation()
                 rootStatus[root.id] = String(localized: "Indexed \(count) items")
+                search()
             } catch is CancellationError { return }
             catch {
                 guard !Task.isCancelled else { return }
@@ -109,8 +124,82 @@ final class FileSearchPlugin {
         save(updated)
     }
 
+    func search() {
+        queryTask?.cancel()
+        page = FileSearchPage()
+        selectedID = nil
+        searchError = nil
+        isSearching = false
+        guard isEnabled, isVisible else { return }
+        let input = query, ext = extensionFilter, type = typeFilter, ordering = sort
+        let roots = settings.roots.filter { (scope.isEmpty || $0.id.uuidString == scope) && $0.isAvailable() }
+        queryTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let parsed = try FileSearchQuery(input, extensionFilter: ext, typeFilter: type)
+                guard !parsed.isEmpty else { return }
+                isSearching = true
+                try await Task.sleep(for: .milliseconds(120))
+                let result = try await index.search(parsed, roots: roots, sort: ordering)
+                try Task.checkCancellation()
+                page = result
+                selectedID = result.files.first?.id
+                isSearching = false
+            } catch is CancellationError { return }
+            catch {
+                guard !Task.isCancelled else { return }
+                isSearching = false
+                searchError = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.storage.localizedDescription
+            }
+        }
+    }
+
+    func dismiss() {
+        isVisible = false
+        queryTask?.cancel()
+        queryTask = nil
+        panel?.orderOut(nil)
+        page = FileSearchPage()
+        selectedID = nil
+        isSearching = false
+    }
+
+    func moveSelection(_ offset: Int) {
+        guard !page.files.isEmpty else { return }
+        let current = page.files.firstIndex { $0.id == selectedFile?.id } ?? 0
+        selectedID = page.files[min(max(current + offset, 0), page.files.count - 1)].id
+    }
+
+    private func show() {
+        dismiss()
+        query = ""
+        scope = ""
+        typeFilter = ""
+        extensionFilter = ""
+        isVisible = true
+        if panel == nil {
+            let panel = FileSearchPanel(contentRect: NSRect(x: 0, y: 0, width: 860, height: 520),
+                styleMask: [.titled, .closable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
+            panel.title = String(localized: "File Search")
+            panel.navigate = { [weak self] in self?.moveSelection($0) }
+            panel.dismiss = { [weak self] in self?.dismiss() }
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            panel.minSize = NSSize(width: 650, height: 380)
+            panel.isReleasedWhenClosed = false
+            panel.center()
+            self.panel = panel
+        }
+        panel?.contentView = NSHostingView(rootView: FileSearchView(plugin: self))
+        panel?.makeKeyAndOrderFront(nil)
+        search()
+    }
+
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "File Search"),
-            subtitle: nil, keywords: ["file", "search", "find", "文件搜索", "查找文件"])) { _ in try openSettings() }
+            subtitle: nil, keywords: ["file", "search", "find", "文件搜索", "查找文件"])) { [weak self] _ in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                show()
+            }
     }
 }

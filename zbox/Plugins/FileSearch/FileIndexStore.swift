@@ -103,6 +103,45 @@ actor FileIndexStore {
         }
     }
 
+    func search(_ query: FileSearchQuery, roots: [FileSearchRoot], sort: FileSearchSort, limit: Int = 200) throws -> FileSearchPage {
+        guard !query.isEmpty else { return FileSearchPage() }
+        return try database { db in
+            var best: [(file: IndexedFile, score: Int, path: String)] = []
+            var hasMore = false
+            func precedes(_ a: (file: IndexedFile, score: Int, path: String), _ b: (file: IndexedFile, score: Int, path: String)) -> Bool {
+                if sort == .relevance, a.score != b.score { return a.score > b.score }
+                if sort == .modified, a.file.modified != b.file.modified { return a.file.modified > b.file.modified }
+                let first = IndexedFile.normalized(a.file.name)
+                let second = IndexedFile.normalized(b.file.name)
+                return first == second ? a.path < b.path : first < second
+            }
+            for root in roots {
+                try statement("SELECT path, name, directory, size, modified FROM files WHERE root = ?", db: db) { stmt in
+                    bind(root.id.uuidString, to: stmt, at: 1)
+                    var result = sqlite3_step(stmt)
+                    while result == SQLITE_ROW {
+                        try Task.checkCancellation()
+                        let file = IndexedFile(rootID: root.id, path: text(stmt, 0), name: text(stmt, 1),
+                            isDirectory: sqlite3_column_int(stmt, 2) != 0, size: sqlite3_column_int64(stmt, 3),
+                            modified: Date(timeIntervalSince1970: sqlite3_column_double(stmt, 4)))
+                        if let score = query.score(file, root: root) {
+                            let candidate = (file: file, score: score, path: root.url.appending(path: file.path).path)
+                            if best.count == limit { hasMore = true }
+                            if best.count < limit || precedes(candidate, best[best.count - 1]) {
+                                best.append(candidate)
+                                best.sort(by: precedes)
+                                if best.count > limit { best.removeLast() }
+                            }
+                        }
+                        result = sqlite3_step(stmt)
+                    }
+                    guard result == SQLITE_DONE else { throw FileSearchError.storage }
+                }
+            }
+            return FileSearchPage(files: best.map(\.file), hasMore: hasMore)
+        }
+    }
+
     func files(root: UUID) throws -> [IndexedFile] {
         try database { db in
             try statement("SELECT path, name, directory, size, modified FROM files WHERE root = ?", db: db) { stmt in
