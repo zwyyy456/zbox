@@ -5,9 +5,13 @@ final class SnippetsPlugin {
     static let commandID = CommandID("snippets.open")
     private let defaults: UserDefaults
     private let coordinator: ClipboardAccessCoordinator
+    private let authorization = AccessibilityAuthorization()
+    @ObservationIgnored private var pasteTask: Task<Void, Never>?
+    @ObservationIgnored private var targetApplication: NSRunningApplication?
     let store = SnippetStore()
     private(set) var isEnabled: Bool
     var statusMessage: String?
+    private(set) var needsPastePermission = false
     var query = ""
     var group = ""
     var selectedID: UUID?
@@ -23,6 +27,7 @@ final class SnippetsPlugin {
     var selectedItem: Snippet? { filteredItems.first { $0.id == selectedID } ?? filteredItems.first }
     var shortcutTargets: [CommandShortcutTarget] {
         [CommandShortcutTarget(id: Self.commandID, title: String(localized: "Snippets"))]
+            + store.items.map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
     }
 
     init(defaults: UserDefaults, coordinator: ClipboardAccessCoordinator) {
@@ -38,19 +43,33 @@ final class SnippetsPlugin {
     }
 
     func stop() {
+        pasteTask?.cancel()
+        pasteTask = nil
+        targetApplication = nil
         panel?.orderOut(nil)
         query = ""
         group = ""
         selectedID = nil
         statusMessage = nil
+        needsPastePermission = false
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "Snippets"),
-            subtitle: nil, keywords: ["snippets", "text", "文本片段", "模板"])) { [weak self] _ in
+            subtitle: nil, keywords: ["snippets", "text", "文本片段", "模板"])) { [weak self] context in
             guard let self else { return }
             guard isEnabled else { try openSettings(); return }
-            show()
+            show(targetPID: context.frontmostApplicationPID)
+        }
+        guard isEnabled else { return }
+        for item in store.items {
+            try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
+                subtitle: String(localized: "Snippets"), keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] context in
+                guard let self, isEnabled else { return }
+                show(targetPID: context.frontmostApplicationPID)
+                selectedID = item.id
+                pasteSelection()
+            }
         }
     }
 
@@ -63,9 +82,47 @@ final class SnippetsPlugin {
 
     func copySelection() {
         guard isEnabled, let item = selectedItem else { return }
+        pasteTask?.cancel()
         do { try write(item.body); stop() }
         catch { statusMessage = error.localizedDescription }
     }
+
+    func pasteSelection() {
+        guard isEnabled, let item = selectedItem else { return }
+        guard authorization.isTrusted else {
+            needsPastePermission = true
+            statusMessage = ClipboardPasteError.permissionRequired.localizedDescription
+            return
+        }
+        guard let targetApplication else {
+            statusMessage = ClipboardPasteError.targetUnavailable.localizedDescription
+            return
+        }
+        needsPastePermission = false
+        pasteTask?.cancel()
+        panel?.orderOut(nil)
+        pasteTask = Task { [weak self] in
+            do {
+                try await ClipboardPasteController.activate(targetApplication)
+                try Task.checkCancellation()
+                guard let self, isEnabled else { return }
+                guard authorization.isTrusted else { throw ClipboardPasteError.permissionRequired }
+                try write(item.body)
+                try ClipboardPasteController.paste(into: targetApplication)
+                stop()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self, !Task.isCancelled, isEnabled else { return }
+                if case ClipboardPasteError.permissionRequired = error { needsPastePermission = true }
+                statusMessage = error.localizedDescription
+                panel?.makeKeyAndOrderFront(nil)
+            }
+        }
+    }
+
+    func requestPastePermission() { authorization.request() }
+    func openAccessibilitySettings() { authorization.openSystemSettings() }
 
     private func write(_ text: String) throws {
         let board = NSPasteboard.general
@@ -74,23 +131,25 @@ final class SnippetsPlugin {
         guard board.setString(text, forType: .string) else { throw SnippetError.copyFailed }
     }
 
-    private func show() {
+    private func show(targetPID: pid_t?) {
         stop()
+        targetApplication = targetPID.flatMap(NSRunningApplication.init(processIdentifier:))
+        selectedID = filteredItems.first?.id
         if panel == nil {
             let panel = SnippetsPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480),
                 styleMask: [.titled, .closable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.title = String(localized: "Snippets")
             panel.navigate = { [weak self] in self?.moveSelection(by: $0) }
-            panel.execute = { [weak self] in self?.copySelection() }
+            panel.execute = { [weak self] in self?.pasteSelection() }
             panel.copy = { [weak self] in self?.copySelection() }
             panel.dismiss = { [weak self] in self?.stop() }
-            panel.contentView = NSHostingView(rootView: SnippetsView(plugin: self))
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.minSize = NSSize(width: 580, height: 360)
             panel.isReleasedWhenClosed = false
             panel.center()
             self.panel = panel
         }
+        panel?.contentView = NSHostingView(rootView: SnippetsView(plugin: self))
         panel?.makeKeyAndOrderFront(nil)
     }
 }

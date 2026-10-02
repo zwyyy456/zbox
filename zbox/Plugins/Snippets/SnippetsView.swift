@@ -26,15 +26,24 @@ struct SnippetsView: View {
                         .frame(maxWidth: .infinity, alignment: .topLeading).padding(12)
                 }.frame(minWidth: 260)
             }
-            if let error = plugin.store.loadError ?? plugin.statusMessage { SettingsErrorView(message: error) }
+            if let error = plugin.store.loadError ?? plugin.statusMessage {
+                SettingsErrorView(message: error)
+            }
+            if plugin.needsPastePermission {
+                HStack {
+                    Button("Request Accessibility for Direct Paste", action: plugin.requestPastePermission)
+                    Button("Open Accessibility Settings", action: plugin.openAccessibilitySettings)
+                }
+            }
             HStack {
-                Text("Return to copy • Esc to close").font(.caption).foregroundStyle(.secondary)
+                Text("Return to paste • ⌘Return to copy • Esc to close").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Copy") { plugin.copySelection() }.disabled(plugin.selectedItem == nil)
+                Button("Paste") { plugin.pasteSelection() }.disabled(plugin.selectedItem == nil)
             }
         }
         .padding(16)
-        .onAppear { searchFocused = true; plugin.selectedID = plugin.filteredItems.first?.id }
+        .onAppear { searchFocused = true }
         .onChange(of: plugin.query) { plugin.selectedID = plugin.filteredItems.first?.id }
         .onChange(of: plugin.group) { plugin.selectedID = plugin.filteredItems.first?.id }
     }

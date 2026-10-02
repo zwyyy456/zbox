@@ -263,11 +263,11 @@ final class ClipboardHistoryPlugin {
     func pasteSelection() {
         guard let selectedID else { return }
         guard authorization.isTrusted else {
-            statusMessage = ClipboardHistoryError.pastePermissionRequired.localizedDescription
+            statusMessage = ClipboardPasteError.permissionRequired.localizedDescription
             return
         }
         guard let targetApplication else {
-            statusMessage = ClipboardHistoryError.targetUnavailable.localizedDescription
+            statusMessage = ClipboardPasteError.targetUnavailable.localizedDescription
             return
         }
         do {
@@ -279,14 +279,15 @@ final class ClipboardHistoryPlugin {
                     try await ClipboardPasteController.activate(targetApplication)
                     try Task.checkCancellation()
                     guard let self, isEnabled else { return }
-                    guard authorization.isTrusted else { throw ClipboardHistoryError.pastePermissionRequired }
+                    guard authorization.isTrusted else { throw ClipboardPasteError.permissionRequired }
                     try write(payload)
                     try ClipboardPasteController.paste(into: targetApplication)
                 } catch is CancellationError {
                     return
                 } catch {
                     guard !Task.isCancelled, self?.isEnabled == true else { return }
-                    self?.statusMessage = (error as? ClipboardHistoryError)?.localizedDescription
+                    self?.statusMessage = (error as? ClipboardPasteError)?.localizedDescription
+                        ?? (error as? ClipboardHistoryError)?.localizedDescription
                         ?? String(localized: "The item could not be pasted. Copy it and paste manually.")
                     self?.panel?.makeKeyAndOrderFront(nil)
                 }

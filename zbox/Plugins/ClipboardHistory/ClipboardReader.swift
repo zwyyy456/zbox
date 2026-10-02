@@ -8,7 +8,7 @@ nonisolated struct ClipboardPayload: Sendable {
 }
 
 nonisolated enum ClipboardHistoryError: LocalizedError, Equatable {
-    case accessRequired, unsupported, tooLarge, changed, storageFull, targetUnavailable, pastePermissionRequired
+    case accessRequired, unsupported, tooLarge, changed, storageFull
 
     var errorDescription: String? {
         switch self {
@@ -17,8 +17,6 @@ nonisolated enum ClipboardHistoryError: LocalizedError, Equatable {
         case .tooLarge: String(localized: "The last clipboard item is too large to save.")
         case .changed: String(localized: "The clipboard changed while it was being read.")
         case .storageFull: String(localized: "Pinned items fill the history. Unpin or delete an item to continue recording.")
-        case .targetUnavailable: String(localized: "The original app is unavailable. Copy the item and paste it manually.")
-        case .pastePermissionRequired: String(localized: "Direct paste requires Accessibility. You can still copy the item.")
         }
     }
 }
