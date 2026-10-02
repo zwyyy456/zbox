@@ -35,6 +35,7 @@ final class AppEnvironment {
     @ObservationIgnored
     let displayPlugin: DisplayPlugin
 
+    let developerToolsPlugin: DeveloperToolsPlugin
     let fileSearchPlugin: FileSearchPlugin
     let snippetsPlugin: SnippetsPlugin
     let quicklinksPlugin: QuicklinksPlugin
@@ -58,7 +59,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -96,6 +97,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        developerToolsPlugin = DeveloperToolsPlugin(clipboardCoordinator: clipboardCoordinator)
         fileSearchPlugin = FileSearchPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         let snippetsPlugin = SnippetsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         self.snippetsPlugin = snippetsPlugin
@@ -177,6 +179,7 @@ final class AppEnvironment {
         snippetsPlugin.stop()
         quicklinksPlugin.stop()
         calculatorPlugin.stop()
+        developerToolsPlugin.stop()
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
         screenshotPlugin.stop()
@@ -225,6 +228,7 @@ final class AppEnvironment {
                 try self?.openSettings(tab: .quicklinks)
             }
             try calculatorPlugin.register(in: registry)
+            try developerToolsPlugin.register(in: registry)
             try displayPlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .display)
             }
@@ -371,6 +375,7 @@ final class AppEnvironment {
         return WindowCommands.systemImage(for: commandID)
             ?? SettingsCommands.systemImage(for: commandID)
             ?? calculatorPlugin.systemImage(for: commandID)
+            ?? developerToolsPlugin.systemImage(for: commandID)
     }
 
     func commandHotkey(for commandID: CommandID) -> Hotkey? {
@@ -758,6 +763,13 @@ final class AppEnvironment {
                 hotkey: hotkey, label: FileSearchPlugin.shortcutTarget.title) { [weak self] in
                 self?.executeDirectCommand(FileSearchPlugin.commandID)
             })
+        }
+        for target in DeveloperToolsPlugin.shortcutTargets {
+            if let hotkey = commandHotkeys[target.id] {
+                requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                    self?.executeDirectCommand(target.id)
+                })
+            }
         }
         if snippetsPlugin.isEnabled {
             for target in snippetsPlugin.shortcutTargets {
