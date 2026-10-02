@@ -14,3 +14,10 @@
 - 独立本地 SwiftData 容器（显式关闭 CloudKit），使用有界历史的 Main Actor 串行写入，避免取消与提交之间的跨 actor 竞态；图片解码单独后台处理。
 - 文本/链接采集、完整文本搜索、独立面板、复制、删除、清空和启停入口已接通。
 - Debug 构建及隔离数据库重开、去重、删除/清空和剪贴板过滤测试通过；未读取真实剪贴板，未运行 UI 测试。
+
+## 阶段 3：粘贴与快捷键
+
+- Clipboard History 接入核心命令快捷键列表、冲突检查和事务式注册；仅启用时注册其直接快捷键。
+- 独立面板支持上下键、Control-N/P、Return、Command-Return 和 Escape；保存 CommandContext 的目标应用，激活并复核前台身份后才发送粘贴。
+- 权限缺失与目标失效提供明确状态，保留仅复制入口；不推断目标已经消费内容。
+- CommandRegistry、HotkeyConfiguration、SearchKeyboardAction 单元测试及 Debug 构建通过。真实跨 App 激活和粘贴未执行，待人工验收。

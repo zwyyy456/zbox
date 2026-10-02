@@ -10,7 +10,7 @@ struct ClipboardHistoryView: View {
                 .textFieldStyle(.roundedBorder)
                 .focused($searchFocused)
                 .padding()
-                .onSubmit { plugin.copySelection() }
+                .onSubmit { plugin.pasteSelection() }
             GeometryReader { geometry in
                 HStack(spacing: 0) {
                     List(selection: $plugin.selectedID) {
@@ -36,6 +36,7 @@ struct ClipboardHistoryView: View {
                 Text(message).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
             }
             HStack {
+                Button("Paste", action: plugin.pasteSelection)
                 Button("Copy", action: plugin.copySelection).keyboardShortcut(.return, modifiers: .command)
                 Spacer()
                 Button("Delete", action: plugin.deleteSelection)
@@ -49,16 +50,19 @@ struct ClipboardHistoryView: View {
 
 struct ClipboardHistorySettingsView: View {
     @Bindable var plugin: ClipboardHistoryPlugin
+    let onEnabledChanged: @MainActor @Sendable (Bool) -> Void
     @State private var confirmsClear = false
 
     var body: some View {
         Form {
-            Toggle("Enable Clipboard History", isOn: Binding(get: { plugin.isEnabled }, set: plugin.setEnabled))
+            Toggle("Enable Clipboard History", isOn: Binding(get: { plugin.isEnabled }, set: onEnabledChanged))
             Text("Stores future copies on this Mac. History is not encrypted or synced. Sensitive markers and excluded apps are skipped, but not all secrets can be detected.")
                 .foregroundStyle(.secondary)
             if let message = plugin.statusMessage { Text(message).foregroundStyle(.secondary) }
             Button("Allow Clipboard Access / Resume", action: plugin.requestClipboardAccess)
                 .disabled(!plugin.isEnabled || plugin.isRecording)
+            Button("Request Accessibility for Direct Paste", action: plugin.requestPastePermission)
+            Button("Open Accessibility Settings", action: plugin.openAccessibilitySettings)
             Button("Clear Clipboard History…", role: .destructive) { confirmsClear = true }
         }
         .settingsPane()

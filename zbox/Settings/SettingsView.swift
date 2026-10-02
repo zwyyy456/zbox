@@ -16,7 +16,8 @@ struct SettingsView: View {
             WindowManagementSettingsView(environment: environment)
                 .settingsTab(SettingsTab.windowManagement)
 
-            ClipboardHistorySettingsView(plugin: environment.clipboardHistoryPlugin)
+            ClipboardHistorySettingsView(plugin: environment.clipboardHistoryPlugin,
+                                         onEnabledChanged: environment.setClipboardHistoryEnabled)
                 .settingsTab(SettingsTab.clipboardHistory)
 
             Form {
@@ -102,7 +103,7 @@ private struct ShortcutSettingsView: View {
             }
 
             Section("Command Shortcuts") {
-                ForEach(WindowCommands.shortcutTargets) { target in
+                ForEach(environment.commandShortcutTargets) { target in
                     VStack(alignment: .leading, spacing: 6) {
                         LabeledContent(target.title) {
                             ShortcutRecorder(

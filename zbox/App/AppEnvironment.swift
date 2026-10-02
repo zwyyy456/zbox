@@ -47,6 +47,11 @@ final class AppEnvironment {
     private(set) var showsApplicationPathsInSearchResults: Bool
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
+    var commandShortcutTargets: [CommandShortcutTarget] {
+        WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+                                                               title: String(localized: "Clipboard History"))]
+    }
+
     var searchQuery = "" {
         didSet {
             if searchQuery != oldValue {
@@ -108,7 +113,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: WindowCommands.shortcutTargets.map(\.id)
+            for: WindowCommands.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -397,6 +402,19 @@ final class AppEnvironment {
         }
     }
 
+    func setClipboardHistoryEnabled(_ enabled: Bool) {
+        clipboardHistoryPlugin.setEnabled(enabled)
+        if !enabled {
+            hotkeyRegistrar.unregister(id: ClipboardHistoryPlugin.commandID.rawValue)
+            return
+        }
+        do { try applyHotkeyRegistrations() }
+        catch {
+            clipboardHistoryPlugin.setEnabled(false)
+            shortcutRegistrationError = error.localizedDescription
+        }
+    }
+
     func setTextLookupEnabled(_ isEnabled: Bool) {
         textLookupError = nil
         do {
@@ -490,7 +508,13 @@ final class AppEnvironment {
             self?.executeDirectCommand(commandID)
         }
 
-        let commandRegistrationIDs = Set(["root-search"] + WindowCommands.shortcutTargets.map(\.id.rawValue))
+        if clipboardHistoryPlugin.isEnabled, let hotkey = commandHotkeys[ClipboardHistoryPlugin.commandID] {
+            requests.append(HotkeyRegistrationRequest(id: ClipboardHistoryPlugin.commandID.rawValue,
+                hotkey: hotkey, label: String(localized: "Clipboard History")) { [weak self] in
+                self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
+            })
+        }
+        let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue))
         try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)
     }
 
@@ -500,7 +524,7 @@ final class AppEnvironment {
     ) throws {
         var assignments = [
             HotkeyAssignment(owner: String(localized: "Root Search"), hotkey: rootSearchHotkey),
-        ] + WindowCommands.shortcutTargets.map { target in
+        ] + commandShortcutTargets.map { target in
             HotkeyAssignment(owner: target.title, hotkey: commandHotkey(for: target.id))
         }
         if textLookupEnabled ?? textLookupPlugin.settings.isEnabled {
