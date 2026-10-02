@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import SwiftUI
 import ScreenCaptureKit
+import UniformTypeIdentifiers
 
 @MainActor
 @Observable
@@ -17,7 +18,10 @@ final class ScreenshotPlugin {
     @ObservationIgnored private var window: ScreenshotWindow?
     private(set) var isEnabled: Bool
     private(set) var statusMessage: String?
-    private(set) var image: CGImage?
+    private(set) var document: ScreenshotDocument?
+    private(set) var isExporting = false
+    var format = ScreenshotFormat.png
+    private var exportTask: Task<Void, Never>?
 
     init(defaults: UserDefaults = .standard, clipboardCoordinator: ClipboardAccessCoordinator) {
         self.defaults = defaults
@@ -47,7 +51,10 @@ final class ScreenshotPlugin {
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil
-        image = nil
+        exportTask?.cancel()
+        exportTask = nil
+        isExporting = false
+        document = nil
     }
 
     func cancelCapture() {
@@ -55,6 +62,44 @@ final class ScreenshotPlugin {
         captureTask?.cancel()
         captureTask = nil
         selection.close()
+    }
+
+    func copyImage() {
+        export(format: .png) { [weak self] data in
+            let board = NSPasteboard.general
+            board.prepareForNewContents(with: .currentHostOnly)
+            defer { self?.clipboardCoordinator.didWrite(changeCount: board.changeCount) }
+            guard board.setData(data, forType: .png) else { throw ScreenshotError.exportFailed }
+            self?.statusMessage = String(localized: "Image copied.")
+        }
+    }
+
+    func saveImage() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [format.type]
+        panel.nameFieldStringValue = "Screenshot-\(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(UUID().uuidString.prefix(8)).\(format.rawValue)"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        export(format: format) { data in try data.write(to: url, options: .atomic) }
+    }
+
+    private func export(format: ScreenshotFormat, completed: @escaping @MainActor (Data) throws -> Void) {
+        guard let document, !isExporting else { return }
+        isExporting = true
+        statusMessage = nil
+        let edit = document.edit
+        exportTask = Task { [weak self] in
+            do {
+                let data = try await ScreenshotRenderer.export(image: document.image, edit: edit, format: format)
+                try Task.checkCancellation()
+                guard let self, self.document === document else { return }
+                try completed(data)
+                isExporting = false
+            } catch {
+                guard !Task.isCancelled, let self, self.document === document else { return }
+                isExporting = false
+                statusMessage = ScreenshotError.exportFailed.localizedDescription
+            }
+        }
     }
 
     func openScreenRecordingSettings() {
@@ -65,6 +110,8 @@ final class ScreenshotPlugin {
 
     private func capture(_ mode: ScreenshotMode) {
         cancelCapture()
+        exportTask?.cancel()
+        isExporting = false
         window?.orderOut(nil)
         statusMessage = nil
         let id = UUID()
@@ -97,7 +144,7 @@ final class ScreenshotPlugin {
                 let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area, window: selectedWindow)
                 try Task.checkCancellation()
                 guard let self, captureID == id, isEnabled else { return }
-                self.image = image
+                self.document = ScreenshotDocument(image: image)
                 show(on: screen)
             } catch {
                 guard !Task.isCancelled, self?.captureID == id else { return }
