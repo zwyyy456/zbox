@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -50,6 +50,14 @@
 - 仅在显式启用后记录后续复制。SwiftData 使用独立本地容器并关闭 CloudKit；数据库操作保持 Main Actor 串行，图片预览解码离开 Main Actor，取消或选择变化后不提交旧预览。
 - Text Lookup 的临时复制通过共享 ClipboardAccessCoordinator 排除；插件自身回写以 changeCount 排除。停止、删除和清空取消待处理粘贴。
 - 直接粘贴在激活和发送按键前检查原目标应用；剪贴板访问授权与 Accessibility 粘贴权限独立处理。
+
+## Screenshot 边界
+
+- 产品行为与图床范围由 `docs/product/screenshot.md` 定义。ScreenshotPlugin 拥有截图、编辑会话和上传任务，AppEnvironment 只组合与协调命令快捷键。
+- 使用支持 macOS 15 的 ScreenCaptureKit 单帧接口；区域和窗口选择、屏幕坐标转换留在插件内。普通截图不依赖 Accessibility。
+- 编辑器只在会话内保存原图和标注，导出必须合成裁剪及遮挡结果。编码、签名和网络工作离开 Main Actor，UI 和 AppKit 状态保持 Main Actor。
+- 上传是用户配置并触发的独立网络边界；平台协议、Keychain、URLSession 留在插件内，不建立通用上传 Runtime。重试保留同一导出快照，停止后拒绝旧任务的成功、错误及进度结果。
+- 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，所有自身回写通知现有协调对象。
 
 ## Calculator 边界
 

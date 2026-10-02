@@ -74,8 +74,9 @@ nonisolated enum ScreenshotUploader {
         if profile.provider == .smms {
             struct Reply: Decodable { let code: Int; let data: Item? }
             struct Item: Decodable { let url: String }
-            guard let reply = try? JSONDecoder().decode(Reply.self, from: data), reply.code == 0,
-                  let raw = reply.data?.url, let url = URL(string: raw), url.scheme == "https", url.host != nil,
+            guard let reply = try? JSONDecoder().decode(Reply.self, from: data) else { throw ScreenshotUploadError.invalidResponse }
+            guard reply.code == 0 else { throw ScreenshotUploadError.serviceRejected }
+            guard let raw = reply.data?.url, let url = URL(string: raw), url.scheme == "https", url.host != nil,
                   url.user == nil, url.password == nil else { throw ScreenshotUploadError.invalidResponse }
             return url
         }

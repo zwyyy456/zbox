@@ -63,6 +63,7 @@ enum ScreenshotCapture {
                 throw ScreenshotError.unavailable
             }
             let ownApps = content.applications.filter { $0.processID == ProcessInfo.processInfo.processIdentifier }
+            guard area == nil || !ownApps.isEmpty else { throw ScreenshotError.captureFailed }
             filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
             let rect = ScreenshotGeometry.sourceRect(area ?? screen.frame, in: screen.frame)
             config.sourceRect = rect

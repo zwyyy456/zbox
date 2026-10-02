@@ -1808,6 +1808,896 @@
           }
         }
       }
+    },
+    "Access Key / Secret ID": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access Key／Secret ID"
+          }
+        }
+      }
+    },
+    "Add Host…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加图床…"
+          }
+        }
+      }
+    },
+    "Aliyun OSS": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阿里云 OSS"
+          }
+        }
+      }
+    },
+    "Allow Screen Recording in System Settings, then try the screenshot again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在系统设置中授予屏幕录制权限，然后重新截图。"
+          }
+        }
+      }
+    },
+    "Arrow": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "箭头"
+          }
+        }
+      }
+    },
+    "Bucket": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储空间（Bucket）"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "Cancel Upload": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消上传"
+          }
+        }
+      }
+    },
+    "Capture Area": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区域截图"
+          }
+        }
+      }
+    },
+    "Capture Screen": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕截图"
+          }
+        }
+      }
+    },
+    "Capture Window": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口截图"
+          }
+        }
+      }
+    },
+    "Captures only when you run a screenshot command. Screen Recording permission is required.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在执行截图命令时捕获屏幕，需要屏幕录制权限。"
+          }
+        }
+      }
+    },
+    "Choose an image host in Screenshot settings first.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在截图设置中选择图床。"
+          }
+        }
+      }
+    },
+    "Click a window · Esc to cancel": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击选择窗口 · Esc 取消"
+          }
+        }
+      }
+    },
+    "Copy Image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制图片"
+          }
+        }
+      }
+    },
+    "Copy Link": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制链接"
+          }
+        }
+      }
+    },
+    "Copy Link As": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "链接格式"
+          }
+        }
+      }
+    },
+    "Cover": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮挡"
+          }
+        }
+      }
+    },
+    "Credentials are stored in Keychain on this Mac.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凭据保存在本机钥匙串中。"
+          }
+        }
+      }
+    },
+    "Crop": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁剪"
+          }
+        }
+      }
+    },
+    "Default Host": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认图床"
+          }
+        }
+      }
+    },
+    "Done & Copy": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成并复制"
+          }
+        }
+      }
+    },
+    "Done & Upload": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成并上传"
+          }
+        }
+      }
+    },
+    "Done & Upload sends the edited image to the selected host. Screenshot selection alone never uploads an image.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“完成并上传”会将编辑后的图片发送到所选图床。仅选取截图区域不会上传。"
+          }
+        }
+      }
+    },
+    "Drag to select an area · Esc to cancel": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动选择区域 · Esc 取消"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑…"
+          }
+        }
+      }
+    },
+    "Enable Screenshot": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用截图"
+          }
+        }
+      }
+    },
+    "Enter a name for this image host.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写图床名称。"
+          }
+        }
+      }
+    },
+    "Enter a valid bucket or service name.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写有效的存储空间或服务名称。"
+          }
+        }
+      }
+    },
+    "Enter text, then click the image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入文字，然后点击图片放置"
+          }
+        }
+      }
+    },
+    "Enter the bucket region, such as us-east-1 or cn-hangzhou.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写存储空间所在区域，例如 us-east-1 或 cn-hangzhou。"
+          }
+        }
+      }
+    },
+    "Enter the credentials required by this image host.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写此图床所需的凭据。"
+          }
+        }
+      }
+    },
+    "Format": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式"
+          }
+        }
+      }
+    },
+    "Image Hosting": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图床"
+          }
+        }
+      }
+    },
+    "Image copied.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制图片。"
+          }
+        }
+      }
+    },
+    "Image host credentials could not be read or saved in Keychain.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法在钥匙串中读取或保存图床凭据。"
+          }
+        }
+      }
+    },
+    "Image saved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存图片。"
+          }
+        }
+      }
+    },
+    "Link copied.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制链接。"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称"
+          }
+        }
+      }
+    },
+    "None": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无"
+          }
+        }
+      }
+    },
+    "Object Path Prefix": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件路径前缀"
+          }
+        }
+      }
+    },
+    "Open Screen Recording Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开屏幕录制设置"
+          }
+        }
+      }
+    },
+    "Operator": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作员"
+          }
+        }
+      }
+    },
+    "Operator Password": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作员密码"
+          }
+        }
+      }
+    },
+    "Provider": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务商"
+          }
+        }
+      }
+    },
+    "Public Base URL (HTTPS)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片访问地址（HTTPS）"
+          }
+        }
+      }
+    },
+    "Qiniu": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "七牛云"
+          }
+        }
+      }
+    },
+    "Rectangle": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "矩形"
+          }
+        }
+      }
+    },
+    "Redo": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重做"
+          }
+        }
+      }
+    },
+    "Region": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区域"
+          }
+        }
+      }
+    },
+    "Remove this image host and its saved credentials?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除此图床及其保存的凭据？"
+          }
+        }
+      }
+    },
+    "Retry Last Upload": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试上次上传"
+          }
+        }
+      }
+    },
+    "Retry uses the previous exported image and its original image host.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试使用上次导出的图片和原图床。"
+          }
+        }
+      }
+    },
+    "S.EE API Key": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S.EE API Key"
+          }
+        }
+      }
+    },
+    "SM.MS uploads have moved to S.EE. Enter a S.EE API key; the old SM.MS upload endpoint is no longer used.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SM.MS 上传已迁移至 S.EE。请填写 S.EE API Key；不再使用旧 SM.MS 上传接口。"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存"
+          }
+        }
+      }
+    },
+    "Save…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存…"
+          }
+        }
+      }
+    },
+    "Screenshot": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图"
+          }
+        }
+      }
+    },
+    "Secret Key": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secret Key"
+          }
+        }
+      }
+    },
+    "Service Name": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务名称"
+          }
+        }
+      }
+    },
+    "Session Token (optional)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "临时凭证 Token（可选）"
+          }
+        }
+      }
+    },
+    "Stored image host settings could not be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取已保存的图床设置。"
+          }
+        }
+      }
+    },
+    "Tencent COS": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "腾讯云 COS"
+          }
+        }
+      }
+    },
+    "The host configuration changed. Start a new upload to use the new settings.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图床配置已更改，请重新发起上传以使用新设置。"
+          }
+        }
+      }
+    },
+    "The image host returned an invalid upload result.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图床返回的上传结果无效。"
+          }
+        }
+      }
+    },
+    "The object path prefix contains invalid characters.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件路径前缀包含无效字符。"
+          }
+        }
+      }
+    },
+    "The screenshot could not be captured. Try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图失败，请重试。"
+          }
+        }
+      }
+    },
+    "The screenshot could not be exported.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出截图。"
+          }
+        }
+      }
+    },
+    "The selected screen or window is no longer available.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所选屏幕或窗口已不可用。"
+          }
+        }
+      }
+    },
+    "The test uploads a generated image to the selected host. It does not capture your screen. Public access must be configured at the host.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试会向所选图床上传一张生成的图片，不会截取屏幕。请在图床侧配置图片访问权限。"
+          }
+        }
+      }
+    },
+    "Tool": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工具"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销"
+          }
+        }
+      }
+    },
+    "Upload": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传"
+          }
+        }
+      }
+    },
+    "Upload Endpoint (HTTPS)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传接口地址（HTTPS）"
+          }
+        }
+      }
+    },
+    "Upload Test Image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传测试图片"
+          }
+        }
+      }
+    },
+    "Upload automatically when finishing edits": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成编辑后自动上传"
+          }
+        }
+      }
+    },
+    "Upload cancelled. The host may already have received the image.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消上传，但图床可能已经收到图片。"
+          }
+        }
+      }
+    },
+    "Upload complete. Link copied.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传完成，已复制链接。"
+          }
+        }
+      }
+    },
+    "Upload complete. The link is ready to copy.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传完成，可复制链接。"
+          }
+        }
+      }
+    },
+    "Upload complete. Your clipboard changed, so the link was not copied. Use Copy Link when ready.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传完成。剪贴板内容已变化，因此未自动复制链接。需要时可点击“复制链接”。"
+          }
+        }
+      }
+    },
+    "Upload failed. Check your connection and image host settings, then retry.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传失败，请检查网络连接和图床设置后重试。"
+          }
+        }
+      }
+    },
+    "Upyun": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "又拍云"
+          }
+        }
+      }
+    },
+    "Use an HTTPS URL without credentials, query parameters or fragments. Upload endpoints must not include a bucket or path.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请使用不含凭据、查询参数或片段的 HTTPS 地址。上传接口地址不能包含存储空间或路径。"
+          }
+        }
+      }
+    },
+    "Use the bucket's public URL or a CDN domain, without the object path. zbox does not change bucket permissions or generate expiring links.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填写存储空间的公开地址或 CDN 域名，不含文件路径。zbox 不修改存储空间权限，也不生成临时签名链接。"
+          }
+        }
+      }
+    },
+    "Zoom In": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大"
+          }
+        }
+      }
+    },
+    "Zoom Out": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩小"
+          }
+        }
+      }
+    },
+    "%lld × %lld px": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld × %2$lld 像素"
+          }
+        }
+      }
+    },
+    "Upload failed (HTTP %lld). Check the host settings, permissions and account limits.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上传失败（HTTP %lld）。请检查图床配置、权限和账户限制。"
+          }
+        }
+      }
+    },
+    "The image host rejected the upload. Check your API key, account limits and file size.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图床拒绝了上传，请检查 API Key、账户限制和文件大小。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

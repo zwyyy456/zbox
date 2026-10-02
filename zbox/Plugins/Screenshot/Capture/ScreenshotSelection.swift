@@ -15,7 +15,7 @@ final class ScreenshotSelection {
             $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier && $0.windowLayer == 0
         }
         for screen in NSScreen.screens {
-            let panel = ScreenshotSelectionPanel(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            let panel = ScreenshotSelectionPanel(contentRect: screen.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.level = .screenSaver
@@ -39,6 +39,10 @@ final class ScreenshotSelection {
         }
     }
 
+    func finishChoosing() {
+        for panel in panels { (panel.contentView as? ScreenshotSelectionView)?.selected = nil }
+    }
+
     func close() {
         for panel in panels { panel.orderOut(nil); panel.close() }
         panels.removeAll()
@@ -57,7 +61,17 @@ private final class ScreenshotSelectionView: NSView {
     private var anchor: CGPoint?
     private var selection: CGRect?
     private var hoveredWindow: SCWindow?
+    private var mouseTracking: NSTrackingArea?
     override var acceptsFirstResponder: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let mouseTracking { removeTrackingArea(mouseTracking) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect], owner: self)
+        addTrackingArea(area)
+        mouseTracking = area
+    }
 
     override func resetCursorRects() { addCursorRect(bounds, cursor: .crosshair) }
     override func keyDown(with event: NSEvent) {

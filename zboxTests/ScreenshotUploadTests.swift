@@ -53,7 +53,7 @@ struct ScreenshotUploadTests {
             #expect(plan.request.value(forHTTPHeaderField: "Authorization") == "test-secret")
             let data = Data(#"{"code":0,"data":{"url":"https://i.s.ee/test.png"}}"#.utf8)
             #expect(try ScreenshotUploader.result(data: data, statusCode: 200, profile: profile, request: plan).host == "i.s.ee")
-            #expect(throws: ScreenshotUploadError.invalidResponse) {
+            #expect(throws: ScreenshotUploadError.serviceRejected) {
                 _ = try ScreenshotUploader.result(data: Data(#"{"code":400,"message":"private response"}"#.utf8), statusCode: 200, profile: profile, request: plan)
             }
         } else {

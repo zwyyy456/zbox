@@ -15,6 +15,8 @@ struct ScreenshotHostingView: View {
             }
             Toggle("Upload automatically when finishing edits", isOn: $settings.automaticallyUpload)
                 .disabled(settings.selected == nil)
+            Text("Done & Upload sends the edited image to the selected host. Screenshot selection alone never uploads an image.")
+                .font(.caption).foregroundStyle(.secondary)
             Picker("Copy Link As", selection: $settings.linkFormat) {
                 ForEach(ScreenshotLinkFormat.allCases) { Text($0.title).tag($0) }
             }
@@ -31,7 +33,10 @@ struct ScreenshotHostingView: View {
                 ProgressView(value: plugin.uploadProgress)
                 Button("Cancel Upload", action: plugin.cancelUpload)
             }
-            if plugin.canRetryUpload { Button("Retry Last Upload", action: plugin.retryUpload) }
+            if plugin.canRetryUpload {
+                Button("Retry Last Upload", action: plugin.retryUpload)
+                Text("Retry uses the previous exported image and its original image host.").font(.caption).foregroundStyle(.secondary)
+            }
             if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink) }
             if let error = errorMessage ?? settings.errorMessage { Text(error).foregroundStyle(.red) }
         }
@@ -71,7 +76,7 @@ private struct ScreenshotHostEditor: View {
                         .font(.caption).foregroundStyle(.secondary)
                     SecureField("S.EE API Key", text: $credentials.secretKey)
                 } else {
-                    TextField(profile.provider == .upyun ? "Service Name" : "Bucket", text: $profile.bucket)
+                    TextField(profile.provider == .upyun ? String(localized: "Service Name") : String(localized: "Bucket"), text: $profile.bucket)
                     if profile.provider.needsRegion {
                         TextField("Region", text: $profile.region)
                         Text(regionHint).font(.caption).foregroundStyle(.secondary)
@@ -85,8 +90,8 @@ private struct ScreenshotHostEditor: View {
                     Text("Use the bucket's public URL or a CDN domain, without the object path. zbox does not change bucket permissions or generate expiring links.")
                         .font(.caption).foregroundStyle(.secondary)
                     TextField("Object Path Prefix", text: $profile.prefix)
-                    TextField(profile.provider == .upyun ? "Operator" : "Access Key / Secret ID", text: $credentials.accessKey)
-                    SecureField(profile.provider == .upyun ? "Operator Password" : "Secret Key", text: $credentials.secretKey)
+                    TextField(profile.provider == .upyun ? String(localized: "Operator") : String(localized: "Access Key / Secret ID"), text: $credentials.accessKey)
+                    SecureField(profile.provider == .upyun ? String(localized: "Operator Password") : String(localized: "Secret Key"), text: $credentials.secretKey)
                     if [.r2, .s3, .oss, .cos].contains(profile.provider) {
                         SecureField("Session Token (optional)", text: $credentials.sessionToken)
                     }

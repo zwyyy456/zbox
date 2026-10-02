@@ -52,6 +52,6 @@ final class ScreenshotHostingSettings {
         try ScreenshotCredentialStore.delete(id)
         defaults.set(data, forKey: "plugin.screenshot.hosting.profiles")
         profiles = next
-        if selectedID == id { selectedID = profiles.first?.id }
+        if selectedID == id { selectedID = nil }
     }
 }

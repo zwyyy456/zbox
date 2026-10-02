@@ -19,6 +19,7 @@ final class ScreenshotPlugin {
     @ObservationIgnored private var window: ScreenshotWindow?
     private(set) var isEnabled: Bool
     private(set) var statusMessage: String?
+    private(set) var needsScreenRecordingPermission = false
     private(set) var document: ScreenshotDocument?
     private(set) var isExporting = false
     var format: ScreenshotFormat {
@@ -91,11 +92,16 @@ final class ScreenshotPlugin {
     }
 
     func saveImage() {
+        guard let document, !isExporting, !isUploading else { return }
+        let selectedFormat = format
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [format.type]
+        panel.allowedContentTypes = [selectedFormat.type]
         panel.nameFieldStringValue = "Screenshot-\(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(UUID().uuidString.prefix(8)).\(format.rawValue)"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        export(format: format) { data in try data.write(to: url, options: .atomic) }
+        guard panel.runModal() == .OK, let url = panel.url, self.document === document else { return }
+        export(format: selectedFormat) { [weak self] data in
+            try data.write(to: url, options: .atomic)
+            self?.statusMessage = String(localized: "Image saved.")
+        }
     }
 
     private func export(format: ScreenshotFormat, completed: @escaping @MainActor (Data) throws -> Void) {
@@ -174,7 +180,7 @@ final class ScreenshotPlugin {
                 do { try await self?.send(snapshot, credentials: credentials, id: id, clipboardCount: clipboardCount) }
                 catch { self?.handleUploadError(error, id: id) }
             }
-        } catch { statusMessage = ScreenshotUploadError.keychain.localizedDescription }
+        } catch { statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.keychain.localizedDescription }
     }
 
     private func beginUpload(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat, copiesLink: Bool) {
@@ -270,6 +276,7 @@ final class ScreenshotPlugin {
         isExporting = false
         window?.orderOut(nil)
         statusMessage = nil
+        needsScreenRecordingPermission = false
         let id = UUID()
         captureID = id
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
@@ -284,7 +291,10 @@ final class ScreenshotPlugin {
                 } else {
                     selection.show(mode: mode, windows: content.windows) { [weak self] screen, area, selectedWindow in
                         self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id)
-                    } cancelled: { [weak self] in self?.cancelCapture() }
+                    } cancelled: { [weak self] in
+                        self?.cancelCapture()
+                        if self?.document != nil { self?.show(on: screen) }
+                    }
                 }
             } catch {
                 guard !Task.isCancelled, self?.captureID == id else { return }
@@ -294,22 +304,30 @@ final class ScreenshotPlugin {
     }
 
     private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID) {
-        selection.close()
+        selection.finishChoosing()
         captureTask = Task { [weak self] in
             do {
-                let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area, window: selectedWindow)
+                // Enumerate while the selection panels still exist so the filter can exclude this app.
+                let captureContent = area != nil || selectedWindow != nil
+                    ? try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) : content
                 try Task.checkCancellation()
-                guard let self, captureID == id, isEnabled else { return }
+                guard let self, captureID == id else { return }
+                selection.close()
+                let image = try await ScreenshotCapture.image(content: captureContent, screen: screen, area: area, window: selectedWindow)
+                try Task.checkCancellation()
+                guard captureID == id, isEnabled else { return }
                 self.document = ScreenshotDocument(image: image)
                 show(on: screen)
             } catch {
                 guard !Task.isCancelled, self?.captureID == id else { return }
+                self?.selection.close()
                 self?.report(error)
             }
         }
     }
 
     private func report(_ error: Error) {
+        if case ScreenshotError.permission = error { needsScreenRecordingPermission = true }
         statusMessage = (error as? ScreenshotError)?.localizedDescription ?? ScreenshotError.captureFailed.localizedDescription
         show(on: NSScreen.main)
     }
@@ -319,7 +337,8 @@ final class ScreenshotPlugin {
             let panel = ScreenshotWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 650),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             panel.title = String(localized: "Screenshot")
-            panel.minSize = CGSize(width: 580, height: 400)
+            panel.minSize = CGSize(width: 640, height: 400)
+            panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             panel.didClose = { [weak self] in self?.stop() }
             panel.contentView = NSHostingView(rootView: ScreenshotEditorView(plugin: self))
@@ -327,6 +346,10 @@ final class ScreenshotPlugin {
         }
         if let screen {
             let frame = screen.visibleFrame
+            if let window {
+                let size = CGSize(width: min(window.frame.width, frame.width), height: min(window.frame.height, frame.height))
+                window.setFrame(CGRect(origin: window.frame.origin, size: size), display: false)
+            }
             window?.setFrameOrigin(CGPoint(x: frame.midX - (window?.frame.width ?? 0) / 2,
                                            y: frame.midY - (window?.frame.height ?? 0) / 2))
         }

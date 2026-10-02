@@ -25,9 +25,17 @@ struct ScreenshotEditorView: View {
                     Button("Cancel Upload", action: plugin.cancelUpload)
                 }.padding()
             }
-            if plugin.canRetryUpload { Button("Retry Last Upload", action: plugin.retryUpload).padding(8) }
+            if plugin.canRetryUpload {
+                HStack {
+                    Text("Retry uses the previous exported image and its original image host.").font(.caption)
+                    Button("Retry Last Upload", action: plugin.retryUpload)
+                }.padding(8)
+            }
             if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink).padding(8) }
             if plugin.isExporting { ProgressView().controlSize(.small).padding(8) }
+            if plugin.needsScreenRecordingPermission {
+                Button("Open Screen Recording Settings", action: plugin.openScreenRecordingSettings).padding(8)
+            }
             if let message = plugin.statusMessage {
                 Text(message).font(.callout).foregroundStyle(.secondary).padding()
             }

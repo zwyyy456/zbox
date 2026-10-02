@@ -91,13 +91,14 @@ nonisolated struct ScreenshotHostCredentials: Codable, Sendable {
 }
 
 nonisolated enum ScreenshotUploadError: LocalizedError, Equatable {
-    case configuration(String), credentials, keychain, invalidResponse, rejected(Int), network
+    case configuration(String), credentials, keychain, invalidResponse, serviceRejected, rejected(Int), network
     var errorDescription: String? {
         switch self {
         case .configuration(let message): message
         case .credentials: String(localized: "Enter the credentials required by this image host.")
         case .keychain: String(localized: "Image host credentials could not be read or saved in Keychain.")
         case .invalidResponse: String(localized: "The image host returned an invalid upload result.")
+        case .serviceRejected: String(localized: "The image host rejected the upload. Check your API key, account limits and file size.")
         case .rejected(let code): String(localized: "Upload failed (HTTP \(code)). Check the host settings, permissions and account limits.")
         case .network: String(localized: "Upload failed. Check your connection and image host settings, then retry.")
         }
