@@ -52,7 +52,7 @@ final class AccessibilityWindowController {
 
         let application = AXUIElementCreateApplication(targetPID)
         let window = try focusedWindow(of: application)
-        let currentAXFrame = try frame(of: window)
+        let currentAXFrame = try AccessibilityWindows.frame(of: window)
         let primaryMaxY = try primaryScreenMaxY()
         let currentCocoaFrame = WindowGeometry.cocoaRect(
             fromAXRect: currentAXFrame,
@@ -72,7 +72,7 @@ final class AccessibilityWindowController {
             fromCocoaRect: targetCocoaFrame,
             primaryScreenMaxY: primaryMaxY
         )
-        try setFrame(targetAXFrame, of: window)
+        try AccessibilityWindows.setFrame(targetAXFrame, of: window)
     }
 
     private func focusedWindow(of application: AXUIElement) throws -> AXUIElement {
@@ -86,57 +86,6 @@ final class AccessibilityWindowController {
             throw AccessibilityWindowError.noFocusedWindow
         }
         return unsafeDowncast(value, to: AXUIElement.self)
-    }
-
-    private func frame(of window: AXUIElement) throws -> CGRect {
-        var positionValue: CFTypeRef?
-        var sizeValue: CFTypeRef?
-
-        guard AXUIElementCopyAttributeValue(
-            window,
-            kAXPositionAttribute as CFString,
-            &positionValue
-        ) == .success,
-        AXUIElementCopyAttributeValue(
-            window,
-            kAXSizeAttribute as CFString,
-            &sizeValue
-        ) == .success,
-        let positionValue,
-        let sizeValue else {
-            throw AccessibilityWindowError.unableToReadFrame
-        }
-
-        let axPosition = unsafeDowncast(positionValue, to: AXValue.self)
-        let axSize = unsafeDowncast(sizeValue, to: AXValue.self)
-        var position = CGPoint.zero
-        var size = CGSize.zero
-
-        guard AXValueGetValue(axPosition, .cgPoint, &position),
-              AXValueGetValue(axSize, .cgSize, &size) else {
-            throw AccessibilityWindowError.unableToReadFrame
-        }
-
-        return CGRect(origin: position, size: size)
-    }
-
-    private func setFrame(_ frame: CGRect, of window: AXUIElement) throws {
-        var position = frame.origin
-        var size = frame.size
-        guard let positionValue = AXValueCreate(.cgPoint, &position),
-              let sizeValue = AXValueCreate(.cgSize, &size),
-              AXUIElementSetAttributeValue(
-                window,
-                kAXPositionAttribute as CFString,
-                positionValue
-              ) == .success,
-              AXUIElementSetAttributeValue(
-                window,
-                kAXSizeAttribute as CFString,
-                sizeValue
-              ) == .success else {
-            throw AccessibilityWindowError.unableToSetFrame
-        }
     }
 
     private func primaryScreenMaxY() throws -> CGFloat {

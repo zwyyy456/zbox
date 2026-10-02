@@ -29,7 +29,7 @@
 ## Window Management 边界
 
 - 产品行为由 `docs/product/window-management.md` 定义。`WindowManagementPlugin` 拥有启用偏好、运行状态、设置反馈、命令注册和停止自身快捷键的生命周期；AppEnvironment 负责组合、共享权限入口和跨功能快捷键事务。
-- 窗口命令、AccessibilityWindowController、WindowGeometry 和 WindowManagementSettingsView 位于 `Plugins/WindowManagement`。AccessibilityAuthorization 与 GlobalHotkeyRegistrar 继续作为共享平台能力。
+- 窗口命令、AccessibilityWindowController 和 WindowManagementSettingsView 位于 `Plugins/WindowManagement`；共享窗口读写与 WindowGeometry 位于 `Platform`。AccessibilityAuthorization 与 GlobalHotkeyRegistrar 继续作为共享平台能力。
 - 插件生成自己的快捷键注册请求，由 App 统一协调替换；请求回调只交回 CommandID，经 App 的统一执行入口进入 Registry。核心 Shortcuts 继续管理命令快捷键的录制、存储与冲突检查。
 - 停止插件不删除启用偏好；用户关闭或权限撤销时才持久化停用。沿用现有命令 ID 和设置 key。
 
