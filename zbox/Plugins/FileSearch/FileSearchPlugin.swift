@@ -1,5 +1,6 @@
 import SwiftUI
 import Observation
+import CoreServices
 
 @MainActor @Observable
 final class FileSearchPlugin {
@@ -28,6 +29,13 @@ final class FileSearchPlugin {
     let index = FileIndexStore()
     private let scanner = FileIndexScanner()
     @ObservationIgnored private var scanTasks: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var watchers: [UUID: FileIndexWatcher] = [:]
+    private var runIDs: [UUID: UUID] = [:]
+    private var pending: [UUID: FileIndexChange] = [:]
+    @ObservationIgnored private var volumeObservers: [NSObjectProtocol] = []
+    @ObservationIgnored private var cleanupTask: Task<Void, Never>?
+    private(set) var isClearing = false
+    private var isRunning = false
 
 
     init(defaults: UserDefaults, coordinator: ClipboardAccessCoordinator) {
@@ -45,56 +53,150 @@ final class FileSearchPlugin {
 
     func start() {
         guard isEnabled else { return }
+        isRunning = true
+        guard !isClearing else { return }
+        if volumeObservers.isEmpty {
+            for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification, NSWorkspace.didWakeNotification] {
+                volumeObservers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    Task { @MainActor in self?.refreshVolumes() }
+                })
+            }
+        }
         for root in settings.roots { rescan(root) }
     }
 
     func stop() {
+        isRunning = false
         dismiss()
+        for watcher in watchers.values { watcher.stop() }
+        watchers = [:]
+        for observer in volumeObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
+        volumeObservers = []
         for task in scanTasks.values { task.cancel() }
+        runIDs = [:]
+        pending = [:]
         rootStatus = [:]
     }
 
+    private func refreshVolumes() {
+        guard isEnabled, isRunning, !isClearing else { return }
+        for root in settings.roots { rescan(root) }
+        search()
+    }
+
     func rescan(_ root: FileSearchRoot) {
-        guard isEnabled else { return }
+        guard isEnabled, isRunning, !isClearing else { return }
         let previous = scanTasks[root.id]
         previous?.cancel()
+        watchers.removeValue(forKey: root.id)?.stop()
+        pending[root.id] = nil
+        let runID = UUID()
+        runIDs[root.id] = runID
         rootStatus[root.id] = String(localized: "Building index…")
         scanTasks[root.id] = Task { [weak self] in
             await previous?.value
             guard let self, !Task.isCancelled, isEnabled else { return }
+            defer { if runIDs[root.id] == runID { scanTasks[root.id] = nil } }
             do {
+                guard await scanner.availableRoots([root]).count == 1 else { throw FileSearchError.unavailable }
+                let baseline = FSEventsGetCurrentEventId()
+                let cursor = try await index.cursor(root: root.id)
+                try Task.checkCancellation()
+                watchers[root.id] = try FileIndexWatcher(root: root, since: min(cursor ?? baseline, baseline)) { [weak self] change in
+                    self?.enqueue(change, for: root)
+                }
                 let count = try await scanner.scan(root, store: index)
                 try Task.checkCancellation()
-                rootStatus[root.id] = String(localized: "Indexed \(count) items")
+                // The full scan covers changes before baseline; buffered later events are reconciled next.
+                try await index.setCursor(baseline, root: root.id)
+                try await drainChanges(for: root)
+                try Task.checkCancellation()
+                rootStatus[root.id] = String(localized: "Index ready (initial scan: \(count) items)")
                 search()
             } catch is CancellationError { return }
-            catch {
-                guard !Task.isCancelled else { return }
-                rootStatus[root.id] = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.scanIncomplete.localizedDescription
-            }
+            catch { reportScanError(error, root: root) }
+        }
+    }
+
+    private func enqueue(_ change: FileIndexChange, for root: FileSearchRoot) {
+        guard isEnabled, isRunning, !isClearing, settings.roots.contains(root) else { return }
+        pending[root.id, default: FileIndexChange()].merge(change)
+        guard scanTasks[root.id] == nil else { return }
+        let runID = UUID()
+        runIDs[root.id] = runID
+        scanTasks[root.id] = Task { [weak self] in
+            guard let self else { return }
+            defer { if runIDs[root.id] == runID { scanTasks[root.id] = nil } }
+            do {
+                try await Task.sleep(for: .milliseconds(200))
+                rootStatus[root.id] = String(localized: "Updating index…")
+                try await drainChanges(for: root)
+                try Task.checkCancellation()
+                rootStatus[root.id] = String(localized: "Index ready")
+                search()
+            } catch is CancellationError { return }
+            catch { reportScanError(error, root: root) }
+        }
+    }
+
+    private func drainChanges(for root: FileSearchRoot) async throws {
+        while let change = pending.removeValue(forKey: root.id) {
+            try await scanner.reconcile(root, change: change, store: index)
+        }
+    }
+
+    private func reportScanError(_ error: any Error, root: FileSearchRoot) {
+        guard !Task.isCancelled else { return }
+        rootStatus[root.id] = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.scanIncomplete.localizedDescription
+        // A failed reconciliation is retried as a full scan on the next event or manual rescan.
+        pending[root.id, default: FileIndexChange()].directories = [""]
+        search()
+    }
+
+    func clearIndex() {
+        let scans = Array(scanTasks.values)
+        let resume = isRunning
+        stop()
+        isRunning = resume
+        isClearing = true
+        let previous = cleanupTask
+        cleanupTask = Task { [weak self] in
+            await previous?.value
+            for task in scans { await task.value }
+            guard let self else { return }
+            defer { isClearing = false; if isRunning { start() } }
+            do {
+                try await index.clear()
+                statusMessage = String(localized: "Index cleared. Enabled search folders will be rebuilt.")
+            } catch { statusMessage = FileSearchError.storage.localizedDescription }
         }
     }
 
     func save(_ root: FileSearchRoot) {
-        do { try settings.save(root); statusMessage = nil; rescan(root) }
+        do { try settings.save(root); statusMessage = nil; rescan(root); search() }
         catch { statusMessage = error.localizedDescription }
     }
 
     func remove(_ root: FileSearchRoot) {
         do {
             try settings.remove(root.id)
-            let previous = scanTasks[root.id]
-            previous?.cancel()
+            watchers.removeValue(forKey: root.id)?.stop()
+            let scan = scanTasks.removeValue(forKey: root.id)
+            scan?.cancel()
+            runIDs[root.id] = nil
+            pending[root.id] = nil
             rootStatus[root.id] = nil
-            scanTasks[root.id] = Task { [weak self] in
+            let previous = cleanupTask
+            cleanupTask = Task { [weak self] in
                 await previous?.value
-                guard let self, !Task.isCancelled else { return }
+                await scan?.value
+                guard let self else { return }
                 do { try await index.remove(root: root.id) }
                 catch { statusMessage = FileSearchError.storage.localizedDescription }
             }
             statusMessage = nil
-        }
-        catch { statusMessage = error.localizedDescription }
+            search()
+        } catch { statusMessage = error.localizedDescription }
     }
 
     func chooseFolder() {
@@ -135,15 +237,17 @@ final class FileSearchPlugin {
         isSearching = false
         guard isEnabled, isVisible else { return }
         let input = query, ext = extensionFilter, type = typeFilter, ordering = sort
-        let roots = settings.roots.filter { (scope.isEmpty || $0.id.uuidString == scope) && $0.isAvailable() }
+        let roots = settings.roots.filter { scope.isEmpty || $0.id.uuidString == scope }
         queryTask = Task { [weak self] in
-            guard let self else { return }
+            guard let self, !Task.isCancelled else { return }
             do {
                 let parsed = try FileSearchQuery(input, extensionFilter: ext, typeFilter: type)
                 guard !parsed.isEmpty else { return }
                 isSearching = true
                 try await Task.sleep(for: .milliseconds(120))
-                let result = try await index.search(parsed, roots: roots, sort: ordering)
+                let available = await scanner.availableRoots(roots)
+                try Task.checkCancellation()
+                let result = try await index.search(parsed, roots: available, sort: ordering)
                 try Task.checkCancellation()
                 page = result
                 selectedID = result.files.first?.id
@@ -166,6 +270,8 @@ final class FileSearchPlugin {
         page = FileSearchPage()
         selectedID = nil
         isSearching = false
+        query = ""
+        searchError = nil
     }
 
     func perform(_ action: FileSearchActions.Action) {

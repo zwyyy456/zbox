@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FileSearchSettingsView: View {
     let environment: AppEnvironment
+    @State private var clearing = false
     private var plugin: FileSearchPlugin { environment.fileSearchPlugin }
 
     var body: some View {
@@ -42,7 +43,13 @@ struct FileSearchSettingsView: View {
                 }
                 Text("Only selected folders are indexed. File contents are not read.").font(.caption).foregroundStyle(.secondary)
             }
+            Button("Clear File Index", role: .destructive) { clearing = true }.disabled(plugin.isClearing)
             if let error = plugin.settings.error ?? plugin.statusMessage { SettingsErrorView(message: error) }
         }.settingsPane()
+        .disabled(plugin.isClearing)
+        .alert("Clear File Index?", isPresented: $clearing) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) { plugin.clearIndex() }
+        } message: { Text("Only the index is removed. Your files and search folders are kept. Enabled folders will be rebuilt.") }
     }
 }

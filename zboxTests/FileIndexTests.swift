@@ -35,4 +35,22 @@ struct FileIndexTests {
         try await store.finishScan(root: root, directory: "", generation: UUID())
         #expect(try await store.files(root: root).isEmpty)
     }
+    @Test func incrementalScanDoesNotEnterPackagesOrSymbolicLinks() async throws {
+        let folder = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let rootURL = folder.appending(path: "root")
+        try FileManager.default.createDirectory(at: rootURL.appending(path: "Example.app/Contents"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: folder.appending(path: "outside/nested"), withIntermediateDirectories: true)
+        try Data().write(to: rootURL.appending(path: "Example.app/Contents/private.txt"))
+        try Data().write(to: folder.appending(path: "outside/nested/private.txt"))
+        try FileManager.default.createSymbolicLink(at: rootURL.appending(path: "alias"), withDestinationURL: folder.appending(path: "outside"))
+        let root = try FileSearchRoot.selected(rootURL)
+        let store = FileIndexStore(url: folder.appending(path: "index.sqlite"))
+        let scanner = FileIndexScanner()
+        _ = try await scanner.scan(root, store: store)
+        _ = try await scanner.scan(root, directory: "Example.app/Contents", store: store)
+        _ = try await scanner.scan(root, directory: "alias/nested", store: store)
+        #expect(Set(try await store.files(root: root.id).map(\.path)) == ["Example.app", "alias"])
+    }
+
 }

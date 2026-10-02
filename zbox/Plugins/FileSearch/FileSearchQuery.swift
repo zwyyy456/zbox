@@ -37,7 +37,8 @@ nonisolated struct FileSearchQuery: Sendable {
                 paths.append(path)
             } else { names.append(value) }
         }
-        if !extensionFilter.isEmpty { extensions.append(IndexedFile.normalized(extensionFilter.trimmingCharacters(in: CharacterSet(charactersIn: ". ")))) }
+        let selectedExtension = IndexedFile.normalized(extensionFilter.trimmingCharacters(in: CharacterSet(charactersIn: ". ")))
+        if !selectedExtension.isEmpty { extensions.append(selectedExtension) }
         if !typeFilter.isEmpty { types.append(typeFilter) }
     }
 

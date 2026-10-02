@@ -103,6 +103,36 @@ actor FileIndexStore {
         }
     }
 
+    func cursor(root: UUID) throws -> UInt64? {
+        try database { db in
+            try statement("SELECT event FROM cursors WHERE root = ?", db: db) { stmt in
+                bind(root.uuidString, to: stmt, at: 1)
+                let result = sqlite3_step(stmt)
+                if result == SQLITE_DONE { return nil }
+                guard result == SQLITE_ROW else { throw FileSearchError.storage }
+                return UInt64(bitPattern: sqlite3_column_int64(stmt, 0))
+            }
+        }
+    }
+
+    func setCursor(_ event: UInt64, root: UUID) throws {
+        try database { db in
+            try statement("INSERT OR REPLACE INTO cursors VALUES (?, ?)", db: db) { stmt in
+                bind(root.uuidString, to: stmt, at: 1)
+                sqlite3_bind_int64(stmt, 2, Int64(bitPattern: event))
+                guard sqlite3_step(stmt) == SQLITE_DONE else { throw FileSearchError.storage }
+            }
+        }
+    }
+
+    func clear() throws {
+        try Task.checkCancellation()
+        // Connections are scoped to each operation, so explicit clearing can also remove a damaged database.
+        for path in [url.path + "-journal", url.path] where FileManager.default.fileExists(atPath: path) {
+            try FileManager.default.removeItem(atPath: path)
+        }
+    }
+
     func search(_ query: FileSearchQuery, roots: [FileSearchRoot], sort: FileSearchSort, limit: Int = 200) throws -> FileSearchPage {
         guard !query.isEmpty else { return FileSearchPage() }
         return try database { db in

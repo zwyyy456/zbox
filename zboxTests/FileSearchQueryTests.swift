@@ -26,8 +26,7 @@ struct FileSearchQueryTests {
         let page = try await store.search(FileSearchQuery("report"), roots: [root], sort: .relevance, limit: 2)
         #expect(page.files.map(\.name) == ["report", "report-final"])
         #expect(page.hasMore)
-        let task = Task { try Task.checkCancellation(); return try await store.search(FileSearchQuery("report"), roots: [root], sort: .name) }
-        task.cancel()
+        let task = Task { withUnsafeCurrentTask { $0?.cancel() }; return try await store.search(FileSearchQuery("report"), roots: [root], sort: .name) }
         await #expect(throws: CancellationError.self) { try await task.value }
     }
 }

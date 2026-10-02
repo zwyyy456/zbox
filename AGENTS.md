@@ -14,6 +14,7 @@
 | 核心产品范围或命令中心行为 | `docs/product-design-v0.1.md` |
 | Window Management 启停、权限、窗口命令或显示器行为 | `docs/product/window-management.md` |
 | Text Lookup 产品范围、触发、悬浮窗、翻译或建卡行为 | `docs/product/text-lookup.md` |
+| File Search 范围、索引、查询、文件操作 | `docs/product/file-search.md` |
 | Quicklinks 入口、参数、执行与存储 | `docs/product/quicklinks.md` |
 | Snippets 模板、变量、复制与粘贴 | `docs/product/snippets.md` |
 | Display 模式、预设、恢复和原生 HiDPI 配置 | `docs/product/display.md` |

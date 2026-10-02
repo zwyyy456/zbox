@@ -4924,6 +4924,526 @@
           }
         }
       }
+    },
+    "Actions": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作"
+          }
+        }
+      }
+    },
+    "Add Common Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加常用目录"
+          }
+        }
+      }
+    },
+    "Add Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加目录"
+          }
+        }
+      }
+    },
+    "All Search Folders": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部搜索目录"
+          }
+        }
+      }
+    },
+    "All Types": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部类型"
+          }
+        }
+      }
+    },
+    "Building index…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在建立索引…"
+          }
+        }
+      }
+    },
+    "Check the quotes and filters. Supported filters: ext:, type:file, type:folder, path:.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请检查引号和筛选条件。支持 ext:、type:file、type:folder 和 path:。"
+          }
+        }
+      }
+    },
+    "Choose a folder on a local disk.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择本地磁盘上的目录。"
+          }
+        }
+      }
+    },
+    "Choose a subfolder inside this search folder.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择此搜索目录中的子目录。"
+          }
+        }
+      }
+    },
+    "Clear File Index": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除文件索引"
+          }
+        }
+      }
+    },
+    "Clear File Index?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除文件索引？"
+          }
+        }
+      }
+    },
+    "Copy File": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制文件"
+          }
+        }
+      }
+    },
+    "Copy Path": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制路径"
+          }
+        }
+      }
+    },
+    "Desktop": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面"
+          }
+        }
+      }
+    },
+    "Documents": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文稿"
+          }
+        }
+      }
+    },
+    "Downloads": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载"
+          }
+        }
+      }
+    },
+    "Enable File Search": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用文件搜索"
+          }
+        }
+      }
+    },
+    "Enter a file name or choose a filter. Add search folders in Settings.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入文件名或选择筛选条件，可在设置中添加搜索目录。"
+          }
+        }
+      }
+    },
+    "Exclude Subfolder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排除子目录"
+          }
+        }
+      }
+    },
+    "Extension": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扩展名"
+          }
+        }
+      }
+    },
+    "File Search": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件搜索"
+          }
+        }
+      }
+    },
+    "File Search settings could not be read. Saved data has been preserved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取文件搜索设置，已保留原有数据。"
+          }
+        }
+      }
+    },
+    "File changes could not be monitored. Check access and rescan.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法监听文件变化，请检查访问权限并重新扫描。"
+          }
+        }
+      }
+    },
+    "Files": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件"
+          }
+        }
+      }
+    },
+    "Folders": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件夹"
+          }
+        }
+      }
+    },
+    "Include Hidden Files": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含隐藏文件"
+          }
+        }
+      }
+    },
+    "Index cleared. Enabled search folders will be rebuilt.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "索引已清除，已启用的搜索目录将重新建立索引。"
+          }
+        }
+      }
+    },
+    "Index ready": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "索引已就绪"
+          }
+        }
+      }
+    },
+    "Index ready (initial scan: %lld items)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "索引已就绪（首次扫描 %lld 项）"
+          }
+        }
+      }
+    },
+    "Modified": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改时间"
+          }
+        }
+      }
+    },
+    "Only selected folders are indexed. File contents are not read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅索引选定目录，不读取文件正文。"
+          }
+        }
+      }
+    },
+    "Only the index is removed. Your files and search folders are kept. Enabled folders will be rebuilt.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅清除索引，保留文件和搜索目录配置。已启用的目录将重新建立索引。"
+          }
+        }
+      }
+    },
+    "Opening or previewing cloud files may download them.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开或预览云端文件时，系统可能下载文件。"
+          }
+        }
+      }
+    },
+    "Quick Look": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速查看"
+          }
+        }
+      }
+    },
+    "Relevance": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相关性"
+          }
+        }
+      }
+    },
+    "Remove Exclusion": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消排除"
+          }
+        }
+      }
+    },
+    "Remove Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除目录"
+          }
+        }
+      }
+    },
+    "Rescan": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新扫描"
+          }
+        }
+      }
+    },
+    "Search Folder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索目录"
+          }
+        }
+      }
+    },
+    "Search Folders": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索目录"
+          }
+        }
+      }
+    },
+    "Search file names — ext:pdf, type:folder, path:project": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索文件名 — ext:pdf、type:folder、path:project"
+          }
+        }
+      }
+    },
+    "Show in Finder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Finder 中显示"
+          }
+        }
+      }
+    },
+    "Showing the best 200 matches. Narrow your search for more.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示前 200 条最佳结果，请缩小搜索范围。"
+          }
+        }
+      }
+    },
+    "Some folders could not be scanned. The index is incomplete; check access and rescan.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分目录无法扫描，索引尚不完整，请检查访问权限并重新扫描。"
+          }
+        }
+      }
+    },
+    "Sort": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排序"
+          }
+        }
+      }
+    },
+    "The file index could not be opened or saved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开或保存文件索引。"
+          }
+        }
+      }
+    },
+    "The file operation could not be completed.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法完成文件操作。"
+          }
+        }
+      }
+    },
+    "The search folder is unavailable or its disk identity has changed.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索目录不可用，或磁盘／目录身份已变化。"
+          }
+        }
+      }
+    },
+    "This folder overlaps an existing search folder.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此目录与已有搜索目录重叠。"
+          }
+        }
+      }
+    },
+    "This item is no longer accessible. Its search folder will be refreshed.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此项目已无法访问，将刷新对应搜索目录。"
+          }
+        }
+      }
+    },
+    "Updating index…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新索引…"
+          }
+        }
+      }
+    },
+    "%lld matches": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 条结果"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -9,6 +9,8 @@ nonisolated struct FileSearchRoot: Codable, Identifiable, Equatable, Sendable {
     var includesHidden = false
     var exclusions: [String] = []
 
+    static var privateDataDirectory: URL { URL.applicationSupportDirectory.appending(path: "zbox").standardizedFileURL }
+
     static func contains(_ child: URL, in parent: URL) -> Bool {
         child.path == parent.path || child.path.hasPrefix(parent.path == "/" ? "/" : parent.path + "/")
     }
@@ -25,15 +27,17 @@ nonisolated struct FileSearchRoot: Codable, Identifiable, Equatable, Sendable {
     }
 
     func isAvailable() -> Bool {
-        guard let current = try? Self.selected(url) else { return false }
+        guard FileManager.default.isReadableFile(atPath: url.path),
+              let current = try? Self.selected(url) else { return false }
         return current.volumeID == volumeID && current.fileID == fileID
     }
 }
 
 nonisolated enum FileSearchError: LocalizedError {
-    case unsupportedRoot, overlappingRoot, outsideRoot, settingsUnreadable, storage, unavailable, scanIncomplete, invalidQuery, missingFile, actionFailed
+    case unsupportedRoot, overlappingRoot, outsideRoot, settingsUnreadable, storage, unavailable, scanIncomplete, invalidQuery, missingFile, actionFailed, watcherFailed
     var errorDescription: String? {
         switch self {
+        case .watcherFailed: String(localized: "File changes could not be monitored. Check access and rescan.")
         case .unsupportedRoot: String(localized: "Choose a folder on a local disk.")
         case .overlappingRoot: String(localized: "This folder overlaps an existing search folder.")
         case .outsideRoot: String(localized: "Choose a subfolder inside this search folder.")

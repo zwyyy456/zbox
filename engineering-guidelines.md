@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/Quicklinks`、`Plugins/Snippets` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -82,6 +82,13 @@
 - 产品行为分别由 `docs/product/quicklinks.md` 与 `docs/product/snippets.md` 定义。插件拥有条目、独立 JSON 存储、临时面板与命令；AppEnvironment 只组合设置、Registry 和快捷键。两者不建立通用模板框架或持久化框架。
 - QuicklinkTemplate 与 SnippetTemplate 保持纯值语义。前者约束 URL 占位符位置并编码参数，后者只做一次模板展开；系统打开、剪贴板读取和写入留在对应副作用边界。
 - ClipboardPasteController 与 ClipboardContentPolicy 位于 Platform，由 Clipboard History 和 Snippets 共同使用。平台层不依赖插件错误或面板类型；粘贴任务归各插件所有，取消与停用后不提交旧结果。
+
+## File Search 边界
+
+- 产品行为由 `docs/product/file-search.md` 定义。FileSearchPlugin 拥有范围设置、面板、扫描／查询任务和 FSEvents 生命周期；AppEnvironment 组合 Registry 与共享快捷键。
+- FileIndexStore actor 隔离 SQLite，FileIndexScanner actor 隔离目录访问。查询解析和排序规则使用值类型；扫描分批写入、查询逐条检查取消，UI 不遍历目录或执行数据库查询。
+- FSEvents 使用主队列回调并显式管理 C context 生命周期；停用先停止监听再取消任务。事件只是重新核对目录的依据，只有对应更新成功才推进事件位置。扫描失败不清理未读范围。
+- 文件操作及 Quick Look 留在插件内。剪贴板写入复用 ClipboardAccessCoordinator，不为此扩展通用文件操作框架。
 
 ## 验证边界
 
