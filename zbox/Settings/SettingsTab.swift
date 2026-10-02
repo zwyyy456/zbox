@@ -5,6 +5,7 @@ nonisolated enum SettingsTab: Hashable {
     case shortcuts
     case windowManagement
     case textLookup
+    case clipboardHistory
 
     var title: String {
         switch self {
@@ -12,6 +13,7 @@ nonisolated enum SettingsTab: Hashable {
         case .shortcuts: String(localized: "Shortcuts")
         case .windowManagement: String(localized: "Window Management")
         case .textLookup: String(localized: "Text Lookup")
+        case .clipboardHistory: String(localized: "Clipboard History")
         }
     }
 
@@ -21,6 +23,7 @@ nonisolated enum SettingsTab: Hashable {
         case .shortcuts: "keyboard"
         case .windowManagement: "macwindow"
         case .textLookup: "text.magnifyingglass"
+        case .clipboardHistory: "clipboard"
         }
     }
 }

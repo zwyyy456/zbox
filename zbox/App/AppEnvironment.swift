@@ -25,6 +25,8 @@ final class AppEnvironment {
     @ObservationIgnored
     let windowManagementPlugin: WindowManagementPlugin
     @ObservationIgnored
+    let clipboardHistoryPlugin: ClipboardHistoryPlugin
+    @ObservationIgnored
     let calculatorPlugin = CalculatorPlugin()
 
     private var commandRegistry = CommandRegistry()
@@ -80,6 +82,8 @@ final class AppEnvironment {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
         let accessibilityAuthorization = AccessibilityAuthorization()
+        clipboardHistoryPlugin = ClipboardHistoryPlugin(defaults: defaults, coordinator: clipboardCoordinator,
+                                                        authorization: accessibilityAuthorization)
         let hotkeyStore = HotkeyConfigurationStore(defaults: defaults)
         let textLookupSettings = TextLookupSettingsStore(defaults: defaults)
         let textLookupPlugin = TextLookupPlugin(
@@ -114,6 +118,7 @@ final class AppEnvironment {
 
         reconcileAccessibilityDependentFeatures()
         windowManagementPlugin.start()
+        clipboardHistoryPlugin.start()
         reloadApplications()
         isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
@@ -136,6 +141,7 @@ final class AppEnvironment {
         textLookupPlugin.stop()
         calculatorPlugin.stop()
         windowManagementPlugin.stop()
+        clipboardHistoryPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -170,6 +176,9 @@ final class AppEnvironment {
                 try self?.openSettings(tab: .general)
             }
             try calculatorPlugin.register(in: registry)
+            try clipboardHistoryPlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .clipboardHistory)
+            }
             for application in applications {
                 try ApplicationCommands.register(
                     application,
@@ -294,7 +303,8 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
-        WindowCommands.systemImage(for: commandID)
+        if commandID == ClipboardHistoryPlugin.commandID { return "clipboard" }
+        return WindowCommands.systemImage(for: commandID)
             ?? SettingsCommands.systemImage(for: commandID)
             ?? calculatorPlugin.systemImage(for: commandID)
     }

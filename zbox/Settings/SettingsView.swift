@@ -16,6 +16,9 @@ struct SettingsView: View {
             WindowManagementSettingsView(environment: environment)
                 .settingsTab(SettingsTab.windowManagement)
 
+            ClipboardHistorySettingsView(plugin: environment.clipboardHistoryPlugin)
+                .settingsTab(SettingsTab.clipboardHistory)
+
             Form {
                 TextLookupSettingsView(environment: environment)
             }

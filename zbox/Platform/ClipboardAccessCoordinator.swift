@@ -19,6 +19,5 @@ final class ClipboardAccessCoordinator {
 
     func didWrite(changeCount: Int) {
         ignoredChangeCount = changeCount
-        revision += 1
     }
 }
