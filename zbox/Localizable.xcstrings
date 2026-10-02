@@ -5444,6 +5444,726 @@
           }
         }
       }
+    },
+    "Seconds": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "秒"
+          }
+        }
+      }
+    },
+    "Milliseconds": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "毫秒"
+          }
+        }
+      }
+    },
+    "Timestamp": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间戳"
+          }
+        }
+      }
+    },
+    "Enter integer milliseconds or seconds with at most three decimal places.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入整数毫秒，或最多三位小数的秒数。"
+          }
+        }
+      }
+    },
+    "The timestamp must fall within UTC years 0001–9999.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间戳必须在 UTC 公元 0001 至 9999 年范围内。"
+          }
+        }
+      }
+    },
+    "Enter a valid ISO 8601 date with a time zone, for example 2026-10-03T10:30:00.123+08:00.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入带时区的有效 ISO 8601 日期，例如 2026-10-03T10:30:00.123+08:00。"
+          }
+        }
+      }
+    },
+    "Standard JSON · Formatting preserves numbers, key order, and string escapes.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标准 JSON · 格式化保留数字原文、键顺序和字符串转义。"
+          }
+        }
+      }
+    },
+    "URL components · Spaces use %20; + stays a plus sign when decoding.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL 组件 · 空格编码为 %20；解码时 + 保持加号。"
+          }
+        }
+      }
+    },
+    "UTF-8 text · Standard output is padded; URL-safe output omits padding.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UTF-8 文本 · 标准输出保留填充，URL-safe 输出省略填充。"
+          }
+        }
+      }
+    },
+    "Valid JSON syntax.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 语法有效。"
+          }
+        }
+      }
+    },
+    "Run to update the result.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行操作以更新结果。"
+          }
+        }
+      }
+    },
+    "Operation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作"
+          }
+        }
+      }
+    },
+    "Indent": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩进"
+          }
+        }
+      }
+    },
+    "Alphabet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字母表"
+          }
+        }
+      }
+    },
+    "Run": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行"
+          }
+        }
+      }
+    },
+    "2 spaces": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 个空格"
+          }
+        }
+      }
+    },
+    "4 spaces": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 个空格"
+          }
+        }
+      }
+    },
+    "Encode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编码"
+          }
+        }
+      }
+    },
+    "Decode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解码"
+          }
+        }
+      }
+    },
+    "Standard Base64": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标准 Base64"
+          }
+        }
+      }
+    },
+    "URL-safe Base64": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL-safe Base64"
+          }
+        }
+      }
+    },
+    "Input": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入"
+          }
+        }
+      }
+    },
+    "Output": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出"
+          }
+        }
+      }
+    },
+    "Go to Error": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定位错误"
+          }
+        }
+      }
+    },
+    "Use Result as Input": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将结果用作输入"
+          }
+        }
+      }
+    },
+    "Copy Result": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制结果"
+          }
+        }
+      }
+    },
+    "UUID v4 · One UUID per line": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UUID v4 · 每行一个 UUID"
+          }
+        }
+      }
+    },
+    "Copy All": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部复制"
+          }
+        }
+      }
+    },
+    "Count: %lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数量：%lld"
+          }
+        }
+      }
+    },
+    "Uppercase": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大写"
+          }
+        }
+      }
+    },
+    "Generate": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "生成"
+          }
+        }
+      }
+    },
+    "Input exceeds the 1 MiB limit.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入超过 1 MiB 限制。"
+          }
+        }
+      }
+    },
+    "Invalid percent encoding or UTF-8 text.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "百分号编码或 UTF-8 文本无效。"
+          }
+        }
+      }
+    },
+    "The decoded result is not UTF-8 text.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解码结果不是 UTF-8 文本。"
+          }
+        }
+      }
+    },
+    "Invalid Base64 characters, length, or padding.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base64 字符、长度或填充无效。"
+          }
+        }
+      }
+    },
+    "JSON Format / Validate": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 格式化与校验"
+          }
+        }
+      }
+    },
+    "Timestamp Converter": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间戳转换"
+          }
+        }
+      }
+    },
+    "UUID Generator": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "UUID 生成"
+          }
+        }
+      }
+    },
+    "URL Encode / Decode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "URL 编解码"
+          }
+        }
+      }
+    },
+    "Base64 Encode / Decode": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base64 编解码"
+          }
+        }
+      }
+    },
+    "Developer Tools": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开发者工具"
+          }
+        }
+      }
+    },
+    "Built-in Developer Tools": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置开发者工具"
+          }
+        }
+      }
+    },
+    "Could not copy the result.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法复制结果。"
+          }
+        }
+      }
+    },
+    "Line %lld, column %lld: %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 行，第 %lld 列：%@"
+          }
+        }
+      }
+    },
+    "Format JSON": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化"
+          }
+        }
+      }
+    },
+    "Compact": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "压缩"
+          }
+        }
+      }
+    },
+    "Validate": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "校验"
+          }
+        }
+      }
+    },
+    "Unexpected text after the JSON value.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 值之后存在多余内容。"
+          }
+        }
+      }
+    },
+    "Expected ':' after the object key.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象键之后应为冒号。"
+          }
+        }
+      }
+    },
+    "Expected a quoted object key.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象键必须使用双引号。"
+          }
+        }
+      }
+    },
+    "JSON exceeds the 256-level nesting limit.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 超过 256 层嵌套限制。"
+          }
+        }
+      }
+    },
+    "Expected a JSON value.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处应为 JSON 值。"
+          }
+        }
+      }
+    },
+    "Expected ',' or the closing bracket.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此处应为逗号或结束括号。"
+          }
+        }
+      }
+    },
+    "Unescaped control character in a string.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字符串中包含未转义的控制字符。"
+          }
+        }
+      }
+    },
+    "Expected four hexadecimal digits after '\\u'.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\\u 之后必须有四位十六进制数字。"
+          }
+        }
+      }
+    },
+    "Invalid string escape.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字符串转义无效。"
+          }
+        }
+      }
+    },
+    "Unterminated string.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字符串缺少结束双引号。"
+          }
+        }
+      }
+    },
+    "Formatted output exceeds the 8 MiB limit.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化结果超过 8 MiB 限制。"
+          }
+        }
+      }
+    },
+    "Invalid JSON literal.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON 字面量无效。"
+          }
+        }
+      }
+    },
+    "Expected a digit in the number.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数值中此处应为数字。"
+          }
+        }
+      }
+    },
+    "Include Z or an explicit offset such as +08:00. Precision: up to milliseconds.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "必须包含 Z 或 +08:00 等明确时区偏移，精度最多为毫秒。"
+          }
+        }
+      }
+    },
+    "Units are explicit. Negative timestamps are supported.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请明确选择单位，支持负时间戳。"
+          }
+        }
+      }
+    },
+    "Timestamp Input": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间戳输入"
+          }
+        }
+      }
+    },
+    "Local Time": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地时间"
+          }
+        }
+      }
+    },
+    "Copy Result copies UTC for timestamp input, or seconds for date input.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入时间戳时复制 UTC 日期，输入日期时复制秒时间戳。"
+          }
+        }
+      }
+    },
+    "Direction": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换方向"
+          }
+        }
+      }
+    },
+    "Input Unit": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入单位"
+          }
+        }
+      }
+    },
+    "Timestamp to Date": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间戳转日期"
+          }
+        }
+      }
+    },
+    "Date to Timestamp": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期转时间戳"
+          }
+        }
+      }
+    },
+    "Current Time": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前时间"
+          }
+        }
+      }
+    },
+    "Convert": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "转换"
+          }
+        }
+      }
+    },
+    "Copy %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制%@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

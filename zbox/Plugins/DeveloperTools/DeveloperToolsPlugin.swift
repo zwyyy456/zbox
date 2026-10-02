@@ -16,6 +16,24 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
             case .base64: String(localized: "Base64 Encode / Decode")
             }
         }
+        var sidebarTitle: String {
+            switch self {
+            case .json: "JSON"
+            case .timestamp: String(localized: "Timestamp")
+            case .uuid: "UUID"
+            case .url: "URL"
+            case .base64: "Base64"
+            }
+        }
+        var keywords: [String] {
+            switch self {
+            case .json: ["json", "format", "validate", "格式化", "校验", "压缩"]
+            case .timestamp: ["timestamp", "unix", "epoch", "时间戳", "日期", "时间"]
+            case .uuid: ["uuid", "guid", "生成"]
+            case .url: ["url", "encode", "decode", "编码", "解码", "网址"]
+            case .base64: ["base64", "encode", "decode", "编码", "解码"]
+            }
+        }
         var icon: String {
             switch self {
             case .json: "curlybraces"
@@ -54,12 +72,13 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
 
     func register(in registry: CommandRegistry) throws {
         for target in Self.shortcutTargets {
+            let tool = Tool.allCases.first { $0.commandID == target.id }
             try registry.register(CommandDescriptor(
                 id: target.id, title: target.title,
                 subtitle: String(localized: "Built-in Developer Tools"),
-                keywords: ["developer", "tools", "开发者", "工具", target.id.rawValue]
+                keywords: ["developer", "tools", "开发者", "工具"] + (tool?.keywords ?? [])
             )) { [weak self] _ in
-                self?.show(tool: Tool.allCases.first { $0.commandID == target.id })
+                self?.show(tool: tool)
             }
         }
     }
@@ -72,6 +91,8 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
         uuids = (0..<uuidCount).map { _ in UUID() }
         copyError = nil
     }
+
+    func clearUUIDs() { uuids = []; copyError = nil }
 
     func uuidText(_ uuid: UUID) -> String {
         uppercaseUUIDs ? uuid.uuidString : uuid.uuidString.lowercased()

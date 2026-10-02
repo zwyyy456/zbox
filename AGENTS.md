@@ -21,6 +21,7 @@
 | Workspace 捕获、保存和恢复布局 | `docs/product/workspace.md` |
 | Screenshot 截图、编辑、图床、上传或屏幕捕获权限 | `docs/product/screenshot.md` |
 | Clipboard History 采集、隐私、存储、粘贴或管理行为 | `docs/product/clipboard-history.md` |
+| Developer Tools 入口、文本编辑、转换语义或会话生命周期 | `docs/product/developer-tools.md` |
 | Calculator 入口、窗口、输入、运算或数值语义 | `docs/product/calculator.md` |
 | Command、快捷键、窗口、Text Lookup、平台、安全或并发边界 | `engineering-guidelines.md` |
 | FlashDict 查词表面、资源、bridge payload 或建卡兼容 | `../zdict/Packages/FlashDictIntegrationKit/README.md`；涉及 payload 或跨版本语义时同时读取 `../zdict/docs/contracts/flashcard-contracts.md` |

@@ -14,7 +14,7 @@ nonisolated struct JSONFormatter {
         case format, compact, validate
         var title: String {
             switch self {
-            case .format: String(localized: "Format")
+            case .format: String(localized: "Format JSON")
             case .compact: String(localized: "Compact")
             case .validate: String(localized: "Validate")
             }

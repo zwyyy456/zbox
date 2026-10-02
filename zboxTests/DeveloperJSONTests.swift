@@ -33,4 +33,18 @@ struct DeveloperJSONTests {
         #expect(try JSONFormatter.process(nested, operation: .validate) == "")
         #expect(throws: JSONSyntaxError.self) { try JSONFormatter.process("[" + nested + "]", operation: .validate) }
     }
+    @Test func boundsExpansionAndHonorsCancellation() async throws {
+        let wide = String(repeating: "[", count: 200) + Array(repeating: "0", count: 12_000).joined(separator: ",")
+            + String(repeating: "]", count: 200)
+        #expect(throws: DeveloperToolError.self) { try JSONFormatter.process(wide, operation: .format, indentation: 4) }
+        #expect(throws: DeveloperToolError.self) {
+            try JSONFormatter.process(String(repeating: " ", count: 1_048_577), operation: .validate)
+        }
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try JSONFormatter.process("{}", operation: .format)
+        }
+        await #expect(throws: CancellationError.self) { try await task.value }
+    }
+
 }

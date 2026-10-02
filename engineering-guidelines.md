@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets`、`Plugins/DeveloperTools` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -89,6 +89,13 @@
 - FileIndexStore actor 隔离 SQLite，FileIndexScanner actor 隔离目录访问。查询解析和排序规则使用值类型；扫描分批写入、查询逐条检查取消，UI 不遍历目录或执行数据库查询。
 - FSEvents 使用主队列回调并显式管理 C context 生命周期；停用先停止监听再取消任务。事件只是重新核对目录的依据，只有对应更新成功才推进事件位置。扫描失败不清理未读范围。
 - 文件操作及 Quick Look 留在插件内。剪贴板写入复用 ClipboardAccessCoordinator，不为此扩展通用文件操作框架。
+
+## Developer Tools 边界
+
+- 产品行为由 `docs/product/developer-tools.md` 定义。DeveloperToolsPlugin 拥有普通窗口和会话，AppEnvironment 组合 Registry 与共享快捷键；各工具不互相依赖。
+- 文本转换使用纯值算法，DeveloperTextSession 拥有后台计算任务；修改输入、操作或关闭窗口时取消，取消后的成功与错误均不得回写。UI、AppKit 编辑器及剪贴板保持 Main Actor 隔离。
+- JSON 以显式解析状态验证语法并原样保留 token，不递归消耗线程栈或把数值转换成浮点。时间戳在数值解析和单位转换时使用整数毫秒，仅在系统日期边界转换为 Date。
+- 原生文本编辑器关闭系统自动替换，窗口关闭时释放编辑器及其撤销记录。结果复制复用 ClipboardAccessCoordinator，文本不持久化。
 
 ## 验证边界
 

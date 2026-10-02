@@ -27,7 +27,7 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 
 ### 1.2 核心与内置插件
 
-核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets、File Search 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
+核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets、File Search、Developer Tools 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
 
 ### 1.3 MVP 要验证的核心假设
 
@@ -223,3 +223,5 @@ Display 作为默认关闭的内置插件，管理现有显示模式、刷新率
 Quicklinks 与 Snippets 作为默认关闭的内置插件，分别管理快捷入口及可复制／粘贴的纯文本模板；产品约定见 `product/quicklinks.md` 与 `product/snippets.md`，不改变 M1 完成定义。
 
 File Search 作为默认关闭的内置插件，为用户选择的本地目录建立文件名索引并提供搜索、预览和文件操作；产品约定见 `product/file-search.md`，不改变 M1 完成定义。
+
+Developer Tools 作为始终可用的内置插件，提供本地 JSON、时间戳、UUID、URL 与 Base64 工具，共用独立窗口；产品约定见 `product/developer-tools.md`，不增加设置 Tab 或后台监听。

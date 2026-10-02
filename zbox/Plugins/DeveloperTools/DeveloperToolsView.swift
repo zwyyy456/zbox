@@ -6,7 +6,7 @@ struct DeveloperToolsView: View {
     var body: some View {
         HStack(spacing: 0) {
             List(DeveloperToolsPlugin.Tool.allCases, selection: $plugin.selection) { tool in
-                Label(tool.title, systemImage: tool.icon).tag(tool)
+                Label(tool.sidebarTitle, systemImage: tool.icon).tag(tool)
             }
             .listStyle(.sidebar)
             .frame(width: 180)
@@ -27,6 +27,7 @@ struct DeveloperToolsView: View {
             .padding(20)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .onChange(of: plugin.selection) { plugin.copyError = nil }
     }
 
     private var uuidView: some View {
@@ -49,9 +50,13 @@ struct DeveloperToolsView: View {
                     Button("Copy") { plugin.copy(plugin.uuidText(uuid)) }
                 }
             }
-            Button("Copy All") { plugin.copy(plugin.uuids.map(plugin.uuidText).joined(separator: "\n")) }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
-                .disabled(plugin.uuids.isEmpty)
+            HStack {
+                Button("Clear") { plugin.clearUUIDs() }.disabled(plugin.uuids.isEmpty)
+                Spacer()
+                Button("Copy All") { plugin.copy(plugin.uuids.map(plugin.uuidText).joined(separator: "\n")) }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
+                    .disabled(plugin.uuids.isEmpty)
+            }
         }
     }
 }
