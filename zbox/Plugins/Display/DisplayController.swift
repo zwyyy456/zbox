@@ -71,6 +71,8 @@ struct DisplayController: DisplayConfiguring {
                     if $0.isHiDPI != $1.isHiDPI { return $0.isHiDPI }
                     if $0.width != $1.width { return $0.width > $1.width }
                     if $0.height != $1.height { return $0.height > $1.height }
+                    if $0.pixelWidth != $1.pixelWidth { return $0.pixelWidth > $1.pixelWidth }
+                    if $0.pixelHeight != $1.pixelHeight { return $0.pixelHeight > $1.pixelHeight }
                     return $0.refreshMillihertz > $1.refreshMillihertz
                 })
         }

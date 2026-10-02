@@ -71,6 +71,8 @@ struct RootSearchView: View {
                             environment.performCommandRecovery(recovery)
                         }
                         .buttonStyle(.link)
+                    case .openDisplaySettings:
+                        Button("Open Display Settings") { environment.performCommandRecovery(.openDisplaySettings) }
                     case .openWorkspaceSettings:
                         Button("Open Workspace Settings") {
                             environment.performCommandRecovery(.openWorkspaceSettings)

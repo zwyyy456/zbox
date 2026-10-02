@@ -3398,6 +3398,1062 @@
           }
         }
       }
+    },
+    "Display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示器"
+          }
+        }
+      }
+    },
+    "Manage Displays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Displays"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理显示器"
+          }
+        }
+      }
+    },
+    "Enable Display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用显示器管理"
+          }
+        }
+      }
+    },
+    "Refresh Displays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh Displays"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新显示器"
+          }
+        }
+      }
+    },
+    "System managed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System managed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "由系统管理"
+          }
+        }
+      }
+    },
+    "A required display is missing or cannot be identified uniquely.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A required display is missing or cannot be identified uniquely."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所需显示器未连接，或无法唯一识别。"
+          }
+        }
+      }
+    },
+    "The saved display mode is no longer available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The saved display mode is no longer available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存的显示模式已不可用。"
+          }
+        }
+      }
+    },
+    "macOS could not apply the display configuration (%d).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS could not apply the display configuration (%d)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 无法应用显示配置（%d）。"
+          }
+        }
+      }
+    },
+    "Enable Display in Settings first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Display in Settings first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在设置中启用显示器管理。"
+          }
+        }
+      }
+    },
+    "Keep or revert the current display change first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep or revert the current display change first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先保留或恢复本次显示设置。"
+          }
+        }
+      }
+    },
+    "Display Presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Presets"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示预设"
+          }
+        }
+      }
+    },
+    "Save Current Display Preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save Current Display Preset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存当前显示预设"
+          }
+        }
+      }
+    },
+    "Display Preset Actions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Preset Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示预设操作"
+          }
+        }
+      }
+    },
+    "Keep these display settings?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep these display settings?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留这些显示设置吗？"
+          }
+        }
+      }
+    },
+    "Reverting in %lld seconds.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reverting in %lld seconds."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将在 %lld 秒后恢复原设置。"
+          }
+        }
+      }
+    },
+    "Keep Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留设置"
+          }
+        }
+      }
+    },
+    "Revert Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revert Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复原设置"
+          }
+        }
+      }
+    },
+    "No displays available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No displays available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可用显示器。"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接类型"
+          }
+        }
+      }
+    },
+    "Built-in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内建"
+          }
+        }
+      }
+    },
+    "External": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "External"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外接"
+          }
+        }
+      }
+    },
+    "Looks like": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looks like"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "逻辑尺寸"
+          }
+        }
+      }
+    },
+    "Rendering pixels": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rendering pixels"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "渲染像素尺寸"
+          }
+        }
+      }
+    },
+    "Refresh Rate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh Rate"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新率"
+          }
+        }
+      }
+    },
+    "HiDPI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HiDPI"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HiDPI"
+          }
+        }
+      }
+    },
+    "Yes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "是"
+          }
+        }
+      }
+    },
+    "No": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "否"
+          }
+        }
+      }
+    },
+    "Resolution": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolution"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分辨率"
+          }
+        }
+      }
+    },
+    "Choose a mode…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a mode…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择显示模式…"
+          }
+        }
+      }
+    },
+    "Apply Mode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用显示模式"
+          }
+        }
+      }
+    },
+    "Display Preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Preset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示预设"
+          }
+        }
+      }
+    },
+    "Apply Display Preset: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply Display Preset: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用显示预设：%@"
+          }
+        }
+      }
+    },
+    "Open Display Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Display Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开显示器设置"
+          }
+        }
+      }
+    },
+    "Saved display presets could not be read. The original data was preserved.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved display presets could not be read. The original data was preserved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取显示预设，原始数据已保留。"
+          }
+        }
+      }
+    },
+    "The display configuration changed during confirmation. Restoration was requested.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The display configuration changed during confirmation. Restoration was requested."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认期间显示配置发生变化，已尝试恢复原设置。"
+          }
+        }
+      }
+    },
+    "Could not restore the previous display configuration. Reconnect missing displays and retry. ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not restore the previous display configuration. Reconnect missing displays and retry. "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法恢复原显示配置，请重新连接缺失的显示器后重试。"
+          }
+        }
+      }
+    },
+    "Configure Additional HiDPI Modes…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure Additional HiDPI Modes…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置更多 HiDPI 模式…"
+          }
+        }
+      }
+    },
+    "Additional HiDPI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Additional HiDPI"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多 HiDPI 缩放"
+          }
+        }
+      }
+    },
+    "Native scaling uses a system display override. Installation requires administrator approval and a restart; available modes still depend on macOS and the display connection.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native scaling uses a system display override. Installation requires administrator approval and a restart; available modes still depend on macOS and the display connection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生缩放通过系统显示器配置实现。安装需要管理员授权和重启；可用模式仍取决于 macOS 和显示器连接方式。"
+          }
+        }
+      }
+    },
+    "Updating display configuration…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating display configuration…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新显示器配置…"
+          }
+        }
+      }
+    },
+    "Additional available HiDPI modes since installation: %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Additional available HiDPI modes since installation: %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相较安装前新增的可用 HiDPI 缩放档位：%lld"
+          }
+        }
+      }
+    },
+    "An installation record does not confirm that macOS enabled the requested modes.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An installation record does not confirm that macOS enabled the requested modes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装记录不代表 macOS 已启用所请求的模式。"
+          }
+        }
+      }
+    },
+    "Remove zbox Override…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove zbox Override…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除 zbox 显示配置…"
+          }
+        }
+      }
+    },
+    "Remove this zbox display override?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove this zbox display override?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除此 zbox 显示配置吗？"
+          }
+        }
+      }
+    },
+    "Remove Override": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove Override"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除配置"
+          }
+        }
+      }
+    },
+    "Only the unchanged configuration installed by zbox will be removed. Restart macOS afterward.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the unchanged configuration installed by zbox will be removed. Restart macOS afterward."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅移除由 zbox 安装且内容未被修改的配置，完成后需要重启 macOS。"
+          }
+        }
+      }
+    },
+    "Enter the physical panel's native resolution before rotation, not the current looks-like or rendering size.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the physical panel's native resolution before rotation, not the current looks-like or rendering size."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入屏幕旋转前的物理原生分辨率，不要填写当前逻辑尺寸或渲染尺寸。"
+          }
+        }
+      }
+    },
+    "Native Width": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native Width"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生宽度"
+          }
+        }
+      }
+    },
+    "Native Height": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native Height"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生高度"
+          }
+        }
+      }
+    },
+    "×": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "×"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "×"
+          }
+        }
+      }
+    },
+    "This requests 2× rendering modes in small scaling steps. It does not change EDID or guarantee that every requested mode is supported.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This requests 2× rendering modes in small scaling steps. It does not change EDID or guarantee that every requested mode is supported."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将请求一组细分的 2× 渲染模式，不修改 EDID。系统不一定支持其中的所有模式。"
+          }
+        }
+      }
+    },
+    "The override applies to all displays of this vendor and model. Existing overrides will not be overwritten. A restart is required.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The override applies to all displays of this vendor and model. Existing overrides will not be overwritten. A restart is required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置会影响相同厂商和型号的所有显示器，不会覆盖现有配置。安装后需要重启。"
+          }
+        }
+      }
+    },
+    "Requested scaling sizes: %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested scaling sizes: %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求的缩放档位：%lld"
+          }
+        }
+      }
+    },
+    "Logical width range: %lld–%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logical width range: %lld–%lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "逻辑宽度范围：%lld–%lld"
+          }
+        }
+      }
+    },
+    "Enter the panel's native unrotated resolution: width 640–16384 and height 480–16384.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the panel's native unrotated resolution: width 640–16384 and height 480–16384."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入旋转前的原生分辨率：宽度 640–16384，高度 480–16384。"
+          }
+        }
+      }
+    },
+    "Install with Administrator Approval": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install with Administrator Approval"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过管理员授权安装"
+          }
+        }
+      }
+    },
+    "A display override already exists. Remove it using the tool that created it before installing a zbox override.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A display override already exists. Remove it using the tool that created it before installing a zbox override."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此显示器已有配置。请先通过创建该配置的工具移除，再安装 zbox 配置。"
+          }
+        }
+      }
+    },
+    "The installed override differs from zbox's saved configuration. It was not removed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The installed override differs from zbox's saved configuration. It was not removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统配置与 zbox 保存的内容不一致，未执行移除。"
+          }
+        }
+      }
+    },
+    "The administrator operation was cancelled or failed. No success was confirmed.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The administrator operation was cancelled or failed. No success was confirmed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理员操作已取消或失败，尚未确认操作成功。"
+          }
+        }
+      }
+    },
+    "Additional HiDPI configuration is supported only for external displays.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Additional HiDPI configuration is supported only for external displays."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "额外 HiDPI 配置仅支持外接显示器。"
+          }
+        }
+      }
+    },
+    "HiDPI installation records could not be read. Existing data was preserved.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HiDPI installation records could not be read. Existing data was preserved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取 HiDPI 安装记录，原始数据已保留。"
+          }
+        }
+      }
+    },
+    "Configuration installed. Restart macOS, then refresh displays to check which HiDPI modes became available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuration installed. Restart macOS, then refresh displays to check which HiDPI modes became available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置已安装。请重启 macOS，再刷新显示器，检查新增的可用 HiDPI 模式。"
+          }
+        }
+      }
+    },
+    "The zbox override was removed. Restart macOS to reload the original display configuration.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The zbox override was removed. Restart macOS to reload the original display configuration."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "zbox 显示配置已移除，请重启 macOS 以加载原配置。"
+          }
+        }
+      }
+    },
+    "The installation record was cleared. No override file was present.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The installation record was cleared. No override file was present."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装记录已清除，系统中没有对应的配置文件。"
+          }
+        }
+      }
+    },
+    "Apply": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重命名"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

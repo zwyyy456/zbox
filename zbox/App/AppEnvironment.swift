@@ -597,6 +597,9 @@ final class AppEnvironment {
         switch action {
         case .openAccessibilitySettings:
             openAccessibilitySettings()
+        case .openDisplaySettings:
+            do { try openSettings(tab: .display) }
+            catch { commandFeedback = CommandFeedbackMapper.failure(for: error) }
         case .openWorkspaceSettings:
             do { try openSettings(tab: .workspace) }
             catch { commandFeedback = CommandFeedbackMapper.failure(for: error) }

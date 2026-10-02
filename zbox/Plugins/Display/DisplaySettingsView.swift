@@ -3,12 +3,15 @@ import SwiftUI
 struct DisplaySettingsView: View {
     let environment: AppEnvironment
     @State private var editingPreset: DisplayPreset?
+    @State private var configuringHiDPI: DisplayInfo?
+    @State private var removingHiDPI: DisplayHiDPIInstallation?
 
     var body: some View {
         let plugin = environment.displayPlugin
         Form {
             Section {
                 Toggle("Enable Display", isOn: Binding(get: { plugin.isEnabled }, set: environment.setDisplayEnabled))
+                    .disabled(plugin.hiDPI.isBusy)
                 Button("Refresh Displays", action: plugin.refresh)
                 if let message = plugin.statusMessage { Text(message).font(.caption) }
             }
@@ -21,7 +24,7 @@ struct DisplaySettingsView: View {
                         Text(preset.name).lineLimit(1).help(preset.name)
                         Spacer()
                         Button("Apply") { environment.applyDisplayPreset(preset) }
-                            .disabled(!plugin.isEnabled || plugin.change.pending != nil)
+                            .disabled(!plugin.isEnabled || plugin.change.pending != nil || plugin.hiDPI.isBusy)
                         Menu {
                             Button("Rename") { plugin.statusMessage = nil; editingPreset = preset }
                             Button("Delete", role: .destructive) { environment.deleteDisplayPreset(preset) }
@@ -53,12 +56,50 @@ struct DisplaySettingsView: View {
                     DisplayModePicker(display: display) { mode in
                         plugin.apply([DisplaySelection(displayID: display.id, displayName: display.name, mode: mode)])
                     }
-                    .disabled(!plugin.isEnabled || plugin.change.pending != nil)
+                    .disabled(!plugin.isEnabled || plugin.change.pending != nil || plugin.hiDPI.isBusy)
+                    if !display.isBuiltIn {
+                        Button("Configure Additional HiDPI Modes…") { configuringHiDPI = display }
+                            .disabled(!plugin.isEnabled || plugin.change.pending != nil || plugin.hiDPI.isBusy || plugin.hiDPI.loadError != nil)
+                    }
+                }
+            }
+            Section("Additional HiDPI") {
+                Text("Native scaling uses a system display override. Installation requires administrator approval and a restart; available modes still depend on macOS and the display connection.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if plugin.hiDPI.isBusy { ProgressView("Updating display configuration…") }
+                if let message = plugin.hiDPI.loadError ?? plugin.hiDPI.statusMessage { Text(message).font(.caption) }
+                ForEach(plugin.hiDPI.installations) { installation in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(installation.displayName)
+                        let matches = plugin.displays.filter { $0.vendor == installation.vendor && $0.product == installation.product }
+                        if let display = matches.first, matches.count == 1 {
+                            Text("Additional available HiDPI modes since installation: \(installation.additionalModes(on: display))")
+                                .font(.caption)
+                        }
+                        Text("An installation record does not confirm that macOS enabled the requested modes.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Button("Remove zbox Override…", role: .destructive) { removingHiDPI = installation }
+                            .disabled(plugin.hiDPI.isBusy || plugin.change.pending != nil)
+                    }
                 }
             }
         }
         .settingsPane()
         .onAppear { plugin.refresh() }
+        .sheet(item: $configuringHiDPI) { display in
+            DisplayHiDPIEditor(display: display, manager: plugin.hiDPI)
+        }
+        .confirmationDialog("Remove this zbox display override?", isPresented: Binding(
+            get: { removingHiDPI != nil }, set: { if !$0 { removingHiDPI = nil } })) {
+            if let installation = removingHiDPI {
+                Button("Remove Override", role: .destructive) {
+                    Task { await plugin.hiDPI.remove(installation) }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Only the unchanged configuration installed by zbox will be removed. Restart macOS afterward.")
+        }
         .sheet(item: $editingPreset) { preset in
             DisplayPresetEditor(preset: preset, errorMessage: plugin.statusMessage, save: environment.saveDisplayPreset)
         }

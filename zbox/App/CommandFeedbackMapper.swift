@@ -6,6 +6,8 @@ nonisolated enum CommandFeedbackMapper {
         switch error {
         case AccessibilityWindowError.permissionRequired:
             recovery = .openAccessibilitySettings
+        case is DisplayError:
+            recovery = .openDisplaySettings
         case WorkspaceError.disabled:
             recovery = .openWorkspaceSettings
         case WindowManagementError.disabled:

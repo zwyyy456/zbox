@@ -21,6 +21,8 @@ struct CommandFeedbackView: View {
                         Button("Open Accessibility Settings") {
                             onRecovery(recovery)
                         }
+                    case .openDisplaySettings:
+                        Button("Open Display Settings") { onRecovery(.openDisplaySettings) }
                     case .openWorkspaceSettings:
                         Button("Open Workspace Settings") { onRecovery(.openWorkspaceSettings) }
                     case .openWindowManagementSettings:

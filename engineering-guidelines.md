@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Workspace` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 

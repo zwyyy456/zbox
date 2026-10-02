@@ -3,7 +3,7 @@ import CoreGraphics
 import Foundation
 
 /// The override format uses two big-endian UInt32 backing dimensions per mode.
-nonisolated struct DisplayHiDPIConfiguration: Codable, Equatable, Sendable {
+nonisolated struct DisplayHiDPIConfiguration: Equatable, Sendable {
     let vendor: UInt32
     let product: UInt32
     let nativeWidth: Int
@@ -25,7 +25,9 @@ nonisolated struct DisplayHiDPIConfiguration: Codable, Equatable, Sendable {
     var path: String { "\(directory)/DisplayProductID-\(String(product, radix: 16))" }
 
     var logicalSizes: [CGSize] {
-        stride(from: nativeWidth, through: nativeWidth / 2, by: -16).map { width in
+        var widths = Array(stride(from: nativeWidth, through: nativeWidth / 2, by: -16))
+        if widths.last != nativeWidth / 2 { widths.append(nativeWidth / 2) }
+        return widths.map { width in
             CGSize(width: width, height: Int((Double(width) * Double(nativeHeight) / Double(nativeWidth)).rounded()))
         }
     }

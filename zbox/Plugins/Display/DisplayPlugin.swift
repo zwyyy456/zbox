@@ -9,6 +9,7 @@ final class DisplayPlugin {
     private let controller = DisplayController()
     let change = DisplayChange(controller: DisplayController())
     let presets: DisplayPresetStore
+    let hiDPI: DisplayHiDPIManager
     private(set) var isEnabled: Bool
     private(set) var displays: [DisplayInfo] = []
     var statusMessage: String?
@@ -17,6 +18,7 @@ final class DisplayPlugin {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         presets = DisplayPresetStore(defaults: defaults)
+        hiDPI = DisplayHiDPIManager(defaults: defaults)
         isEnabled = defaults.bool(forKey: "display.enabled")
     }
 
@@ -47,6 +49,7 @@ final class DisplayPlugin {
     }
 
     func setEnabled(_ enabled: Bool) {
+        guard !hiDPI.isBusy else { return }
         if !enabled {
             change.revert()
             guard change.pending == nil else { return }
@@ -57,13 +60,25 @@ final class DisplayPlugin {
     }
 
     func apply(_ selections: [DisplaySelection]) {
+        guard !hiDPI.isBusy else { return }
         guard isEnabled else { statusMessage = DisplayError.disabled.localizedDescription; return }
         do { try change.begin(selections); statusMessage = nil }
         catch { statusMessage = error.localizedDescription }
         refresh()
     }
 
-    func refresh() { displays = controller.read() }
+    func refresh() {
+        displays = controller.read()
+        if let pending = change.pending, !change.recoveryFailed,
+           !pending.requested.allSatisfy({ selection in
+               let matches = displays.filter { $0.id == selection.displayID }
+               return matches.count == 1 && matches.first?.current == selection.mode
+           }) {
+            change.revert()
+            displays = controller.read()
+            statusMessage = String(localized: "The display configuration changed during confirmation. Restoration was requested.")
+        }
+    }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for preset in presets.presets {
@@ -72,7 +87,7 @@ final class DisplayPlugin {
                 subtitle: preset.selections.map(\.displayName).joined(separator: ", "),
                 keywords: ["display", "preset", "显示器", "预设", preset.name])) { [weak self] _ in
                 try openSettings()
-                guard let self, isEnabled else { return }
+                guard let self, isEnabled, !hiDPI.isBusy else { return }
                 try change.begin(preset.selections)
                 refresh()
             }
