@@ -183,7 +183,10 @@ final class ClipboardHistoryPlugin {
                     guard self?.selectedID == id else { return }
                     self?.previewImage = NSImage(data: thumbnail)
                 } catch is CancellationError { return }
-                catch { self?.statusMessage = String(localized: "The image preview could not be loaded.") }
+                catch {
+                    guard !Task.isCancelled, self?.selectedID == id else { return }
+                    self?.statusMessage = String(localized: "The image preview could not be loaded.")
+                }
             }
         } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
@@ -223,12 +226,14 @@ final class ClipboardHistoryPlugin {
     }
 
     func deleteSelection() {
+        pasteTask?.cancel()
         guard let selectedID else { return }
         do { try store?.delete(selectedID); try refresh() }
         catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
     func clearHistory() {
+        pasteTask?.cancel()
         do { try prepareStore(); try store?.clear(); try refresh() }
         catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
@@ -243,6 +248,7 @@ final class ClipboardHistoryPlugin {
     private func write(_ payload: ClipboardPayload) throws {
         let board = NSPasteboard.general
         board.prepareForNewContents(with: .currentHostOnly)
+        defer { coordinator.didWrite(changeCount: board.changeCount) }
         let copied: Bool
         if ["png", "tiff"].contains(payload.kind) {
             copied = board.setData(payload.data, forType: payload.kind == "png" ? .png : .tiff)
@@ -252,7 +258,6 @@ final class ClipboardHistoryPlugin {
         guard copied else {
             throw ClipboardHistoryError.unsupported
         }
-        coordinator.didWrite(changeCount: board.changeCount)
     }
 
     func pasteSelection() {
@@ -280,6 +285,7 @@ final class ClipboardHistoryPlugin {
                 } catch is CancellationError {
                     return
                 } catch {
+                    guard !Task.isCancelled, self?.isEnabled == true else { return }
                     self?.statusMessage = (error as? ClipboardHistoryError)?.localizedDescription
                         ?? String(localized: "The item could not be pasted. Copy it and paste manually.")
                     self?.panel?.makeKeyAndOrderFront(nil)

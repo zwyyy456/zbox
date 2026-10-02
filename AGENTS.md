@@ -14,6 +14,7 @@
 | 核心产品范围或命令中心行为 | `docs/product-design-v0.1.md` |
 | Window Management 启停、权限、窗口命令或显示器行为 | `docs/product/window-management.md` |
 | Text Lookup 产品范围、触发、悬浮窗、翻译或建卡行为 | `docs/product/text-lookup.md` |
+| Clipboard History 采集、隐私、存储、粘贴或管理行为 | `docs/product/clipboard-history.md` |
 | Calculator 入口、窗口、输入、运算或数值语义 | `docs/product/calculator.md` |
 | Command、快捷键、窗口、Text Lookup、平台、安全或并发边界 | `engineering-guidelines.md` |
 | FlashDict 查词表面、资源、bridge payload 或建卡兼容 | `../zdict/Packages/FlashDictIntegrationKit/README.md`；涉及 payload 或跨版本语义时同时读取 `../zdict/docs/contracts/flashcard-contracts.md` |

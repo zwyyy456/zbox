@@ -13,6 +13,11 @@ struct ClipboardReaderTests {
         #expect(entry.text == "sample\ntext")
         #expect(entry.sourceBundleID == "test.app")
         #expect(try ClipboardReader.read(from: board, excluding: ["test.app"], sourceBundleID: "test.app") == nil)
+        board.clearContents()
+        board.setString(String(repeating: "x", count: ClipboardReader.textLimit + 1), forType: .string)
+        #expect(throws: ClipboardHistoryError.tooLarge) {
+            _ = try ClipboardReader.read(from: board, excluding: [], sourceBundleID: nil)
+        }
         for marker in ClipboardReader.ignoredTypes {
             board.clearContents()
             board.setString("private fixture", forType: .string)
@@ -22,7 +27,7 @@ struct ClipboardReaderTests {
     }
 
     @Test
-    func temporaryAccessAndOwnWritesInvalidatePendingCapture() {
+    func temporaryAccessChangesRevisionButOwnWritesOnlyMarkTheirChangeCount() {
         let access = ClipboardAccessCoordinator()
         let initialRevision = access.revision
         access.beginTemporaryAccess()
@@ -30,7 +35,9 @@ struct ClipboardReaderTests {
         #expect(access.revision != initialRevision)
         access.endTemporaryAccess()
         #expect(access.temporaryAccessCount == 0)
+        let completedRevision = access.revision
         access.didWrite(changeCount: 42)
+        #expect(access.revision == completedRevision)
         #expect(access.ignoredChangeCount == 42)
     }
 

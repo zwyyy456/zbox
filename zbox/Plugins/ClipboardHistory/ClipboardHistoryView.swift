@@ -37,12 +37,18 @@ struct ClipboardHistoryView: View {
                                     if let image = plugin.previewImage {
                                         Image(nsImage: image).resizable().scaledToFit().padding()
                                             .accessibilityLabel(entry.text)
-                                    } else { ProgressView().padding() }
+                                    } else { Text("Image preview unavailable").foregroundStyle(.secondary).padding() }
                                 } else {
                                     Text(entry.text).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding()
                                 }
                             }
                         }.frame(width: geometry.size.width * 0.45)
+                    }
+                }
+                .overlay {
+                    if plugin.filteredEntries.isEmpty {
+                        ContentUnavailableView("No Clipboard Items", systemImage: "clipboard",
+                            description: Text("Copy something after enabling Clipboard History, or change your search and filter."))
                     }
                 }
             }
@@ -67,6 +73,7 @@ struct ClipboardHistoryView: View {
 struct ClipboardHistorySettingsView: View {
     @Bindable var plugin: ClipboardHistoryPlugin
     let onEnabledChanged: @MainActor @Sendable (Bool) -> Void
+    let shortcutError: String?
     @State private var confirmsClear = false
 
     var body: some View {
@@ -75,6 +82,7 @@ struct ClipboardHistorySettingsView: View {
             Text("Stores future copies on this Mac. History is not encrypted or synced. Sensitive markers and excluded apps are skipped, but not all secrets can be detected.")
                 .foregroundStyle(.secondary)
             if let message = plugin.statusMessage { Text(message).foregroundStyle(.secondary) }
+            if let shortcutError { SettingsErrorView(message: shortcutError) }
             Button("Allow Clipboard Access / Resume", action: plugin.requestClipboardAccess)
                 .disabled(!plugin.isEnabled || plugin.isRecording)
             Picker("Keep History", selection: $plugin.retentionDays) {

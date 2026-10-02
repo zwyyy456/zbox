@@ -47,6 +47,11 @@ final class ClipboardHistoryPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    override func close() {
+        dismiss?()
+        super.close()
+    }
+
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown {
             let modifiers = event.modifierFlags.intersection([.command, .control, .shift, .option])

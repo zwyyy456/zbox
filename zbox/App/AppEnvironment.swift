@@ -408,7 +408,10 @@ final class AppEnvironment {
             hotkeyRegistrar.unregister(id: ClipboardHistoryPlugin.commandID.rawValue)
             return
         }
-        do { try applyHotkeyRegistrations() }
+        do {
+            try applyHotkeyRegistrations()
+            shortcutRegistrationError = nil
+        }
         catch {
             clipboardHistoryPlugin.setEnabled(false)
             shortcutRegistrationError = error.localizedDescription

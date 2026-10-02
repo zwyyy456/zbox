@@ -17,7 +17,8 @@ struct SettingsView: View {
                 .settingsTab(SettingsTab.windowManagement)
 
             ClipboardHistorySettingsView(plugin: environment.clipboardHistoryPlugin,
-                                         onEnabledChanged: environment.setClipboardHistoryEnabled)
+                                         onEnabledChanged: environment.setClipboardHistoryEnabled,
+                                         shortcutError: environment.shortcutRegistrationError)
                 .settingsTab(SettingsTab.clipboardHistory)
 
             Form {

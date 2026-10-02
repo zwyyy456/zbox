@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -43,6 +43,13 @@
 - 剪贴板兼容路径只执行一次受控复制，并以 change count 防止恢复操作覆盖用户后续修改。
 - 捕获文本、原句、来源 URL、释义和翻译不持久化，也不进入普通日志。停用功能或关闭会话时释放相关内存状态。
 - NSPanel 定位以锚点、鼠标位置和当前屏幕可用区域为输入；全屏、Space、多显示器和不同应用兼容性属于真实系统验证边界。
+
+## Clipboard History 边界
+
+- 产品行为由 `docs/product/clipboard-history.md` 定义；插件拥有采集任务、历史数据库、面板和设置状态，由 AppEnvironment 组合并注册命令。
+- 仅在显式启用后记录后续复制。SwiftData 使用独立本地容器并关闭 CloudKit；数据库操作保持 Main Actor 串行，图片预览解码离开 Main Actor，取消或选择变化后不提交旧预览。
+- Text Lookup 的临时复制通过共享 ClipboardAccessCoordinator 排除；插件自身回写以 changeCount 排除。停止、删除和清空取消待处理粘贴。
+- 直接粘贴在激活和发送按键前检查原目标应用；剪贴板访问授权与 Accessibility 粘贴权限独立处理。
 
 ## Calculator 边界
 
