@@ -32,6 +32,8 @@ final class AppEnvironment {
     let calculatorPlugin = CalculatorPlugin()
     @ObservationIgnored
     let workspacePlugin: WorkspacePlugin
+    @ObservationIgnored
+    let displayPlugin: DisplayPlugin
 
     private var commandRegistry = CommandRegistry()
     private var applicationURLsByCommandID: [CommandID: URL] = [:]
@@ -90,6 +92,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        displayPlugin = DisplayPlugin(defaults: defaults)
         let workspacePlugin = WorkspacePlugin(defaults: defaults)
         self.workspacePlugin = workspacePlugin
         screenshotPlugin = ScreenshotPlugin(defaults: defaults, clipboardCoordinator: clipboardCoordinator)
@@ -137,6 +140,7 @@ final class AppEnvironment {
         }
         reconcileAccessibilityDependentFeatures()
         windowManagementPlugin.start()
+        if displayPlugin.isEnabled { displayPlugin.start() }
         clipboardHistoryPlugin.start()
         reloadApplications()
         isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
@@ -163,6 +167,7 @@ final class AppEnvironment {
         clipboardHistoryPlugin.stop()
         screenshotPlugin.stop()
         workspacePlugin.stop()
+        displayPlugin.stop()
         hotkeyRegistrar.unregisterAll()
     }
 
@@ -197,6 +202,9 @@ final class AppEnvironment {
                 try self?.openSettings(tab: .general)
             }
             try calculatorPlugin.register(in: registry)
+            try displayPlugin.register(in: registry) { [weak self] in
+                try self?.openSettings(tab: .display)
+            }
             try workspacePlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .workspace)
             }
@@ -330,6 +338,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if commandID.rawValue.hasPrefix("display.") { return "display" }
         if commandID.rawValue.hasPrefix("workspace.") { return "rectangle.3.group" }
         if ScreenshotPlugin.shortcutTargets.contains(where: { $0.id == commandID }) { return "camera.viewfinder" }
         if commandID == ClipboardHistoryPlugin.commandID { return "clipboard" }
@@ -424,6 +433,10 @@ final class AppEnvironment {
         windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
         }
+    }
+
+    func setDisplayEnabled(_ enabled: Bool) {
+        displayPlugin.setEnabled(enabled)
     }
 
     func setWorkspaceEnabled(_ enabled: Bool) {

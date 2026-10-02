@@ -14,6 +14,7 @@
 | 核心产品范围或命令中心行为 | `docs/product-design-v0.1.md` |
 | Window Management 启停、权限、窗口命令或显示器行为 | `docs/product/window-management.md` |
 | Text Lookup 产品范围、触发、悬浮窗、翻译或建卡行为 | `docs/product/text-lookup.md` |
+| Display 模式、预设、恢复和原生 HiDPI 配置 | `docs/product/display.md` |
 | Workspace 捕获、保存和恢复布局 | `docs/product/workspace.md` |
 | Screenshot 截图、编辑、图床、上传或屏幕捕获权限 | `docs/product/screenshot.md` |
 | Clipboard History 采集、隐私、存储、粘贴或管理行为 | `docs/product/clipboard-history.md` |
