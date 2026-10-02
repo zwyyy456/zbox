@@ -167,6 +167,7 @@ final class AppEnvironment {
         rootSearchSessionID = nil
         commandFeedbackPanelController.hide()
         textLookupPlugin.stop()
+        quicklinksPlugin.stop()
         calculatorPlugin.stop()
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
@@ -457,6 +458,7 @@ final class AppEnvironment {
     func saveQuicklink(_ item: Quicklink) -> Bool {
         do {
             try quicklinksPlugin.store.save(item)
+            quicklinksPlugin.stop()
             reloadApplications()
             quicklinksPlugin.statusMessage = nil
             return true
@@ -466,6 +468,7 @@ final class AppEnvironment {
     func deleteQuicklink(_ item: Quicklink) {
         do {
             try quicklinksPlugin.store.delete(item.id)
+            quicklinksPlugin.stop()
             hotkeyRegistrar.unregister(id: item.commandID.rawValue)
             commandHotkeys[item.commandID] = nil
             commandHotkeyErrors[item.commandID] = nil

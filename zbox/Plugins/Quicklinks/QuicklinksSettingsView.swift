@@ -43,10 +43,18 @@ private struct QuicklinkEditor: View {
         Form {
             TextField("Name", text: $item.name)
             Picker("Type", selection: $item.kind) {
+                Text("Parameterized URL").tag(Quicklink.Kind.template)
                 Text("URL").tag(Quicklink.Kind.url)
                 Text("File or Folder").tag(Quicklink.Kind.file)
             }
             TextField("Target", text: $item.target)
+            if item.kind == .template {
+                TextField("Parameter Prompt", text: Binding(get: { item.parameterPrompt ?? "" }, set: { item.parameterPrompt = $0 }))
+                Text("Insert {query} where the search value belongs.").font(.caption)
+                if let url = try? item.destination() {
+                    Text(url.absoluteString).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            }
             if item.kind == .file {
                 Button("Choose File or Folder") {
                     let panel = NSOpenPanel()
