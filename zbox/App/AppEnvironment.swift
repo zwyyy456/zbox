@@ -62,7 +62,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        [AppMenuPlugin.shortcutTarget] + AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        [AppMenuPlugin.shortcutTarget] + AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + FileSearchPlugin.shortcutTargets + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -142,7 +142,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: DeveloperToolsPlugin.shortcutTargets.map(\.id) + [AppMenuPlugin.commandID] + AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: DeveloperToolsPlugin.shortcutTargets.map(\.id) + [AppMenuPlugin.commandID] + AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + FileSearchPlugin.shortcutTargets.map(\.id) + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -381,7 +381,7 @@ final class AppEnvironment {
     func systemImage(for commandID: CommandID) -> String? {
         if commandID == AppMenuPlugin.commandID { return "menubar.rectangle" }
         if commandID.rawValue.hasPrefix("audio.") { return "speaker.wave.2" }
-        if commandID == FileSearchPlugin.commandID { return "doc.text.magnifyingglass" }
+        if commandID.rawValue.hasPrefix("filesearch.") { return "doc.text.magnifyingglass" }
         if commandID.rawValue.hasPrefix("scripts.") { return "terminal" }
         if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
         if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
@@ -836,11 +836,14 @@ final class AppEnvironment {
                 self?.executeDirectCommand(ClipboardHistoryPlugin.commandID)
             })
         }
-        if fileSearchPlugin.isEnabled, let hotkey = commandHotkeys[FileSearchPlugin.commandID] {
-            requests.append(HotkeyRegistrationRequest(id: FileSearchPlugin.commandID.rawValue,
-                hotkey: hotkey, label: FileSearchPlugin.shortcutTarget.title) { [weak self] in
-                self?.executeDirectCommand(FileSearchPlugin.commandID)
-            })
+        if fileSearchPlugin.isEnabled {
+            for target in FileSearchPlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         if appMenuPlugin.isEnabled, isAccessibilityTrusted, let hotkey = commandHotkeys[AppMenuPlugin.commandID] {
             requests.append(HotkeyRegistrationRequest(id: AppMenuPlugin.commandID.rawValue, hotkey: hotkey,

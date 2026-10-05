@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSAppleEventsUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the file you explicitly selected in Finder to open, preview, or copy it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取你在 Finder 中明确选中的文件，以打开、预览或复制该文件。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

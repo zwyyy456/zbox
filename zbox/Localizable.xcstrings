@@ -7447,6 +7447,86 @@
           }
         }
       }
+    },
+    "Actions for Finder Selection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作 Finder 选中文件"
+          }
+        }
+      }
+    },
+    "Finder Selection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder 选中文件"
+          }
+        }
+      }
+    },
+    "Select one file in Finder before invoking this command.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在 Finder 中选中一个文件，再执行此命令。"
+          }
+        }
+      }
+    },
+    "Allow zbox to control Finder in System Settings > Privacy & Security > Automation, then try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在系统设置 > 隐私与安全性 > 自动化中允许 zbox 控制 Finder，然后重试。"
+          }
+        }
+      }
+    },
+    "Select exactly one file or folder in Finder.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在 Finder 中只选中一个文件或文件夹。"
+          }
+        }
+      }
+    },
+    "The Finder selection could not be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取 Finder 选中的项目。"
+          }
+        }
+      }
+    },
+    "Only local files and folders are supported.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅支持本地文件和文件夹。"
+          }
+        }
+      }
+    },
+    "This selection is temporary and is not added to the file index.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选中的项目仅在本次会话中保留，不会加入文件索引。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

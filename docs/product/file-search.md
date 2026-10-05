@@ -47,3 +47,11 @@
 ## 首版边界
 
 不含全文搜索、拼音／模糊匹配、复杂布尔表达式、正则、完整 gitignore、删除／移动／重命名、批量操作或跨 App 打开／保存对话框控制。不承诺 Everything 的全盘建库速度或固定规模下的响应时间。
+
+## Finder 选中文件
+
+`filesearch.finder-selection` 通过 Registry 与核心快捷键提供“操作 Finder 选中文件”入口，复用本插件的打开、Finder 显示、Quick Look、复制文件和路径操作。仅在用户明确执行且原应用为 Finder 时读取一个本地文件／文件夹；多选、无选区、非本地卷、目标切换、权限拒绝或文件失效均明确失败。
+
+Finder 选区由静态 AppleScript 读取，系统按需请求自动化权限。Info.plist 明确用途，Hardened Runtime 启用 Apple Events entitlement；不要求为此启用 Text Lookup 或授予辅助功能权限。NSAppleScript 留在 Main Actor，Apple event 使用有限超时。不执行用户拼接脚本，不读取文件正文。
+
+选区进入独立临时操作表面，复用 File Search 面板及文件动作；不加入索引，不改变搜索目录范围，不保存选择历史。Escape 先关闭预览再关闭面板，停用时清理。操作前检查文件可访问性；云文件打开／预览可能由系统下载。Finder 授权、Space、选择变化及真实文件行为通过人工验证。

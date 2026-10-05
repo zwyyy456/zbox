@@ -87,6 +87,8 @@
 
 ## File Search 边界
 
+- File Search 的 FinderSelection 隔离静态 AppleScript 与 Automation 授权错误，仅返回显式选择的本地 URL。NSAppleScript 保持 Main Actor，不与索引 actor 共享平台对象；临时选择由插件会话持有，执行复用 FileSearchActions。
+
 - 产品行为由 `docs/product/file-search.md` 定义。FileSearchPlugin 拥有范围设置、面板、扫描／查询任务和 FSEvents 生命周期；AppEnvironment 组合 Registry 与共享快捷键。
 - FileIndexStore actor 隔离 SQLite，FileIndexScanner actor 隔离目录访问。查询解析和排序规则使用值类型；扫描分批写入、查询逐条检查取消，UI 不遍历目录或执行数据库查询。
 - FSEvents 使用主队列回调并显式管理 C context 生命周期；停用先停止监听再取消任务。事件只是重新核对目录的依据，只有对应更新成功才推进事件位置。扫描失败不清理未读范围。

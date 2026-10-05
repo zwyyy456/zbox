@@ -4,8 +4,13 @@ import CoreServices
 
 @MainActor @Observable
 final class FileSearchPlugin {
+    static let selectionCommandID = CommandID("filesearch.finder-selection")
     static let commandID = CommandID("filesearch.open")
     static let shortcutTarget = CommandShortcutTarget(id: commandID, title: String(localized: "File Search"))
+    static var shortcutTargets: [CommandShortcutTarget] {
+        [shortcutTarget, CommandShortcutTarget(id: selectionCommandID, title: String(localized: "Actions for Finder Selection"))]
+    }
+    private(set) var finderSelection: URL?
     private let defaults: UserDefaults
     let settings = FileSearchSettings()
     private(set) var isEnabled: Bool
@@ -235,7 +240,7 @@ final class FileSearchPlugin {
         selectedID = nil
         searchError = nil
         isSearching = false
-        guard isEnabled, isVisible else { return }
+        guard isEnabled, isVisible, finderSelection == nil else { return }
         let input = query, ext = extensionFilter, type = typeFilter, ordering = sort
         let roots = settings.roots.filter { scope.isEmpty || $0.id.uuidString == scope }
         queryTask = Task { [weak self] in
@@ -264,6 +269,7 @@ final class FileSearchPlugin {
     func dismiss() {
         actions.closePreview()
         isVisible = false
+        finderSelection = nil
         queryTask?.cancel()
         queryTask = nil
         panel?.orderOut(nil)
@@ -275,6 +281,14 @@ final class FileSearchPlugin {
     }
 
     func perform(_ action: FileSearchActions.Action) {
+        if let url = finderSelection {
+            do {
+                try actions.perform(action, url: url)
+                searchError = nil
+                if action == .open || action == .reveal { dismiss() }
+            } catch { searchError = error.localizedDescription }
+            return
+        }
         guard let file = selectedFile, let root = settings.roots.first(where: { $0.id == file.rootID }) else { return }
         do {
             guard root.isAvailable() else { throw FileSearchError.missingFile }
@@ -297,8 +311,9 @@ final class FileSearchPlugin {
         selectedID = page.files[min(max(current + offset, 0), page.files.count - 1)].id
     }
 
-    private func show() {
+    private func show(finderSelection: URL? = nil) {
         dismiss()
+        self.finderSelection = finderSelection
         query = ""
         scope = ""
         typeFilter = ""
@@ -311,19 +326,40 @@ final class FileSearchPlugin {
             panel.navigate = { [weak self] in self?.moveSelection($0) }
             panel.dismiss = { [weak self] in self?.escape() }
             panel.performAction = { [weak self] in self?.perform($0) }
-            panel.canPreview = { [weak self] in self?.resultsFocused == true }
+            panel.canPreview = { [weak self] in self?.finderSelection != nil || self?.resultsFocused == true }
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.minSize = NSSize(width: 650, height: 380)
             panel.isReleasedWhenClosed = false
             panel.center()
             self.panel = panel
         }
-        panel?.contentView = NSHostingView(rootView: FileSearchView(plugin: self))
+        if finderSelection != nil {
+            panel?.contentView = NSHostingView(rootView: FinderSelectionView(plugin: self))
+        } else {
+            panel?.contentView = NSHostingView(rootView: FileSearchView(plugin: self))
+        }
         panel?.makeKeyAndOrderFront(nil)
         search()
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
+        try registry.register(CommandDescriptor(id: Self.selectionCommandID, title: String(localized: "Actions for Finder Selection"),
+            subtitle: String(localized: "File Search"), keywords: ["Finder", "selection", "file", "访达", "选中", "文件操作"])) { [weak self] context in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                guard let pid = context.frontmostApplicationPID,
+                      let target = NSRunningApplication(processIdentifier: pid), target.bundleIdentifier == "com.apple.finder" else {
+                    throw FinderSelectionError.target
+                }
+                let current = NSWorkspace.shared.frontmostApplication?.processIdentifier
+                guard current == pid || current == ProcessInfo.processInfo.processIdentifier else { throw FinderSelectionError.target }
+                let url = try FinderSelection.read()
+                try Task.checkCancellation()
+                let after = NSWorkspace.shared.frontmostApplication?.processIdentifier
+                guard !target.isTerminated, after == pid || after == ProcessInfo.processInfo.processIdentifier else { throw FinderSelectionError.target }
+                guard isEnabled else { return }
+                show(finderSelection: url)
+            }
         try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "File Search"),
             subtitle: nil, keywords: ["file", "search", "find", "文件搜索", "查找文件"])) { [weak self] _ in
                 guard let self else { return }

@@ -107,3 +107,29 @@ struct FileSearchView: View {
         super.sendEvent(event)
     }
 }
+
+struct FinderSelectionView: View {
+    let plugin: FileSearchPlugin
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Finder Selection").font(.headline)
+            if let url = plugin.finderSelection {
+                Text(url.lastPathComponent).font(.title2).lineLimit(2)
+                Text(url.path).foregroundStyle(.secondary).textSelection(.enabled)
+            }
+            HStack {
+                Button("Open") { plugin.perform(.open) }
+                Button("Show in Finder") { plugin.perform(.reveal) }
+                Button("Quick Look") { plugin.perform(.preview) }
+            }
+            HStack {
+                Button("Copy File") { plugin.perform(.copyFile) }
+                Button("Copy Path") { plugin.perform(.copyPath) }
+            }
+            Text("This selection is temporary and is not added to the file index.").foregroundStyle(.secondary)
+            Text("Opening or previewing cloud files may download them.").font(.caption).foregroundStyle(.secondary)
+            if let error = plugin.searchError { SettingsErrorView(message: error) }
+            Spacer()
+        }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
