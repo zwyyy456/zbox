@@ -35,6 +35,7 @@ final class AppEnvironment {
     @ObservationIgnored
     let displayPlugin: DisplayPlugin
 
+    let scriptCommandsPlugin: ScriptCommandsPlugin
     let developerToolsPlugin: DeveloperToolsPlugin
     let fileSearchPlugin: FileSearchPlugin
     let snippetsPlugin: SnippetsPlugin
@@ -59,7 +60,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -97,6 +98,8 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        let scriptCommandsPlugin = ScriptCommandsPlugin(defaults: defaults)
+        self.scriptCommandsPlugin = scriptCommandsPlugin
         developerToolsPlugin = DeveloperToolsPlugin(clipboardCoordinator: clipboardCoordinator)
         fileSearchPlugin = FileSearchPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         let snippetsPlugin = SnippetsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
@@ -135,7 +138,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -180,6 +183,7 @@ final class AppEnvironment {
         quicklinksPlugin.stop()
         calculatorPlugin.stop()
         developerToolsPlugin.stop()
+        scriptCommandsPlugin.stop()
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
         screenshotPlugin.stop()
@@ -229,6 +233,7 @@ final class AppEnvironment {
             }
             try calculatorPlugin.register(in: registry)
             try developerToolsPlugin.register(in: registry)
+            try scriptCommandsPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .scriptCommands) }
             try displayPlugin.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .display)
             }
@@ -366,6 +371,7 @@ final class AppEnvironment {
 
     func systemImage(for commandID: CommandID) -> String? {
         if commandID == FileSearchPlugin.commandID { return "doc.text.magnifyingglass" }
+        if commandID.rawValue.hasPrefix("scripts.") { return "terminal" }
         if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
         if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
         if commandID.rawValue.hasPrefix("display.") { return "display" }
@@ -505,6 +511,38 @@ final class AppEnvironment {
             hotkeyStore.setCommandHotkey(nil, for: item.commandID)
             reloadApplications()
         } catch { snippetsPlugin.statusMessage = error.localizedDescription }
+    }
+
+    func setScriptCommandsEnabled(_ enabled: Bool) {
+        scriptCommandsPlugin.setEnabled(enabled)
+        do { try applyHotkeyRegistrations(); scriptCommandsPlugin.statusMessage = nil }
+        catch {
+            scriptCommandsPlugin.setEnabled(!enabled)
+            scriptCommandsPlugin.statusMessage = error.localizedDescription
+        }
+        reloadApplications()
+    }
+
+    func saveScriptCommand(_ item: ScriptCommand) -> Bool {
+        do {
+            try scriptCommandsPlugin.store.save(item)
+            scriptCommandsPlugin.stop()
+            reloadApplications()
+            scriptCommandsPlugin.statusMessage = nil
+            return true
+        } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription; return false }
+    }
+
+    func deleteScriptCommand(_ item: ScriptCommand) {
+        do {
+            try scriptCommandsPlugin.store.delete(item.id)
+            scriptCommandsPlugin.stop()
+            hotkeyRegistrar.unregister(id: item.commandID.rawValue)
+            commandHotkeys[item.commandID] = nil
+            commandHotkeyErrors[item.commandID] = nil
+            hotkeyStore.setCommandHotkey(nil, for: item.commandID)
+            reloadApplications()
+        } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription }
     }
 
     func setQuicklinksEnabled(_ enabled: Bool) {
@@ -776,6 +814,15 @@ final class AppEnvironment {
                 if let hotkey = commandHotkeys[target.id] {
                     requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
                         self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
+        }
+        if scriptCommandsPlugin.isEnabled {
+            for item in scriptCommandsPlugin.store.items where item.enabled {
+                if let hotkey = commandHotkeys[item.commandID] {
+                    requests.append(HotkeyRegistrationRequest(id: item.commandID.rawValue, hotkey: hotkey, label: item.name) { [weak self] in
+                        self?.executeDirectCommand(item.commandID)
                     })
                 }
             }

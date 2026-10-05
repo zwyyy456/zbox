@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum SettingsTab: Hashable {
+    case scriptCommands
     case fileSearch
     case snippets
     case quicklinks
@@ -15,6 +16,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var title: String {
         switch self {
+        case .scriptCommands: String(localized: "Script Commands")
         case .fileSearch: String(localized: "File Search")
         case .snippets: String(localized: "Snippets")
         case .quicklinks: String(localized: "Quicklinks")
@@ -31,6 +33,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var systemImage: String {
         switch self {
+        case .scriptCommands: "terminal"
         case .fileSearch: "doc.text.magnifyingglass"
         case .snippets: "text.quote"
         case .quicklinks: "link"
