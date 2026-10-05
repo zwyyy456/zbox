@@ -98,7 +98,7 @@ final class AppEnvironment {
     ) {
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
-        let scriptCommandsPlugin = ScriptCommandsPlugin(defaults: defaults)
+        let scriptCommandsPlugin = ScriptCommandsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         self.scriptCommandsPlugin = scriptCommandsPlugin
         developerToolsPlugin = DeveloperToolsPlugin(clipboardCoordinator: clipboardCoordinator)
         fileSearchPlugin = FileSearchPlugin(defaults: defaults, coordinator: clipboardCoordinator)

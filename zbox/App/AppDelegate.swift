@@ -13,6 +13,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         environment.reconcileAccessibilityDependentFeatures()
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard environment.scriptCommandsPlugin.isRunning else { return .terminateNow }
+        environment.stop()
+        Task {
+            await environment.scriptCommandsPlugin.waitForStop()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         environment.stop()
     }
