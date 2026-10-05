@@ -17,6 +17,7 @@
 | File Search 范围、索引、查询、文件操作 | `docs/product/file-search.md` |
 | Quicklinks 入口、参数、执行与存储 | `docs/product/quicklinks.md` |
 | Snippets 模板、变量、复制与粘贴 | `docs/product/snippets.md` |
+| 应用菜单搜索、读取与执行 | `docs/product/app-menu.md` |
 | Audio 设备、音量与静音 | `docs/product/audio.md` |
 | Display 模式、预设、恢复和原生 HiDPI 配置 | `docs/product/display.md` |
 | Workspace 捕获、保存和恢复布局 | `docs/product/workspace.md` |

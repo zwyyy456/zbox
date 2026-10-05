@@ -4,7 +4,7 @@ nonisolated enum CommandFeedbackMapper {
     static func failure(for error: any Error) -> CommandFeedback {
         let recovery: CommandRecoveryAction?
         switch error {
-        case AccessibilityWindowError.permissionRequired:
+        case AccessibilityWindowError.permissionRequired, AppMenuError.permissionRequired:
             recovery = .openAccessibilitySettings
         case is DisplayError:
             recovery = .openDisplaySettings

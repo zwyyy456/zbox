@@ -114,3 +114,7 @@
 ## Audio 边界
 
 - 产品行为见 `docs/product/audio.md`。AudioPlugin 拥有设备快照、面板与监听生命周期，Core Audio 属性操作留在插件内；App 只组合 Registry、设置与快捷键。平台回调通过 Main Actor 更新状态，停用后不提交新快照。
+
+## Application Menu 边界
+
+- 产品行为见 `docs/product/app-menu.md`。AppMenuPlugin 拥有会话与任务；AppMenuController 在 Main Actor 内持有 AX 菜单对象并隔离读取和执行。只共享授权与唤起前应用上下文，不依赖窗口管理启停；停止后取消读取并释放会话。

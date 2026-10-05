@@ -3385,12 +3385,6 @@
     },
     "Request Accessibility Permission": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Request Accessibility Permission"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -6980,6 +6974,146 @@
           "stringUnit": {
             "state": "translated",
             "value": "音频操作失败（%d）。"
+          }
+        }
+      }
+    },
+    "Application Menu": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用菜单"
+          }
+        }
+      }
+    },
+    "Search Application Menu": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索应用菜单"
+          }
+        }
+      }
+    },
+    "Search Menu Items": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索菜单项"
+          }
+        }
+      }
+    },
+    "Checked": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已勾选"
+          }
+        }
+      }
+    },
+    "Unavailable": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不可用"
+          }
+        }
+      }
+    },
+    "No menu items found.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到菜单项。"
+          }
+        }
+      }
+    },
+    "Execute Menu Item": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行菜单项"
+          }
+        }
+      }
+    },
+    "Enable Application Menu Search": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用应用菜单搜索"
+          }
+        }
+      }
+    },
+    "Search and execute the original application's accessible menu items. Menu contents are not saved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索并执行原应用通过辅助功能提供的菜单项，不保存菜单内容。"
+          }
+        }
+      }
+    },
+    "Accessibility permission is required to search application menus.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索应用菜单需要辅助功能权限。"
+          }
+        }
+      }
+    },
+    "The original application is no longer available or has changed.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原应用已不可用，或前台应用已变化。"
+          }
+        }
+      }
+    },
+    "This application's menu could not be read.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取此应用的菜单。"
+          }
+        }
+      }
+    },
+    "The menu item is unavailable. Reopen menu search to refresh it.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单项已不可用，请重新打开菜单搜索以刷新。"
+          }
+        }
+      }
+    },
+    "The application menu is too large or is not responding.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用菜单过大或未响应。"
           }
         }
       }

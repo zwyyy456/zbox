@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum SettingsTab: Hashable {
+    case appMenu
     case audio
     case scriptCommands
     case fileSearch
@@ -17,6 +18,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var title: String {
         switch self {
+        case .appMenu: String(localized: "Application Menu")
         case .audio: String(localized: "Audio")
         case .scriptCommands: String(localized: "Script Commands")
         case .fileSearch: String(localized: "File Search")
@@ -35,6 +37,7 @@ nonisolated enum SettingsTab: Hashable {
 
     var systemImage: String {
         switch self {
+        case .appMenu: "menubar.rectangle"
         case .audio: "speaker.wave.2"
         case .scriptCommands: "terminal"
         case .fileSearch: "doc.text.magnifyingglass"
