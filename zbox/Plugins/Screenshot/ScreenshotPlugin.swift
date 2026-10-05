@@ -10,6 +10,7 @@ final class ScreenshotPlugin {
     private enum CapturePurpose { case edit, text }
     static let textCommandID = CommandID("screenshot.ocr")
     private let textWindow = ScreenshotTextWindow()
+    private let pins = ScreenshotPinController()
 
     static var shortcutTargets: [CommandShortcutTarget] {
         ScreenshotMode.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
@@ -72,7 +73,12 @@ final class ScreenshotPlugin {
     }
 
     func stop() {
+        pins.closeAll()
         textWindow.close()
+        closeEditor()
+    }
+
+    private func closeEditor() {
         cancelCapture()
         document?.ocr.invalidate()
         cancelUpload()
@@ -84,7 +90,6 @@ final class ScreenshotPlugin {
         exportTask?.cancel()
         exportTask = nil
         isExporting = false
-        document?.ocr.invalidate()
         document = nil
     }
 
@@ -93,6 +98,32 @@ final class ScreenshotPlugin {
         captureTask?.cancel()
         captureTask = nil
         selection.close()
+    }
+
+    func pinImage() {
+        guard let document, !isExporting, !isUploading else { return }
+        isExporting = true
+        let edit = document.edit
+        exportTask = Task { [weak self] in
+            do {
+                let image = try await ScreenshotRenderer.flattened(image: document.image, edit: edit)
+                guard !Task.isCancelled, let self, self.document === document else { return }
+                try addPin(image)
+                isExporting = false
+                exportTask = nil
+            } catch {
+                guard !Task.isCancelled, let self, self.document === document else { return }
+                statusMessage = error.localizedDescription
+                isExporting = false
+                exportTask = nil
+            }
+        }
+    }
+
+    private func addPin(_ image: CGImage) throws {
+        try pins.add(image, coordinator: clipboardCoordinator) { [weak self] image in
+            self?.textWindow.show(image: image) { [weak self] in self?.copyText($0) }
+        }
     }
 
     func copyText(_ text: String) {
@@ -370,7 +401,7 @@ final class ScreenshotPlugin {
             panel.minSize = CGSize(width: 640, height: 400)
             panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
-            panel.didClose = { [weak self] in self?.stop() }
+            panel.didClose = { [weak self] in self?.closeEditor() }
             panel.contentView = NSHostingView(rootView: ScreenshotEditorView(plugin: self))
             window = panel
         }

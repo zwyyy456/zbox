@@ -14,9 +14,10 @@ nonisolated enum ScreenshotMode: String, CaseIterable {
 }
 
 nonisolated enum ScreenshotError: LocalizedError {
-    case permission, unavailable, captureFailed, exportFailed
+    case permission, unavailable, captureFailed, exportFailed, pinLimit
     var errorDescription: String? {
         switch self {
+        case .pinLimit: String(localized: "Close some pinned images before adding another (10 images / 256 MiB maximum).")
         case .permission: String(localized: "Allow Screen Recording in System Settings, then try the screenshot again.")
         case .unavailable: String(localized: "The selected screen or window is no longer available.")
         case .captureFailed: String(localized: "The screenshot could not be captured. Try again.")

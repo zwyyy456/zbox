@@ -75,10 +75,12 @@ nonisolated enum ScreenshotRenderer {
     @concurrent
     static func export(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat) async throws -> Data {
         let output = try await flattened(image: image, edit: edit, whiteBackground: format == .jpeg)
-        return try encode(output, format: format)
+        return try await encode(output, format: format)
     }
 
-    static func encode(_ output: CGImage, format: ScreenshotFormat) throws -> Data {
+    @concurrent
+    static func encode(_ output: CGImage, format: ScreenshotFormat) async throws -> Data {
+        try Task.checkCancellation()
         let data = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(data, format.type.identifier as CFString, 1, nil) else {
             throw ScreenshotError.exportFailed

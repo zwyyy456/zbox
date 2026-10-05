@@ -11,6 +11,7 @@ struct ScreenshotEditorView: View {
                         Text("Recognized Text").tag(true)
                     }.pickerStyle(.segmented).frame(width: 240)
                     Spacer()
+                    Button("Pin Image", action: plugin.pinImage).disabled(plugin.isExporting || plugin.isUploading)
                     Button("Recognize Text") {
                         document.showsText = true
                         document.ocr.run(image: document.image, edit: document.edit)
