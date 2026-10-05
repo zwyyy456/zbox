@@ -110,3 +110,7 @@
 
 - 产品行为由 `docs/product/script-commands.md` 定义。插件拥有脚本配置、运行任务和结果窗口；App 负责 Registry、快捷键事务和退出时等待任务清理。
 - `ScriptRunner` 是进程副作用边界：argv 不拼接，标准输入关闭交互，双路输出有界且持续排空，工作线程负责启动、进程组终止和回收。Main Actor 只消费输出快照与结果。
+
+## Audio 边界
+
+- 产品行为见 `docs/product/audio.md`。AudioPlugin 拥有设备快照、面板与监听生命周期，Core Audio 属性操作留在插件内；App 只组合 Registry、设置与快捷键。平台回调通过 Main Actor 更新状态，停用后不提交新快照。

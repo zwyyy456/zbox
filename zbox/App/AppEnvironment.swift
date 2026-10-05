@@ -35,6 +35,7 @@ final class AppEnvironment {
     @ObservationIgnored
     let displayPlugin: DisplayPlugin
 
+    let audioPlugin: AudioPlugin
     let scriptCommandsPlugin: ScriptCommandsPlugin
     let developerToolsPlugin: DeveloperToolsPlugin
     let fileSearchPlugin: FileSearchPlugin
@@ -60,7 +61,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + [FileSearchPlugin.shortcutTarget] + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -96,6 +97,7 @@ final class AppEnvironment {
         defaults: UserDefaults = .standard,
         hotkeyRegistrar: any HotkeyRegistering = GlobalHotkeyRegistrar()
     ) {
+        audioPlugin = AudioPlugin(defaults: defaults)
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
         let scriptCommandsPlugin = ScriptCommandsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
@@ -138,7 +140,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
@@ -154,6 +156,7 @@ final class AppEnvironment {
             }
         }
         reconcileAccessibilityDependentFeatures()
+        audioPlugin.start()
         windowManagementPlugin.start()
         if displayPlugin.isEnabled { displayPlugin.start() }
         fileSearchPlugin.start()
@@ -177,6 +180,7 @@ final class AppEnvironment {
         commandExecutionID = nil
         rootSearchSessionID = nil
         commandFeedbackPanelController.hide()
+        audioPlugin.stop()
         textLookupPlugin.stop()
         fileSearchPlugin.stop()
         snippetsPlugin.stop()
@@ -218,6 +222,7 @@ final class AppEnvironment {
         var applicationURLs: [CommandID: URL] = [:]
 
         do {
+            try audioPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .audio) }
             try windowManagementPlugin.register(in: registry)
             try SettingsCommands.register(in: registry) { [weak self] in
                 try self?.openSettings(tab: .general)
@@ -370,6 +375,7 @@ final class AppEnvironment {
     }
 
     func systemImage(for commandID: CommandID) -> String? {
+        if commandID.rawValue.hasPrefix("audio.") { return "speaker.wave.2" }
         if commandID == FileSearchPlugin.commandID { return "doc.text.magnifyingglass" }
         if commandID.rawValue.hasPrefix("scripts.") { return "terminal" }
         if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
@@ -470,6 +476,16 @@ final class AppEnvironment {
         windowManagementPlugin.setEnabled(isEnabled) {
             try applyHotkeyRegistrations()
         }
+    }
+
+    func setAudioEnabled(_ enabled: Bool) {
+        audioPlugin.setEnabled(enabled)
+        if !enabled {
+            for target in AudioPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
+            return
+        }
+        do { try applyHotkeyRegistrations(); shortcutRegistrationError = nil }
+        catch { audioPlugin.setEnabled(false); shortcutRegistrationError = error.localizedDescription }
     }
 
     func setFileSearchEnabled(_ enabled: Bool) {
@@ -808,6 +824,15 @@ final class AppEnvironment {
                 hotkey: hotkey, label: FileSearchPlugin.shortcutTarget.title) { [weak self] in
                 self?.executeDirectCommand(FileSearchPlugin.commandID)
             })
+        }
+        if audioPlugin.isEnabled {
+            for target in AudioPlugin.shortcutTargets {
+                if let hotkey = commandHotkeys[target.id] {
+                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                        self?.executeDirectCommand(target.id)
+                    })
+                }
+            }
         }
         for target in DeveloperToolsPlugin.shortcutTargets {
             if let hotkey = commandHotkeys[target.id] {

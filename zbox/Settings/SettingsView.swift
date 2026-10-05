@@ -25,6 +25,9 @@ struct SettingsView: View {
             QuicklinksSettingsView(environment: environment)
                 .settingsTab(SettingsTab.quicklinks)
 
+            AudioSettingsView(environment: environment)
+                .settingsTab(SettingsTab.audio)
+
             DisplaySettingsView(environment: environment)
                 .settingsTab(SettingsTab.display)
 

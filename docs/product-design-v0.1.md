@@ -27,7 +27,7 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 
 ### 1.2 核心与内置插件
 
-核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets、File Search、Developer Tools、Script Commands 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
+核心负责 Root Search、Command Registry、全局快捷键协调、设置入口以及应用搜索与启动。Window Management、Text Lookup、Calculator、Clipboard History、Screenshot、Workspace、Display、Quicklinks、Snippets、File Search、Developer Tools、Script Commands、Audio 是随主 App 静态编译的内置插件，分别管理自身功能状态与界面。窗口管理通过 Registry 暴露命令，并使用共享的快捷键与授权能力。
 
 ### 1.3 MVP 要验证的核心假设
 
