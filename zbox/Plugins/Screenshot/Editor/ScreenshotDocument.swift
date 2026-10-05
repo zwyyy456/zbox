@@ -36,7 +36,9 @@ nonisolated struct ScreenshotEdit: Sendable {
 @Observable
 final class ScreenshotDocument {
     let image: CGImage
-    private(set) var edit: ScreenshotEdit
+    private(set) var edit: ScreenshotEdit { didSet { ocr.invalidate() } }
+    let ocr = ScreenshotOCRSession()
+    var showsText = false
     private var undoStack: [ScreenshotEdit] = []
     private var redoStack: [ScreenshotEdit] = []
     var tool = ScreenshotTool.arrow

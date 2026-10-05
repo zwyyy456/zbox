@@ -62,6 +62,7 @@ final class ScreenshotPlugin {
 
     func stop() {
         cancelCapture()
+        document?.ocr.invalidate()
         cancelUpload()
         uploadedURL = nil
         pendingUpload = nil
@@ -71,6 +72,7 @@ final class ScreenshotPlugin {
         exportTask?.cancel()
         exportTask = nil
         isExporting = false
+        document?.ocr.invalidate()
         document = nil
     }
 
@@ -79,6 +81,14 @@ final class ScreenshotPlugin {
         captureTask?.cancel()
         captureTask = nil
         selection.close()
+    }
+
+    func copyText(_ text: String) {
+        let board = NSPasteboard.general
+        board.prepareForNewContents(with: .currentHostOnly)
+        let copied = board.setString(text, forType: .string)
+        clipboardCoordinator.didWrite(changeCount: board.changeCount)
+        statusMessage = copied ? String(localized: "Text copied.") : String(localized: "Could not copy the result.")
     }
 
     func copyImage() {
@@ -269,6 +279,7 @@ final class ScreenshotPlugin {
 
     private func capture(_ mode: ScreenshotMode) {
         cancelCapture()
+        document?.ocr.invalidate()
         cancelUpload()
         uploadedURL = nil
         pendingUpload = nil

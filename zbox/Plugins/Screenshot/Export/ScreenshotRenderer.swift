@@ -57,20 +57,30 @@ nonisolated enum ScreenshotRenderer {
     }
 
     @concurrent
-    static func export(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat) async throws -> Data {
+    static func flattened(image: CGImage, edit: ScreenshotEdit, whiteBackground: Bool = false) async throws -> CGImage {
         try Task.checkCancellation()
         guard let context = CGContext(data: nil, width: Int(edit.crop.width), height: Int(edit.crop.height),
             bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { throw ScreenshotError.exportFailed }
-        if format == .jpeg {
+        if whiteBackground {
             context.setFillColor(CGColor(gray: 1, alpha: 1))
             context.fill(CGRect(origin: .zero, size: edit.crop.size))
         }
         draw(image: image, edit: edit, in: context)
         try Task.checkCancellation()
+        guard let output = context.makeImage() else { throw ScreenshotError.exportFailed }
+        return output
+    }
+
+    @concurrent
+    static func export(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat) async throws -> Data {
+        let output = try await flattened(image: image, edit: edit, whiteBackground: format == .jpeg)
+        return try encode(output, format: format)
+    }
+
+    static func encode(_ output: CGImage, format: ScreenshotFormat) throws -> Data {
         let data = NSMutableData()
-        guard let output = context.makeImage(),
-              let destination = CGImageDestinationCreateWithData(data, format.type.identifier as CFString, 1, nil) else {
+        guard let destination = CGImageDestinationCreateWithData(data, format.type.identifier as CFString, 1, nil) else {
             throw ScreenshotError.exportFailed
         }
         CGImageDestinationAddImage(destination, output, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)

@@ -5,7 +5,22 @@ struct ScreenshotEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let document = plugin.document {
-                ScreenshotDocumentView(document: document).disabled(plugin.isExporting || plugin.isUploading)
+                HStack {
+                    Picker("View", selection: Bindable(document).showsText) {
+                        Text("Image").tag(false)
+                        Text("Recognized Text").tag(true)
+                    }.pickerStyle(.segmented).frame(width: 240)
+                    Spacer()
+                    Button("Recognize Text") {
+                        document.showsText = true
+                        document.ocr.run(image: document.image, edit: document.edit)
+                    }
+                }.padding(.horizontal).padding(.top, 8)
+                if document.showsText {
+                    ScreenshotOCRView(document: document, copy: plugin.copyText)
+                } else {
+                    ScreenshotDocumentView(document: document).disabled(plugin.isExporting || plugin.isUploading)
+                }
                 Divider()
                 HStack {
                     Picker("Format", selection: $plugin.format) {
