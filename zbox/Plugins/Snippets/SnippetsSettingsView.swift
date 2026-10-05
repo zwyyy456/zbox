@@ -3,11 +3,11 @@ import SwiftUI
 struct SnippetsSettingsView: View {
     let environment: AppEnvironment
     @State private var query = ""
-    @State private var editing: Snippet?
     @State private var deleting: Snippet?
     private var plugin: SnippetsPlugin { environment.snippetsPlugin }
 
     var body: some View {
+        @Bindable var plugin = plugin
         VStack(alignment: .leading) {
             Toggle("Enable Snippets", isOn: Binding(get: { plugin.isEnabled }, set: environment.setSnippetsEnabled))
             TextField("Search Snippets", text: $query)
@@ -19,16 +19,16 @@ struct SnippetsSettingsView: View {
                             if !item.group.isEmpty { Text(item.group).font(.caption).foregroundStyle(.secondary) }
                         }
                         Spacer()
-                        Button("Edit") { editing = item }
+                        Button("Edit") { plugin.editingSnippet = item }
                         Button("Delete", role: .destructive) { deleting = item }
                     }
                 }
             }
-            Button("Add Snippet") { editing = Snippet() }
+            Button("Add Snippet") { plugin.editingSnippet = Snippet() }
             if let error = plugin.store.loadError ?? plugin.statusMessage { SettingsErrorView(message: error) }
         }
         .padding(20)
-        .sheet(item: $editing) { item in SnippetEditor(item: item) { environment.saveSnippet($0) } }
+        .sheet(item: $plugin.editingSnippet) { item in SnippetEditor(item: item) { environment.saveSnippet($0) } }
         .alert("Delete Snippet?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("Cancel", role: .cancel) { deleting = nil }
             Button("Delete", role: .destructive) {

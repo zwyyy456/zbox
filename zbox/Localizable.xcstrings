@@ -7197,6 +7197,56 @@
           }
         }
       }
+    },
+    "Quicklink with Selected Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用选中文本打开快捷链接"
+          }
+        }
+      }
+    },
+    "Quicklink": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷链接"
+          }
+        }
+      }
+    },
+    "Save Selected Text as Snippet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将选中文本保存为片段"
+          }
+        }
+      }
+    },
+    "Add a parameterized Quicklink in Settings first.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在设置中添加带参数的快捷链接。"
+          }
+        }
+      }
+    },
+    "Save or cancel the existing snippet draft before importing selected text.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先保存或取消已有片段草稿，再导入选中文本。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -3,11 +3,13 @@ import Observation
 
 @MainActor @Observable
 final class QuicklinksPlugin {
+    static let selectionCommandID = CommandID("quicklinks.selection")
     static let commandID = CommandID("quicklinks.manage")
     private let defaults: UserDefaults
     let store = QuicklinkStore()
     private(set) var isEnabled: Bool
     var statusMessage: String?
+    var choosingTemplate = false
     var parameterItem: Quicklink?
     var query = ""
     var parameterError: String?
@@ -15,7 +17,8 @@ final class QuicklinksPlugin {
 
 
     var shortcutTargets: [CommandShortcutTarget] {
-        store.items.map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
+        [CommandShortcutTarget(id: Self.selectionCommandID, title: String(localized: "Quicklink with Selected Text"))]
+            + store.items.map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
     }
 
     init(defaults: UserDefaults) {
@@ -31,6 +34,7 @@ final class QuicklinksPlugin {
 
     func stop() {
         panel?.orderOut(nil)
+        choosingTemplate = false
         parameterItem = nil
         query = ""
         parameterError = nil
@@ -45,9 +49,10 @@ final class QuicklinksPlugin {
         } catch { parameterError = error.localizedDescription }
     }
 
-    private func showParameters(for item: Quicklink) {
+    private func showParameters(for item: Quicklink, selectedText: String? = nil) {
+        choosingTemplate = selectedText != nil
         parameterItem = item
-        query = ""
+        query = selectedText ?? ""
         parameterError = nil
         if panel == nil {
             let panel = QuicklinkParameterPanel(contentRect: NSRect(x: 0, y: 0, width: 520, height: 220),
@@ -59,6 +64,7 @@ final class QuicklinksPlugin {
             panel.center()
             self.panel = panel
         }
+        panel?.setContentSize(NSSize(width: 520, height: choosingTemplate ? 290 : 220))
         panel?.contentView = NSHostingView(rootView: QuicklinkParameterView(plugin: self))
         panel?.makeKeyAndOrderFront(nil)
     }
@@ -66,6 +72,15 @@ final class QuicklinksPlugin {
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "Quicklinks"),
             subtitle: nil, keywords: ["quicklinks", "links", "快捷入口", "链接"])) { _ in try openSettings() }
+        try registry.register(CommandDescriptor(id: Self.selectionCommandID, title: String(localized: "Quicklink with Selected Text"),
+            subtitle: String(localized: "Quicklinks"), keywords: ["selection", "selected", "选中", "搜索", "链接"])) { [weak self] context in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                guard let item = store.items.first(where: { $0.kind == .template }) else { throw QuicklinkSelectionError.noTemplate }
+                let text = try await SelectedTextReader.read(targetPID: context.frontmostApplicationPID)
+                guard isEnabled else { return }
+                showParameters(for: item, selectedText: text)
+            }
         guard isEnabled else { return }
         for item in store.items {
             try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
@@ -78,4 +93,9 @@ final class QuicklinksPlugin {
             }
         }
     }
+}
+
+nonisolated enum QuicklinkSelectionError: LocalizedError {
+    case noTemplate
+    var errorDescription: String? { String(localized: "Add a parameterized Quicklink in Settings first.") }
 }

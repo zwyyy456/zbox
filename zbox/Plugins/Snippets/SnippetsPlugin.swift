@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor @Observable
 final class SnippetsPlugin {
+    static let selectionCommandID = CommandID("snippets.selection")
     static let commandID = CommandID("snippets.open")
     private let defaults: UserDefaults
     private let coordinator: ClipboardAccessCoordinator
@@ -12,6 +13,7 @@ final class SnippetsPlugin {
     private(set) var isEnabled: Bool
     var statusMessage: String?
     private(set) var needsPastePermission = false
+    var editingSnippet: Snippet?
     var query = ""
     var group = ""
     var selectedID: UUID?
@@ -26,7 +28,8 @@ final class SnippetsPlugin {
     }
     var selectedItem: Snippet? { filteredItems.first { $0.id == selectedID } ?? filteredItems.first }
     var shortcutTargets: [CommandShortcutTarget] {
-        [CommandShortcutTarget(id: Self.commandID, title: String(localized: "Snippets"))]
+        [CommandShortcutTarget(id: Self.selectionCommandID, title: String(localized: "Save Selected Text as Snippet")),
+         CommandShortcutTarget(id: Self.commandID, title: String(localized: "Snippets"))]
             + store.items.map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
     }
 
@@ -37,7 +40,7 @@ final class SnippetsPlugin {
     }
 
     func setEnabled(_ enabled: Bool) {
-        if !enabled { stop() }
+        if !enabled { editingSnippet = nil; stop() }
         isEnabled = enabled
         defaults.set(enabled, forKey: "snippets.enabled")
     }
@@ -61,6 +64,18 @@ final class SnippetsPlugin {
             guard isEnabled else { try openSettings(); return }
             show(targetPID: context.frontmostApplicationPID)
         }
+        try registry.register(CommandDescriptor(id: Self.selectionCommandID, title: String(localized: "Save Selected Text as Snippet"),
+            subtitle: String(localized: "Snippets"), keywords: ["selection", "selected", "选中", "片段", "保存"])) { [weak self] context in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                guard editingSnippet == nil else { throw SnippetSelectionError.unfinishedDraft }
+                let text = try await SelectedTextReader.read(targetPID: context.frontmostApplicationPID)
+                guard isEnabled else { return }
+                var item = Snippet()
+                item.body = text
+                try openSettings()
+                editingSnippet = item
+            }
         guard isEnabled else { return }
         for item in store.items {
             try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
@@ -185,4 +200,9 @@ final class SnippetsPlugin {
         }
         super.sendEvent(event)
     }
+}
+
+nonisolated enum SnippetSelectionError: LocalizedError {
+    case unfinishedDraft
+    var errorDescription: String? { String(localized: "Save or cancel the existing snippet draft before importing selected text.") }
 }

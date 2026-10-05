@@ -9,7 +9,16 @@ struct QuicklinkParameterView: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(plugin.parameterItem?.name ?? "").font(.headline)
+            if plugin.choosingTemplate {
+                Picker("Quicklink", selection: Binding(get: { plugin.parameterItem?.id }, set: { id in
+                    plugin.parameterItem = plugin.store.items.first { $0.id == id }
+                    plugin.parameterError = nil
+                })) {
+                    ForEach(plugin.store.items.filter { $0.kind == .template }) { item in
+                        Text(item.name).tag(Optional(item.id))
+                    }
+                }
+            } else { Text(plugin.parameterItem?.name ?? "").font(.headline) }
             Text((try? plugin.parameterItem?.destination().host) ?? "").foregroundStyle(.secondary)
             TextField(prompt, text: $plugin.query)
                 .focused($focused)
