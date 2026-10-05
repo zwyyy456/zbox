@@ -109,6 +109,7 @@
 ## Script Commands 边界
 
 - 产品行为由 `docs/product/script-commands.md` 定义。插件拥有脚本配置、运行任务和结果窗口；App 负责 Registry、快捷键事务和退出时等待任务清理。
+- AppleShortcuts 负责系统目录格式、稳定标识符、文本临时文件与 CLI 参数；复用 ScriptRunner 管理客户端进程，其结束不等同于系统快捷指令动作停止。原脚本存储与命令身份保留。
 - `ScriptRunner` 是进程副作用边界：argv 不拼接，标准输入关闭交互，双路输出有界且持续排空，工作线程负责启动、进程组终止和回收。Main Actor 只消费输出快照与结果。
 
 ## Audio 边界

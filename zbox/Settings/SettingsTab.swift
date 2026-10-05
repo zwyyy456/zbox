@@ -20,7 +20,7 @@ nonisolated enum SettingsTab: Hashable {
         switch self {
         case .appMenu: String(localized: "Application Menu")
         case .audio: String(localized: "Audio")
-        case .scriptCommands: String(localized: "Script Commands")
+        case .scriptCommands: String(localized: "Automation")
         case .fileSearch: String(localized: "File Search")
         case .snippets: String(localized: "Snippets")
         case .quicklinks: String(localized: "Quicklinks")

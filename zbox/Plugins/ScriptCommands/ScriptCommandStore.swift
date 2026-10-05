@@ -18,10 +18,18 @@ nonisolated struct ScriptCommand: Codable, Identifiable, Equatable, Sendable {
     var directory = ""
     var arguments: [String] = []
     var parameters: [ScriptParameter] = []
+    var shortcut: AppleShortcutConfiguration?
     var timeout = 60.0
     var commandID: CommandID { CommandID("scripts.\(id.uuidString)") }
 
     func validate() throws {
+        if let shortcut {
+            guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !shortcut.name.isEmpty, timeout.isFinite, (1...3600).contains(timeout) else {
+                throw ScriptCommandError.invalidConfiguration
+            }
+            return
+        }
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               path.hasPrefix("/"), interpreter.isEmpty || interpreter.hasPrefix("/"),
               directory.isEmpty || directory.hasPrefix("/"), timeout.isFinite, (1...3600).contains(timeout),
@@ -33,6 +41,7 @@ nonisolated struct ScriptCommand: Codable, Identifiable, Equatable, Sendable {
 
     func invocation(values: [String]) throws -> ScriptInvocation {
         try validate()
+        guard shortcut == nil else { throw ScriptCommandError.invalidConfiguration }
         guard values.count == parameters.count,
               zip(parameters, values).allSatisfy({ !$0.0.required || !$0.1.isEmpty }),
               !values.contains(where: { $0.contains("\0") }) else { throw ScriptCommandError.missingParameter }

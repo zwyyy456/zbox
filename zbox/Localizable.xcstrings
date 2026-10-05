@@ -7247,6 +7247,206 @@
           }
         }
       }
+    },
+    "Automation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动化"
+          }
+        }
+      }
+    },
+    "Enable Automation": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用自动化"
+          }
+        }
+      }
+    },
+    "Apple Shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple 快捷指令"
+          }
+        }
+      }
+    },
+    "Add Apple Shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加 Apple 快捷指令"
+          }
+        }
+      }
+    },
+    "Choose a Shortcut": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择快捷指令"
+          }
+        }
+      }
+    },
+    "Refresh Shortcuts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新快捷指令"
+          }
+        }
+      }
+    },
+    "Ask for Text Input": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行前输入文本"
+          }
+        }
+      }
+    },
+    "Shortcut Input": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷指令输入"
+          }
+        }
+      }
+    },
+    "Stop Waiting": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止等待"
+          }
+        }
+      }
+    },
+    "Stopped Waiting": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停止等待"
+          }
+        }
+      }
+    },
+    "Open in Shortcuts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在快捷指令中打开"
+          }
+        }
+      }
+    },
+    "Could not load Apple Shortcuts. Open Shortcuts and try refreshing the list.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法加载 Apple 快捷指令，请打开快捷指令 App 后刷新列表。"
+          }
+        }
+      }
+    },
+    "The shortcut list could not be interpreted. No items were imported.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法解析快捷指令列表，未导入任何条目。"
+          }
+        }
+      }
+    },
+    "This Apple shortcut no longer exists. Select another shortcut in Settings.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 Apple 快捷指令已不存在，请在设置中重新选择。"
+          }
+        }
+      }
+    },
+    "Several shortcuts have this name. Open the Shortcuts app to edit the intended one.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存在多个同名快捷指令，请打开快捷指令 App 选择要编辑的条目。"
+          }
+        }
+      }
+    },
+    "Shortcut input must be UTF-8 text no larger than 1 MiB.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷指令输入必须是不超过 1 MiB 的 UTF-8 文本。"
+          }
+        }
+      }
+    },
+    "Stopped waiting. The shortcut may still be running in Shortcuts.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停止等待。快捷指令可能仍在系统快捷指令中运行。"
+          }
+        }
+      }
+    },
+    "Stopping or timing out only stops waiting in zbox. The shortcut may continue in Shortcuts.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止或超时仅结束 zbox 的等待，快捷指令可能仍在系统中继续执行。"
+          }
+        }
+      }
+    },
+    "Scripts run as your user. Apple Shortcuts handles its own permissions and prompts. Add only automation you trust.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "脚本以当前用户权限运行，Apple 快捷指令自行处理权限和交互提示。请只添加你信任的自动化任务。"
+          }
+        }
+      }
+    },
+    "Text input uses a private temporary file that is removed after execution. Shortcut actions may save or send the input.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文本输入通过私有临时文件传递，执行结束后清理。快捷指令中的动作可能保存或发送输入内容。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
