@@ -26,6 +26,7 @@
 | 自动化（Script Commands）、Apple 快捷指令、参数、输出与进程生命周期 | `docs/product/script-commands.md` |
 | Developer Tools 入口、文本编辑、转换语义或会话生命周期 | `docs/product/developer-tools.md` |
 | Calculator 入口、窗口、输入、运算或数值语义 | `docs/product/calculator.md` |
+| 外部扩展安装、运行、界面、授权及 SDK | `docs/product/extensions.md`、`docs/contracts/extensions.md` |
 | Command、快捷键、窗口、Text Lookup、平台、安全或并发边界 | `engineering-guidelines.md` |
 | FlashDict 查词表面、资源、bridge payload 或建卡兼容 | `../zdict/Packages/FlashDictIntegrationKit/README.md`；涉及 payload 或跨版本语义时同时读取 `../zdict/docs/contracts/flashcard-contracts.md` |
 | Developer ID、公证、翻译模型、真实应用/显示器或跨 App 验收 | 按需读取 `docs/release-readiness.md` |
@@ -34,7 +35,7 @@
 
 - Root Search 与 Direct Hotkey 的 App Launch/Window Command 必须经过同一 Command Registry 执行路径。
 - Window Management 是随主 App 静态编译的内置插件，拥有独立启停、设置和窗口操作边界；通过核心 Registry 和共享快捷键能力执行。
-- Text Lookup 是随主 App 静态编译、拥有独立启停生命周期、状态和设置边界的内置独立扩展；它保留私有触发流，并通过现有 App composition 共享平台能力。当前不建设 macOS App Extension、动态插件 Runtime、XPC/RPC 扩展协议或公共 SDK。
+- Text Lookup 是随主 App 静态编译、拥有独立启停生命周期、状态和设置边界的内置独立扩展；它保留私有触发流，并通过现有 App composition 共享平台能力。Text Lookup 不接入外部扩展协议；可安装扩展的边界见 `docs/product/extensions.md`。
 - Calculator 是随主 App 静态编译、由 Command Registry 打开的内置独立扩展；它不增加后台监听、权限或动态插件边界。
 - UI、AppKit 和共享运行状态保持 Main Actor 隔离；纯搜索、窗口几何和文本定位规则保持值语义。
 - Window Management 不读取窗口内容。Text Lookup 只在用户启用并触发时读取完成查询所需的有限文本和来源，不建立取词历史、不上传捕获内容，只有用户显式建卡时才把约定内容交给 FlashDict。

@@ -194,7 +194,7 @@ FR-07 和 FR-08 已进入 M1 实施基线；仍需真实系统或分发环境的
 | --- | --- |
 | M2 System Toolkit | Text Lookup、Clipboard History、Screenshot、Workspace 与 Display 已进入当前产品 |
 | M3 Internal Extensions | Window Management、Text Lookup、Calculator、Clipboard History 和 Screenshot 以真实功能检验内置插件边界 |
-| M4 Plugin Preview | 再决定独立 Runtime、权限和 SDK |
+| M4 Plugin Preview | 可安装扩展、独立子进程、宿主界面与 SDK，见 `product/extensions.md` |
 
 Window Management、Text Lookup 与 Calculator 作为内置独立扩展验证单 App target 内的功能边界，但不构成动态插件系统；其当前产品约定分别见 `product/window-management.md`、`product/text-lookup.md` 与 `product/calculator.md`。只有真实功能需要复用或隔离时，才引入新的 Package、进程或公共插件接口。
 

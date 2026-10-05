@@ -125,3 +125,10 @@
 ## 显式选区读取
 
 - Platform/SelectedTextReader 只返回原始选中文本或明确错误，负责目标激活、Accessibility 与安全输入检查；不依赖 Text Lookup 的触发、清洗或翻译。调用插件拥有导入会话、确认与清理，核心普通搜索不读取选区。
+
+## 外部扩展边界
+
+- 产品约定见 `docs/product/extensions.md`，包与协议见 `docs/contracts/extensions.md`。ExternalExtensions 拥有安装、会话、授权和界面；AppEnvironment 组合 Registry 与快捷键事务。内置扩展不迁移到外部协议。
+- 外部进程与宿主只交换有界、可序列化消息；宿主以连接和会话确定调用身份，不信任消息自报身份。失效会话不能提交界面或宿主副作用。
+- 进程与文件 I/O 离开 Main Actor；UI、平台对象和会话可观察状态保持 Main Actor。退出等待所有受管进程回收。
+- 安装管理只接受用户主动导入的包，不执行安装钩子。包代码与用户设置、数据和凭据分离；安装失败不替换有效版本。
