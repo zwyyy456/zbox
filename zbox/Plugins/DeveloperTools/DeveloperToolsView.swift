@@ -27,6 +27,27 @@ struct DeveloperToolsView: View {
             .padding(20)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .sheet(isPresented: Binding(get: { plugin.pendingSelection != nil }, set: { if !$0 { plugin.pendingSelection = nil } })) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Import Selected Text").font(.headline)
+                Picker("Tool", selection: $plugin.importTool) {
+                    ForEach([DeveloperToolsPlugin.Tool.json, .url, .base64]) { tool in
+                        Text(tool.title).tag(tool)
+                    }
+                }
+                Text("The selected text will become the tool's input. Run the conversion when ready.").foregroundStyle(.secondary)
+                if plugin.importReplacesDraft {
+                    Text("This will replace the existing draft in the selected tool.").foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button("Cancel") { plugin.pendingSelection = nil }.keyboardShortcut(.cancelAction)
+                    Spacer()
+                    Button(plugin.importReplacesDraft ? String(localized: "Replace Draft") : String(localized: "Import")) {
+                        plugin.importSelection()
+                    }.keyboardShortcut(.defaultAction)
+                }
+            }.padding(24).frame(width: 460)
+        }
         .onChange(of: plugin.selection) { plugin.copyError = nil }
     }
 

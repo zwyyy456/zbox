@@ -118,3 +118,7 @@
 ## Application Menu 边界
 
 - 产品行为见 `docs/product/app-menu.md`。AppMenuPlugin 拥有会话与任务；AppMenuController 在 Main Actor 内持有 AX 菜单对象并隔离读取和执行。只共享授权与唤起前应用上下文，不依赖窗口管理启停；停止后取消读取并释放会话。
+
+## 显式选区读取
+
+- Platform/SelectedTextReader 只返回原始选中文本或明确错误，负责目标激活、Accessibility 与安全输入检查；不依赖 Text Lookup 的触发、清洗或翻译。调用插件拥有导入会话、确认与清理，核心普通搜索不读取选区。

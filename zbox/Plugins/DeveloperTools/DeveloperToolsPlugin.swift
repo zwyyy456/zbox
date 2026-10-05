@@ -46,12 +46,16 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
         var commandID: CommandID { CommandID("developer-tools.\(rawValue)") }
     }
 
+    static let selectionCommandID = CommandID("developer-tools.selection")
     static let commandID = CommandID("developer-tools.open")
     static var shortcutTargets: [CommandShortcutTarget] {
-        [CommandShortcutTarget(id: commandID, title: String(localized: "Developer Tools"))]
+        [CommandShortcutTarget(id: selectionCommandID, title: String(localized: "Developer Tools with Selected Text")),
+         CommandShortcutTarget(id: commandID, title: String(localized: "Developer Tools"))]
             + Tool.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
     }
 
+    var pendingSelection: String?
+    var importTool: Tool = .json
     var selection: Tool = .json
     var jsonSession = DeveloperTextSession(kind: .json)
     var urlSession = DeveloperTextSession(kind: .url)
@@ -77,14 +81,41 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
                 id: target.id, title: target.title,
                 subtitle: String(localized: "Built-in Developer Tools"),
                 keywords: ["developer", "tools", "开发者", "工具"] + (tool?.keywords ?? [])
-            )) { [weak self] _ in
-                self?.show(tool: tool)
+            )) { [weak self] context in
+                if target.id == Self.selectionCommandID {
+                    let text = try await SelectedTextReader.read(targetPID: context.frontmostApplicationPID)
+                    guard let self else { return }
+                    importTool = [.json, .url, .base64].contains(selection) ? selection : .json
+                    show(tool: nil)
+                    pendingSelection = text
+                } else {
+                    self?.show(tool: tool)
+                }
             }
         }
     }
 
     func systemImage(for commandID: CommandID) -> String? {
         Self.shortcutTargets.contains { $0.id == commandID } ? "hammer" : nil
+    }
+
+    var importReplacesDraft: Bool {
+        switch importTool {
+        case .url: !urlSession.input.isEmpty
+        case .base64: !base64Session.input.isEmpty
+        default: !jsonSession.input.isEmpty
+        }
+    }
+
+    func importSelection() {
+        guard let text = pendingSelection else { return }
+        switch importTool {
+        case .url: urlSession.input = text
+        case .base64: base64Session.input = text
+        default: jsonSession.input = text
+        }
+        selection = importTool
+        pendingSelection = nil
     }
 
     func generateUUIDs() {
@@ -109,6 +140,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     func stop() { window?.close() }
 
     func windowWillClose(_ notification: Notification) {
+        pendingSelection = nil
         timestampSession = DeveloperTimestampSession()
         uuids = []
         copyError = nil

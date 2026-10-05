@@ -7117,6 +7117,86 @@
           }
         }
       }
+    },
+    "Reading selected text requires Accessibility permission.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取选中文本需要辅助功能权限。"
+          }
+        }
+      }
+    },
+    "Select text in an application that exposes its selection to Accessibility.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在支持辅助功能选区读取的应用中选中文本。"
+          }
+        }
+      }
+    },
+    "Developer Tools with Selected Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用选中文本打开开发者工具"
+          }
+        }
+      }
+    },
+    "Import Selected Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入选中文本"
+          }
+        }
+      }
+    },
+    "The selected text will become the tool's input. Run the conversion when ready.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选中文本将填入工具，准备好后再执行转换。"
+          }
+        }
+      }
+    },
+    "This will replace the existing draft in the selected tool.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会替换所选工具中的已有草稿。"
+          }
+        }
+      }
+    },
+    "Replace Draft": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "替换草稿"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

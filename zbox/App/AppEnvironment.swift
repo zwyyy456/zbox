@@ -142,7 +142,7 @@ final class AppEnvironment {
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         commandHotkeys = hotkeyStore.commandHotkeys(
-            for: [AppMenuPlugin.commandID] + AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
+            for: DeveloperToolsPlugin.shortcutTargets.map(\.id) + [AppMenuPlugin.commandID] + AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + [FileSearchPlugin.commandID] + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
         )
     }
 
