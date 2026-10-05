@@ -6,7 +6,6 @@ nonisolated struct ExtensionInstallation: Codable, Identifiable, Sendable {
     let source: String
     var enabled: Bool
     var grants: [String]
-    var settings: [String: String]
     var id: String { manifest.id }
 }
 
@@ -49,10 +48,10 @@ actor ExtensionPackageStore {
                 let entry = destination.appending(path: command.entry)
                 guard try entry.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else { throw ExtensionFailure("The entry must be a regular file.") }
                 // Check executables without running package code or requiring user parameters.
-                _ = try command.invocation(root: destination, values: (command.parameters ?? []).map { $0.defaultValue ?? "validation" })
+                _ = try command.invocation(root: destination, values: (command.parameters ?? []).map { _ in "validation" })
             }
             return ExtensionInstallation(manifest: manifest, directory: folder, source: source.path, enabled: true,
-                                         grants: manifest.capabilities ?? [], settings: [:])
+                                         grants: manifest.capabilities ?? [])
         } catch {
             try FileManager.default.removeItem(at: destination)
             throw error
@@ -65,8 +64,4 @@ actor ExtensionPackageStore {
     }
 
     func discard(_ item: ExtensionInstallation) throws { try FileManager.default.removeItem(at: packageURL(item)) }
-    func removeData(_ id: String) throws {
-        let directory = dataURL(id)
-        if FileManager.default.fileExists(atPath: directory.path) { try FileManager.default.removeItem(at: directory) }
-    }
 }

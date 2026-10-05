@@ -50,7 +50,6 @@ final class ExtensionManager {
         defer { busy = false }
         let previous = items.first { $0.id == item.id }
         await stop(item.id)
-        item.settings = previous?.settings ?? [:]
         item.enabled = previous?.enabled ?? true
         do {
             try await replace(items.filter { $0.id != item.id } + [item])
@@ -80,8 +79,33 @@ final class ExtensionManager {
         do {
             try await replace(items.filter { $0.id != item.id })
             try await store.discard(item)
-            if deleteData { try await store.removeData(item.id) }
+            if deleteData { try await dataStore(item.id).deleteAll() }
         } catch { self.error = error.localizedDescription }
+    }
+
+    func dataStore(_ id: String) -> ExtensionDataStore { ExtensionDataStore(root: store.dataURL(id), id: id) }
+
+    func savePreferences(_ item: ExtensionInstallation, values: [String: String], grants: [String]) async -> Bool {
+        guard !stopping, !busy, !loadFailed else { return false }
+        busy = true; error = nil
+        defer { busy = false }
+        await stop(item.id)
+        do {
+            let data = dataStore(item.id)
+            var ordinary: [String: String] = [:]
+            for field in item.manifest.settings ?? [] {
+                let value = values[field.id] ?? field.defaultValue ?? ""
+                if field.type == "secret" { _ = try await data.credential(field.id, value: value) }
+                else { ordinary[field.id] = value }
+            }
+            try await data.saveSettings(ordinary)
+            var next = items
+            if let index = next.firstIndex(where: { $0.id == item.id }) {
+                next[index].grants = grants.filter { (item.manifest.capabilities ?? []).contains($0) }
+            }
+            try await replace(next)
+            return true
+        } catch { self.error = error.localizedDescription; return false }
     }
 
     private func replace(_ next: [ExtensionInstallation]) async throws {
@@ -120,7 +144,8 @@ final class ExtensionManager {
         if command.mode == "interactive" {
             try item.manifest.checkEnvironment()
             sessions[id]?.stop()
-            let session = ExtensionSession(installation: item, command: command, root: store.packageURL(item), context: context)
+            let session = ExtensionSession(installation: item, command: command, root: store.packageURL(item), context: context,
+                host: ExtensionHostAPI(installation: item, data: dataStore(item.id), coordinator: coordinator, context: context))
             interactiveSessions[id] = session
             session.show()
             if (command.parameters ?? []).isEmpty { session.start() }

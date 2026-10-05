@@ -15,6 +15,7 @@ actor ExtensionConnection {
     }
 
     func run(_ invocation: ScriptInvocation, initial: ExtensionMessage,
+             stopping: @escaping @Sendable () async -> Void = {},
              receive: @escaping @Sendable (ExtensionMessage) async throws -> Void) async throws -> ScriptRunResult {
         try Task.checkCancellation()
         let child = try ChildProcess.start(invocation, interactive: true)
@@ -33,6 +34,7 @@ actor ExtensionConnection {
             if waitid(P_PID, id_t(child.pid), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == child.pid { exited = true }
             if stoppingAt == nil && (Task.isCancelled || failure != nil || exited) {
                 stoppingAt = clock.now
+                await stopping()
                 kill(-child.pid, SIGTERM)
             }
             var outputDrained = false, errorDrained = false

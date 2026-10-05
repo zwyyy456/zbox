@@ -33,6 +33,9 @@ nonisolated struct ExtensionManifest: Codable, Sendable, Identifiable {
         let fields = settings ?? []
         guard Set(fields.map(\.id)).count == fields.count else { throw ExtensionFailure("Duplicate setting IDs.") }
         for field in fields { try field.validate() }
+        guard !fields.contains(where: { $0.type == "secret" }) || (capabilities ?? []).contains("credentials") else {
+            throw ExtensionFailure("Secret settings require the credentials capability.")
+        }
         for command in commands { try command.validate() }
     }
 
@@ -54,6 +57,18 @@ nonisolated struct ExtensionManifest: Codable, Sendable, Identifiable {
         #endif
         if let architectures, !architectures.contains(architecture) {
             throw ExtensionFailure("The extension does not support this CPU architecture.")
+        }
+    }
+
+    static func capabilityLabel(_ capability: String) -> String {
+        switch capability {
+        case "selection.read": String(localized: "Read Selected Text")
+        case "clipboard.read": String(localized: "Read Clipboard Text")
+        case "clipboard.write": String(localized: "Copy Text")
+        case "clipboard.paste": String(localized: "Paste into Original App")
+        case "storage": String(localized: "Save Extension Data")
+        case "credentials": String(localized: "Store and Read Extension Credentials")
+        default: capability
         }
     }
 
@@ -111,6 +126,7 @@ nonisolated struct ExtensionCommand: Codable, Sendable, Identifiable {
               mode != "interactive" || protocolVersion == 1,
               (timeout ?? 60).isFinite, (1...3600).contains(timeout ?? 60),
               !([entry, interpreter ?? ""] + (arguments ?? [])).contains(where: { $0.contains("\0") }),
+              (parameters ?? []).allSatisfy({ !$0.id.isEmpty && !$0.name.isEmpty && !($0.defaultValue ?? "").contains("\0") }),
               Set((parameters ?? []).map(\.id)).count == (parameters ?? []).count else {
             throw ExtensionFailure("Invalid extension command.")
         }

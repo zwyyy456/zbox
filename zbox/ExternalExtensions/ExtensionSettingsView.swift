@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExtensionSettingsView: View {
     @Bindable var manager: ExtensionManager
+    @State private var editing: ExtensionInstallation?
     @State private var removing: ExtensionInstallation?
     @State private var deleteData = false
 
@@ -18,6 +19,7 @@ struct ExtensionSettingsView: View {
                         }
                     }
                     Spacer()
+                    Button("Settings…") { editing = item }
                     Button("Uninstall") { deleteData = false; removing = item }
                 }
             }
@@ -34,7 +36,7 @@ struct ExtensionSettingsView: View {
                 Text("\(item.id) · \(item.manifest.version)")
                 Text(item.source).font(.caption).textSelection(.enabled)
                 Text(item.manifest.commands.map(\.name).joined(separator: ", "))
-                Text("Requested host capabilities: \(item.grants.joined(separator: ", "))")
+                Text("Requested host capabilities: \(item.grants.map(ExtensionManifest.capabilityLabel).joined(separator: ", "))")
                 Text("Installing trusts this code. Replacing an installed extension stops its current session and preserves settings.")
                 if let error = manager.error { SettingsErrorView(message: error) }
                 HStack {
@@ -44,6 +46,7 @@ struct ExtensionSettingsView: View {
                 }.disabled(manager.busy)
             }.padding(24).frame(width: 520).interactiveDismissDisabled()
         }
+        .sheet(item: $editing) { item in ExtensionPreferencesView(item: item, manager: manager) }
         .sheet(item: $removing) { item in
             VStack(alignment: .leading, spacing: 16) {
                 Text("Uninstall \(item.manifest.name)?").font(.headline)
