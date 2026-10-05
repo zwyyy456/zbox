@@ -13,6 +13,9 @@ struct SettingsView: View {
             ShortcutSettingsView(environment: environment)
                 .settingsTab(SettingsTab.shortcuts)
 
+            ExtensionSettingsView(manager: environment.extensionManager)
+                .settingsTab(SettingsTab.extensions)
+
             ScriptCommandsSettingsView(environment: environment)
                 .settingsTab(SettingsTab.scriptCommands)
 

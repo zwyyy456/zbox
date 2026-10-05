@@ -3,6 +3,7 @@ import Foundation
 nonisolated enum SettingsTab: Hashable {
     case appMenu
     case audio
+    case extensions
     case scriptCommands
     case fileSearch
     case snippets
@@ -20,6 +21,7 @@ nonisolated enum SettingsTab: Hashable {
         switch self {
         case .appMenu: String(localized: "Application Menu")
         case .audio: String(localized: "Audio")
+        case .extensions: String(localized: "Extensions")
         case .scriptCommands: String(localized: "Automation")
         case .fileSearch: String(localized: "File Search")
         case .snippets: String(localized: "Snippets")
@@ -39,6 +41,7 @@ nonisolated enum SettingsTab: Hashable {
         switch self {
         case .appMenu: "menubar.rectangle"
         case .audio: "speaker.wave.2"
+        case .extensions: "puzzlepiece.extension"
         case .scriptCommands: "terminal"
         case .fileSearch: "doc.text.magnifyingglass"
         case .snippets: "text.quote"

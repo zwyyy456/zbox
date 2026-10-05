@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "org.zbox.examples.hello",
+  "name": "Hello",
+  "version": "1.0.0",
+  "author": "zbox examples",
+  "commands": [
+    {
+      "id": "hello",
+      "name": "Say Hello",
+      "mode": "task",
+      "entry": "main.zsh",
+      "interpreter": "/bin/zsh",
+      "keywords": ["hello", "打招呼"],
+      "parameters": [{"id": "name", "name": "Name", "required": true}]
+    }
+  ]
+}

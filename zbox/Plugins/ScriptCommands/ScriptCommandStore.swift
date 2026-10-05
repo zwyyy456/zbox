@@ -66,13 +66,6 @@ nonisolated struct ScriptCommand: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
-nonisolated struct ScriptInvocation: Sendable {
-    let executable: String
-    let arguments: [String]
-    let directory: String
-    let timeout: Double
-}
-
 nonisolated enum ScriptCommandError: LocalizedError {
     case invalidConfiguration, missingParameter, unavailable, unreadableData, launchFailed
     var errorDescription: String? {

@@ -37,6 +37,8 @@ final class AppEnvironment {
 
     let appMenuPlugin: AppMenuPlugin
     let audioPlugin: AudioPlugin
+    let extensionManager: ExtensionManager
+    private var registeredExtensionIDs = Set<String>()
     let scriptCommandsPlugin: ScriptCommandsPlugin
     let developerToolsPlugin: DeveloperToolsPlugin
     let fileSearchPlugin: FileSearchPlugin
@@ -62,7 +64,7 @@ final class AppEnvironment {
     private(set) var commandFeedback: CommandFeedback?
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        [AppMenuPlugin.shortcutTarget] + AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + FileSearchPlugin.shortcutTargets + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
+        extensionManager.shortcutTargets + [AppMenuPlugin.shortcutTarget] + AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + FileSearchPlugin.shortcutTargets + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
                                                                title: String(localized: "Clipboard History"))]
     }
 
@@ -102,6 +104,7 @@ final class AppEnvironment {
         audioPlugin = AudioPlugin(defaults: defaults)
         let clipboardCoordinator = ClipboardAccessCoordinator()
         self.clipboardCoordinator = clipboardCoordinator
+        extensionManager = ExtensionManager(coordinator: clipboardCoordinator)
         let scriptCommandsPlugin = ScriptCommandsPlugin(defaults: defaults, coordinator: clipboardCoordinator)
         self.scriptCommandsPlugin = scriptCommandsPlugin
         developerToolsPlugin = DeveloperToolsPlugin(clipboardCoordinator: clipboardCoordinator)
@@ -150,6 +153,23 @@ final class AppEnvironment {
         guard !hasStarted else { return }
         hasStarted = true
 
+        extensionManager.applyCommands = { [weak self] in
+            guard let self else { return }
+            for target in extensionManager.shortcutTargets where commandHotkeys[target.id] == nil {
+                commandHotkeys[target.id] = hotkeyStore.commandHotkeys(for: [target.id])[target.id]
+            }
+            try rebuildCommandRegistry()
+            try applyHotkeyRegistrations()
+        }
+        extensionManager.didCommit = { [weak self] removed in
+            guard let self else { return }
+            for id in removed {
+                commandHotkeys[id] = nil
+                commandHotkeyErrors[id] = nil
+                hotkeyStore.setCommandHotkey(nil, for: id)
+            }
+        }
+        Task { await extensionManager.load() }
         workspacePlugin.onCompletion = { [weak self] message, permissionLost in
             guard let self else { return }
             if permissionLost { reconcileAccessibilityDependentFeatures() }
@@ -190,6 +210,7 @@ final class AppEnvironment {
         quicklinksPlugin.stop()
         calculatorPlugin.stop()
         developerToolsPlugin.stop()
+        extensionManager.stop()
         scriptCommandsPlugin.stop()
         windowManagementPlugin.stop()
         clipboardHistoryPlugin.stop()
@@ -221,54 +242,56 @@ final class AppEnvironment {
 
     func reloadApplications() {
         applications = applicationCatalog.loadApplications()
+        do { try rebuildCommandRegistry() }
+        catch { applicationReloadError = error.localizedDescription }
+    }
+
+    private func rebuildCommandRegistry() throws {
         let registry = CommandRegistry()
         var applicationURLs: [CommandID: URL] = [:]
 
-        do {
-            try appMenuPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .appMenu) }
-            try audioPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .audio) }
-            try windowManagementPlugin.register(in: registry)
-            try SettingsCommands.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .general)
-            }
-            try fileSearchPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .fileSearch)
-            }
-            try snippetsPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .snippets)
-            }
-            try quicklinksPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .quicklinks)
-            }
-            try calculatorPlugin.register(in: registry)
-            try developerToolsPlugin.register(in: registry)
-            try scriptCommandsPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .scriptCommands) }
-            try displayPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .display)
-            }
-            try workspacePlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .workspace)
-            }
-            try screenshotPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .screenshot)
-            }
-            try clipboardHistoryPlugin.register(in: registry) { [weak self] in
-                try self?.openSettings(tab: .clipboardHistory)
-            }
-            for application in applications {
-                try ApplicationCommands.register(
-                    application,
-                    in: registry,
-                    launcher: applicationLauncher
-                )
-                applicationURLs[ApplicationCommands.id(for: application)] = application.url
-            }
-            commandRegistry = registry
-            applicationURLsByCommandID = applicationURLs
-            applicationReloadError = nil
-        } catch {
-            applicationReloadError = error.localizedDescription
+        try extensionManager.register(in: registry)
+        try appMenuPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .appMenu) }
+        try audioPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .audio) }
+        try windowManagementPlugin.register(in: registry)
+        try SettingsCommands.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .general)
         }
+        try fileSearchPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .fileSearch)
+        }
+        try snippetsPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .snippets)
+        }
+        try quicklinksPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .quicklinks)
+        }
+        try calculatorPlugin.register(in: registry)
+        try developerToolsPlugin.register(in: registry)
+        try scriptCommandsPlugin.register(in: registry) { [weak self] in try self?.openSettings(tab: .scriptCommands) }
+        try displayPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .display)
+        }
+        try workspacePlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .workspace)
+        }
+        try screenshotPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .screenshot)
+        }
+        try clipboardHistoryPlugin.register(in: registry) { [weak self] in
+            try self?.openSettings(tab: .clipboardHistory)
+        }
+        for application in applications {
+            try ApplicationCommands.register(
+                application,
+                in: registry,
+                launcher: applicationLauncher
+            )
+            applicationURLs[ApplicationCommands.id(for: application)] = application.url
+        }
+        commandRegistry = registry
+        applicationURLsByCommandID = applicationURLs
+        applicationReloadError = nil
     }
 
     func select(_ commandID: CommandID) {
@@ -382,6 +405,7 @@ final class AppEnvironment {
         if commandID == AppMenuPlugin.commandID { return "menubar.rectangle" }
         if commandID.rawValue.hasPrefix("audio.") { return "speaker.wave.2" }
         if commandID.rawValue.hasPrefix("filesearch.") { return "doc.text.magnifyingglass" }
+        if commandID.rawValue.hasPrefix("extensions.") { return "puzzlepiece.extension" }
         if commandID.rawValue.hasPrefix("scripts.") { return "terminal" }
         if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
         if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
@@ -919,8 +943,16 @@ final class AppEnvironment {
                 }
             }
         }
-        let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue))
+        for target in extensionManager.shortcutTargets where extensionManager.enabledCommandIDs.contains(target.id) {
+            if let hotkey = commandHotkeys[target.id] {
+                requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                    self?.executeDirectCommand(target.id)
+                })
+            }
+        }
+        let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue)).union(registeredExtensionIDs)
         try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)
+        registeredExtensionIDs = Set(extensionManager.shortcutTargets.map(\.id.rawValue))
     }
 
     private func validateHotkeyAssignments(

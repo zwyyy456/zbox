@@ -40,7 +40,7 @@ nonisolated enum ScriptRunner {
               posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0) == 0,
               posix_spawn_file_actions_adddup2(&actions, out.fileHandleForWriting.fileDescriptor, STDOUT_FILENO) == 0,
               posix_spawn_file_actions_adddup2(&actions, err.fileHandleForWriting.fileDescriptor, STDERR_FILENO) == 0 else {
-            throw ScriptCommandError.launchFailed
+            throw ScriptProcessError.launchFailed
         }
         let environment = [
             "HOME=\(NSHomeDirectory())", "USER=\(NSUserName())", "TMPDIR=\(NSTemporaryDirectory())",
@@ -57,7 +57,7 @@ nonisolated enum ScriptRunner {
         }
         try? out.fileHandleForWriting.close()
         try? err.fileHandleForWriting.close()
-        guard launched == 0 else { throw ScriptCommandError.launchFailed }
+        guard launched == 0 else { throw ScriptProcessError.launchFailed }
         let outFD = out.fileHandleForReading.fileDescriptor, errFD = err.fileHandleForReading.fileDescriptor
         _ = fcntl(outFD, F_SETFL, O_NONBLOCK)
         _ = fcntl(errFD, F_SETFL, O_NONBLOCK)
@@ -116,4 +116,16 @@ nonisolated enum ScriptRunner {
             if count > remaining { truncated = true }
         }
     }
+}
+
+nonisolated struct ScriptInvocation: Sendable {
+    let executable: String
+    let arguments: [String]
+    let directory: String
+    let timeout: Double
+}
+
+nonisolated enum ScriptProcessError: LocalizedError {
+    case launchFailed
+    var errorDescription: String? { String(localized: "The script process could not be started.") }
 }

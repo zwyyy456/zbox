@@ -14,10 +14,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard environment.scriptCommandsPlugin.isRunning else { return .terminateNow }
+        guard environment.scriptCommandsPlugin.isRunning || environment.extensionManager.hasRunningTasks else { return .terminateNow }
         environment.stop()
         Task {
             await environment.scriptCommandsPlugin.waitForStop()
+            await environment.extensionManager.waitForStop()
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater
