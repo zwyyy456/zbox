@@ -7,7 +7,20 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class ScreenshotPlugin {
-    private enum CapturePurpose { case edit, text }
+    private enum CapturePurpose { case edit, text, pin }
+    private enum PinCommand: String, CaseIterable {
+        case capture, clipboard, toggle, close
+        var id: CommandID { CommandID("screenshot.pin.\(rawValue)") }
+        var title: String {
+            switch self {
+            case .capture: String(localized: "Capture & Pin")
+            case .clipboard: String(localized: "Pin Clipboard Image")
+            case .toggle: String(localized: "Show / Hide Pinned Images")
+            case .close: String(localized: "Close All Pinned Images")
+            }
+        }
+    }
+    private var pinImportTask: Task<Void, Never>?
     static let textCommandID = CommandID("screenshot.ocr")
     private let textWindow = ScreenshotTextWindow()
     private let pins = ScreenshotPinController()
@@ -15,6 +28,7 @@ final class ScreenshotPlugin {
     static var shortcutTargets: [CommandShortcutTarget] {
         ScreenshotMode.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
         + [CommandShortcutTarget(id: textCommandID, title: String(localized: "Capture Text"))]
+        + PinCommand.allCases.map { CommandShortcutTarget(id: $0.id, title: $0.title) }
     }
     let hosting: ScreenshotHostingSettings
     private let defaults: UserDefaults
@@ -64,6 +78,21 @@ final class ScreenshotPlugin {
             guard isEnabled else { try openSettings(); return }
             capture(.area, purpose: .text)
         }
+        for command in PinCommand.allCases {
+            try registry.register(CommandDescriptor(id: command.id, title: command.title,
+                subtitle: String(localized: "Screenshot"), keywords: ["pin", "image", "贴图", "悬浮", "图片"])) { [weak self] _ in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                switch command {
+                case .capture: capture(.area, purpose: .pin)
+                case .clipboard: try pinClipboard()
+                case .toggle: pins.toggleVisibility()
+                case .close:
+                    pinImportTask?.cancel()
+                    pins.closeAll()
+                }
+            }
+        }
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -73,6 +102,8 @@ final class ScreenshotPlugin {
     }
 
     func stop() {
+        pinImportTask?.cancel()
+        pinImportTask = nil
         pins.closeAll()
         textWindow.close()
         closeEditor()
@@ -98,6 +129,23 @@ final class ScreenshotPlugin {
         captureTask?.cancel()
         captureTask = nil
         selection.close()
+    }
+
+    private func pinClipboard() throws {
+        let data = try ScreenshotPinClipboard.read()
+        pinImportTask?.cancel()
+        pinImportTask = Task { [weak self] in
+            do {
+                let image = try await ScreenshotPinClipboard.decode(data)
+                guard !Task.isCancelled, let self, isEnabled else { return }
+                try addPin(image)
+                pinImportTask = nil
+            } catch {
+                guard !Task.isCancelled, let self else { return }
+                pinImportTask = nil
+                report(error)
+            }
+        }
     }
 
     func pinImage() {
@@ -375,6 +423,9 @@ final class ScreenshotPlugin {
                 case .edit:
                     self.document = ScreenshotDocument(image: image)
                     show(on: screen)
+                case .pin:
+                    if document != nil { show(on: screen) }
+                    try addPin(image)
                 case .text:
                     if document != nil { show(on: screen) }
                     textWindow.show(image: image) { [weak self] in self?.copyText($0) }
