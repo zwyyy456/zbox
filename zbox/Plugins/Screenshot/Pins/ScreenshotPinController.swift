@@ -140,6 +140,7 @@ private struct ScreenshotPinView: View {
                 if hovering {
                     HStack(spacing: 6) {
                         Button("Copy", systemImage: "doc.on.doc", action: pin.copy)
+                        Menu("Image Actions", systemImage: "ellipsis") { actions }
                         Button("Close", systemImage: "xmark") { pin.window.close() }
                     }.labelStyle(.iconOnly).padding(6).background(.regularMaterial)
                 }
@@ -148,22 +149,24 @@ private struct ScreenshotPinView: View {
                 if let error = pin.error { Text(error).font(.caption).padding(6).background(.regularMaterial) }
             }
             .onHover { hovering = $0 }
-            .contextMenu {
-                Button("Copy Image", action: pin.copy)
-                Button("Save…", action: pin.save)
-                Button("Recognize Text") { pin.recognize(pin.image) }
-                Divider()
-                Button("Zoom In") { pin.resize(1.25) }
-                Button("Zoom Out") { pin.resize(0.8) }
-                Button("Reset Size") { pin.resize(0) }
-                Menu("Opacity") {
-                    ForEach([1.0, 0.75, 0.5, 0.25], id: \.self) { opacity in
-                        Button(opacity.formatted(.percent)) { pin.opacity = opacity }
-                    }
-                }
-                Divider()
-                Button("Close") { pin.window.close() }
-            }
+            .contextMenu { actions }
             .accessibilityLabel("Pinned Image")
+    }
+
+    @ViewBuilder private var actions: some View {
+        Button("Copy Image", action: pin.copy)
+        Button("Save…", action: pin.save)
+        Button("Recognize Text") { pin.recognize(pin.image) }
+        Divider()
+        Button("Zoom In") { pin.resize(1.25) }
+        Button("Zoom Out") { pin.resize(0.8) }
+        Button("Reset Size") { pin.resize(0) }
+        Menu("Opacity") {
+            ForEach([1.0, 0.75, 0.5, 0.25], id: \.self) { opacity in
+                Button(opacity.formatted(.percent)) { pin.opacity = opacity }
+            }
+        }
+        Divider()
+        Button("Close") { pin.window.close() }
     }
 }

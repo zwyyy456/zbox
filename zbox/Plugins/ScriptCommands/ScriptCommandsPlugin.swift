@@ -38,8 +38,11 @@ final class ScriptCommandsPlugin {
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil
-        selected = nil
-        values = []
+        if !isRunning {
+            selected = nil
+            values = []
+            clear()
+        }
     }
 
     func waitForStop() async { await task?.value }
@@ -94,6 +97,7 @@ final class ScriptCommandsPlugin {
                 } catch { self?.statusMessage = error.localizedDescription }
                 self?.isRunning = false
                 self?.task = nil
+                if self?.window == nil { self?.stop() }
             }
         } catch { statusMessage = error.localizedDescription }
     }
@@ -146,7 +150,7 @@ struct ScriptCommandView: View {
                 Text("Standard Output").tag(false)
                 Text("Standard Error").tag(true)
             }.pickerStyle(.segmented)
-            ScriptOutputView(text: text)
+            PlainTextEditor(text: .constant(text), isEditable: false, label: String(localized: "Output"))
             HStack {
                 Button("Copy Output") { plugin.copy(text) }.disabled(text.isEmpty)
                 Button("Clear", action: plugin.clear).disabled(plugin.isRunning)
@@ -154,21 +158,5 @@ struct ScriptCommandView: View {
             }
             if let message = plugin.statusMessage { Text(message).foregroundStyle(.red) }
         }.padding(20)
-    }
-}
-
-private struct ScriptOutputView: NSViewRepresentable {
-    let text: String
-    func makeNSView(context: Context) -> NSScrollView {
-        let scroll = NSTextView.scrollableTextView()
-        let view = scroll.documentView as! NSTextView
-        view.isEditable = false
-        view.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        view.textContainerInset = NSSize(width: 8, height: 8)
-        return scroll
-    }
-    func updateNSView(_ view: NSScrollView, context: Context) {
-        let editor = view.documentView as! NSTextView
-        if editor.string != text { editor.string = text }
     }
 }

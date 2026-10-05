@@ -20,6 +20,7 @@ final class ScreenshotPlugin {
             }
         }
     }
+    private var pinGeneration = 0
     private var pinImportTask: Task<Void, Never>?
     static let textCommandID = CommandID("screenshot.ocr")
     private let textWindow = ScreenshotTextWindow()
@@ -88,6 +89,7 @@ final class ScreenshotPlugin {
                 case .clipboard: try pinClipboard()
                 case .toggle: pins.toggleVisibility()
                 case .close:
+                    pinGeneration += 1
                     pinImportTask?.cancel()
                     pins.closeAll()
                 }
@@ -102,6 +104,7 @@ final class ScreenshotPlugin {
     }
 
     func stop() {
+        pinGeneration += 1
         pinImportTask?.cancel()
         pinImportTask = nil
         pins.closeAll()
@@ -152,11 +155,12 @@ final class ScreenshotPlugin {
         guard let document, !isExporting, !isUploading else { return }
         isExporting = true
         let edit = document.edit
+        let generation = pinGeneration
         exportTask = Task { [weak self] in
             do {
                 let image = try await ScreenshotRenderer.flattened(image: document.image, edit: edit)
                 guard !Task.isCancelled, let self, self.document === document else { return }
-                try addPin(image)
+                if pinGeneration == generation { try addPin(image) }
                 isExporting = false
                 exportTask = nil
             } catch {
@@ -381,6 +385,7 @@ final class ScreenshotPlugin {
         statusMessage = nil
         needsScreenRecordingPermission = false
         let id = UUID()
+        let generation = pinGeneration
         captureID = id
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
         captureTask = Task { [weak self] in
@@ -390,10 +395,10 @@ final class ScreenshotPlugin {
                 guard let self, captureID == id else { return }
                 if mode == .screen {
                     guard let screen else { throw ScreenshotError.unavailable }
-                    finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id, purpose: purpose)
+                    finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id, purpose: purpose, pinGeneration: generation)
                 } else {
                     selection.show(mode: mode, windows: content.windows) { [weak self] screen, area, selectedWindow in
-                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: purpose)
+                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: purpose, pinGeneration: generation)
                     } cancelled: { [weak self] in
                         self?.cancelCapture()
                         if self?.document != nil { self?.show(on: screen) }
@@ -406,7 +411,7 @@ final class ScreenshotPlugin {
         }
     }
 
-    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID, purpose: CapturePurpose) {
+    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID, purpose: CapturePurpose, pinGeneration generation: Int) {
         selection.finishChoosing()
         captureTask = Task { [weak self] in
             do {
@@ -425,7 +430,7 @@ final class ScreenshotPlugin {
                     show(on: screen)
                 case .pin:
                     if document != nil { show(on: screen) }
-                    try addPin(image)
+                    if pinGeneration == generation { try addPin(image) }
                 case .text:
                     if document != nil { show(on: screen) }
                     textWindow.show(image: image) { [weak self] in self?.copyText($0) }

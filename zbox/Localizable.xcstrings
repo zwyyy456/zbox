@@ -6164,6 +6164,605 @@
           }
         }
       }
+    },
+    "Add Parameter": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加参数"
+          }
+        }
+      }
+    },
+    "Add Script": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加脚本"
+          }
+        }
+      }
+    },
+    "Cancelled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消"
+          }
+        }
+      }
+    },
+    "Capture & Pin": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图并贴图"
+          }
+        }
+      }
+    },
+    "Capture Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图识别文字"
+          }
+        }
+      }
+    },
+    "Choose Interpreter…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择解释器…"
+          }
+        }
+      }
+    },
+    "Choose Working Directory…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择工作目录…"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Close All Pinned Images": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭全部贴图"
+          }
+        }
+      }
+    },
+    "Close some pinned images before adding another (10 images / 256 MiB maximum).": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先关闭部分贴图（最多 10 张，总内存不超过 256 MiB）。"
+          }
+        }
+      }
+    },
+    "Copy Output": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制输出"
+          }
+        }
+      }
+    },
+    "Copy Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制文字"
+          }
+        }
+      }
+    },
+    "Copy a single PNG or TIFF image first. Clipboard access must be allowed; private or transient contents cannot be pinned.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先复制一张 PNG 或 TIFF 图片，并允许访问剪贴板。私密或临时内容不能贴图。"
+          }
+        }
+      }
+    },
+    "Could not export the pinned image.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出贴图。"
+          }
+        }
+      }
+    },
+    "Default Value": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认值"
+          }
+        }
+      }
+    },
+    "Disabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停用"
+          }
+        }
+      }
+    },
+    "Enable Script Commands": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用脚本命令"
+          }
+        }
+      }
+    },
+    "Enabled": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用"
+          }
+        }
+      }
+    },
+    "Enter a name, absolute file paths, named parameters, and a timeout between 1 and 3600 seconds.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写名称、绝对路径、参数名称，以及 1 至 3600 秒的超时时间。"
+          }
+        }
+      }
+    },
+    "Exit Code: %d": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出码：%d"
+          }
+        }
+      }
+    },
+    "Fill in every required parameter. Null characters are not supported.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写所有必填参数，不支持空字符（NUL）。"
+          }
+        }
+      }
+    },
+    "Fixed Arguments (one argument per line)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "固定参数（每行一个）"
+          }
+        }
+      }
+    },
+    "Interpreter (empty = direct execution)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解释器（留空则直接执行）"
+          }
+        }
+      }
+    },
+    "Keywords": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关键词"
+          }
+        }
+      }
+    },
+    "Language Correction": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言纠错"
+          }
+        }
+      }
+    },
+    "No text was found.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未识别到文字。"
+          }
+        }
+      }
+    },
+    "Opacity": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不透明度"
+          }
+        }
+      }
+    },
+    "Output limited to 1 MiB per stream.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每路输出最多保留 1 MiB，超出部分已截断。"
+          }
+        }
+      }
+    },
+    "Parameter Name": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参数名称"
+          }
+        }
+      }
+    },
+    "Pin Clipboard Image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贴图：剪贴板图片"
+          }
+        }
+      }
+    },
+    "Pin Image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贴图"
+          }
+        }
+      }
+    },
+    "Pinned Image": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "贴图"
+          }
+        }
+      }
+    },
+    "Recognition Language": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别语言"
+          }
+        }
+      }
+    },
+    "Recognize Again": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新识别"
+          }
+        }
+      }
+    },
+    "Recognize Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别文字"
+          }
+        }
+      }
+    },
+    "Recognize again after changing the image or options.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改图片或选项后，请重新识别。"
+          }
+        }
+      }
+    },
+    "Recognized Text": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别结果"
+          }
+        }
+      }
+    },
+    "Reset Size": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置大小"
+          }
+        }
+      }
+    },
+    "Reveal Script in Finder": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在访达中显示脚本"
+          }
+        }
+      }
+    },
+    "Running…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在运行…"
+          }
+        }
+      }
+    },
+    "Runtime Parameters (appended in this order)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行时参数（按此顺序追加）"
+          }
+        }
+      }
+    },
+    "Script Commands": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "脚本命令"
+          }
+        }
+      }
+    },
+    "Script File": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "脚本文件"
+          }
+        }
+      }
+    },
+    "Script commands could not be read. The saved file has been preserved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取脚本命令，原配置文件已保留。"
+          }
+        }
+      }
+    },
+    "Scripts run as your user and can access your files and network. Only add scripts you trust.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "脚本以你的用户身份运行，可以访问文件和网络。请仅添加你信任的脚本。"
+          }
+        }
+      }
+    },
+    "Show / Hide Pinned Images": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示／隐藏全部贴图"
+          }
+        }
+      }
+    },
+    "Signal: %d": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "终止信号：%d"
+          }
+        }
+      }
+    },
+    "Standard Error": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "错误输出"
+          }
+        }
+      }
+    },
+    "Standard Output": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标准输出"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止"
+          }
+        }
+      }
+    },
+    "Text copied.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字已复制。"
+          }
+        }
+      }
+    },
+    "Text recognition failed. Try another language or a clearer image.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字识别失败，请尝试其他语言或更清晰的图片。"
+          }
+        }
+      }
+    },
+    "The script process could not be started.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启动脚本进程。"
+          }
+        }
+      }
+    },
+    "The script, interpreter, or working directory is unavailable. Check the paths and executable permissions.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "脚本、解释器或工作目录不可用，请检查路径和执行权限。"
+          }
+        }
+      }
+    },
+    "Timed Out": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已超时"
+          }
+        }
+      }
+    },
+    "Timeout (seconds)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超时时间（秒）"
+          }
+        }
+      }
+    },
+    "View": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视图"
+          }
+        }
+      }
+    },
+    "Working Directory (empty = script folder)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作目录（留空则使用脚本目录）"
+          }
+        }
+      }
+    },
+    "Image Actions": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片操作"
+          }
+        }
+      }
+    },
+    "AppleScript": {
+      "shouldTranslate": false
+    },
+    "bash": {
+      "shouldTranslate": false
+    },
+    "zsh": {
+      "shouldTranslate": false
     }
   },
   "version": "1.0"

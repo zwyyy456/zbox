@@ -525,7 +525,14 @@ final class AppEnvironment {
 
     func saveScriptCommand(_ item: ScriptCommand) -> Bool {
         do {
+            let previous = scriptCommandsPlugin.store.items.first { $0.id == item.id }
             try scriptCommandsPlugin.store.save(item)
+            do { try applyHotkeyRegistrations() }
+            catch {
+                if let previous { try scriptCommandsPlugin.store.save(previous) }
+                else { try scriptCommandsPlugin.store.delete(item.id) }
+                throw error
+            }
             scriptCommandsPlugin.stop()
             reloadApplications()
             scriptCommandsPlugin.statusMessage = nil

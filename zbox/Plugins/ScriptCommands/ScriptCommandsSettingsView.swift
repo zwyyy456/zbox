@@ -56,9 +56,9 @@ private struct ScriptCommandEditor: View {
                 Button("Choose Working Directory…") { choose(directory: true) { item.directory = $0 } }
                 TextField("Timeout (seconds)", value: $item.timeout, format: .number)
                 Text("Fixed Arguments (one argument per line)").font(.headline)
-                TextEditor(text: Binding(get: { item.arguments.joined(separator: "\n") }, set: {
+                PlainTextEditor(text: Binding(get: { item.arguments.joined(separator: "\n") }, set: {
                     item.arguments = $0.isEmpty ? [] : $0.components(separatedBy: "\n")
-                })).font(.system(.body, design: .monospaced)).frame(height: 70).autocorrectionDisabled()
+                }), label: String(localized: "Fixed Arguments (one argument per line)")).frame(height: 70)
                 Text("Runtime Parameters (appended in this order)").font(.headline)
                 ForEach($item.parameters) { $parameter in
                     HStack {

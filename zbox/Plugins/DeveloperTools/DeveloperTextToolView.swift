@@ -46,12 +46,12 @@ struct DeveloperTextToolView: View {
             HSplitView {
                 VStack(alignment: .leading) {
                     Text("Input").font(.headline)
-                    DeveloperTextEditor(text: $session.input, label: String(localized: "Input"),
+                    PlainTextEditor(text: $session.input, label: String(localized: "Input"),
                                         selectionRequest: selectionRequest)
                 }.frame(minWidth: 180, maxWidth: .infinity)
                 VStack(alignment: .leading) {
                     Text("Output").font(.headline)
-                    DeveloperTextEditor(text: .constant(session.output ?? ""), isEditable: false,
+                    PlainTextEditor(text: .constant(session.output ?? ""), isEditable: false,
                                         label: String(localized: "Output"))
                 }.frame(minWidth: 180, maxWidth: .infinity)
             }

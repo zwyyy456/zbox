@@ -8,7 +8,7 @@
 ## Command 与平台边界
 
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
-- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets`、`Plugins/DeveloperTools` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
+- 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets`、`Plugins/DeveloperTools`、`Plugins/ScriptCommands` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
@@ -59,6 +59,8 @@
 - 上传是用户配置并触发的独立网络边界；平台协议、Keychain、URLSession 留在插件内，不建立通用上传 Runtime。重试保留同一导出快照，停止后拒绝旧任务的成功、错误及进度结果。
 - 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，所有自身回写通知现有协调对象。
 
+- OCR 使用 Apple Vision 处理截图最终合成像素，贴图保存独立合成快照；两者不读取未合成的裁剪外或遮挡前内容，不自行上传。所有图片／文字回写通过已有剪贴板协调器登记。
+
 ## Display 边界
 
 - 产品行为由 `docs/product/display.md` 定义。插件拥有显示器枚举、切换确认、预设及原生 HiDPI 配置；App 只组合命令、设置和快捷键。
@@ -103,3 +105,8 @@
 - Carbon 快捷键、NSPanel 焦点/Space、Accessibility、登录项、外接显示器、真实应用启动和 Text Lookup 应用兼容性以构建、运行和人工矩阵验证。
 - Text Lookup 的系统兼容、翻译模型、FlashDict 跨进程与真实建卡按需使用 `docs/release-readiness.md`。
 - 文档专属改动只做引用、重复、冲突和 diff 检查，不要求构建。
+
+## Script Commands 边界
+
+- 产品行为由 `docs/product/script-commands.md` 定义。插件拥有脚本配置、运行任务和结果窗口；App 负责 Registry、快捷键事务和退出时等待任务清理。
+- `ScriptRunner` 是进程副作用边界：argv 不拼接，标准输入关闭交互，双路输出有界且持续排空，工作线程负责启动、进程组终止和回收。Main Actor 只消费输出快照与结果。

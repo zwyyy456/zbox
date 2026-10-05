@@ -22,7 +22,7 @@ struct DeveloperTimestampView: View {
                      ? String(localized: "Include Z or an explicit offset such as +08:00. Precision: up to milliseconds.")
                      : String(localized: "Units are explicit. Negative timestamps are supported."))
                     .font(.caption).foregroundStyle(.secondary)
-                DeveloperTextEditor(text: $session.input, label: String(localized: "Timestamp Input"))
+                PlainTextEditor(text: $session.input, label: String(localized: "Timestamp Input"))
                     .frame(height: 64)
                 HStack {
                     Button("Current Time") { session.useCurrentTime() }

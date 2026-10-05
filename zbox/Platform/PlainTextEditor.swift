@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Plain text only: code must not be changed by smart quotes or substitutions.
-struct DeveloperTextEditor: NSViewRepresentable {
+struct PlainTextEditor: NSViewRepresentable {
     @Binding var text: String
     var isEditable = true
     var label: String
@@ -48,8 +48,8 @@ struct DeveloperTextEditor: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var selectionID: UUID?
-        var parent: DeveloperTextEditor
-        init(_ parent: DeveloperTextEditor) { self.parent = parent }
+        var parent: PlainTextEditor
+        init(_ parent: PlainTextEditor) { self.parent = parent }
         func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
             parent.text = editor.string

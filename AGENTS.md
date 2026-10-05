@@ -19,8 +19,9 @@
 | Snippets 模板、变量、复制与粘贴 | `docs/product/snippets.md` |
 | Display 模式、预设、恢复和原生 HiDPI 配置 | `docs/product/display.md` |
 | Workspace 捕获、保存和恢复布局 | `docs/product/workspace.md` |
-| Screenshot 截图、编辑、图床、上传或屏幕捕获权限 | `docs/product/screenshot.md` |
+| Screenshot 截图、编辑、OCR、贴图、图床、上传或屏幕捕获权限 | `docs/product/screenshot.md` |
 | Clipboard History 采集、隐私、存储、粘贴或管理行为 | `docs/product/clipboard-history.md` |
+| Script Commands 配置、参数、运行、输出和进程生命周期 | `docs/product/script-commands.md` |
 | Developer Tools 入口、文本编辑、转换语义或会话生命周期 | `docs/product/developer-tools.md` |
 | Calculator 入口、窗口、输入、运算或数值语义 | `docs/product/calculator.md` |
 | Command、快捷键、窗口、Text Lookup、平台、安全或并发边界 | `engineering-guidelines.md` |
