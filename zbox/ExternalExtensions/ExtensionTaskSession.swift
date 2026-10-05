@@ -2,11 +2,11 @@ import SwiftUI
 
 @MainActor @Observable
 final class ExtensionTaskSession {
-    let installation: ExtensionInstallation
     let command: ExtensionCommand
     let root: URL
     let coordinator: ClipboardAccessCoordinator
     var values: [String]
+    private var closed = false
     private(set) var running = false
     private(set) var output = ScriptOutput()
     private(set) var result: ScriptRunResult?
@@ -14,8 +14,8 @@ final class ExtensionTaskSession {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var window: NSWindow?
 
-    init(installation: ExtensionInstallation, command: ExtensionCommand, root: URL, coordinator: ClipboardAccessCoordinator) {
-        self.installation = installation; self.command = command; self.root = root; self.coordinator = coordinator
+    init(command: ExtensionCommand, root: URL, coordinator: ClipboardAccessCoordinator) {
+        self.command = command; self.root = root; self.coordinator = coordinator
         values = (command.parameters ?? []).map { $0.defaultValue ?? "" }
     }
 
@@ -36,19 +36,23 @@ final class ExtensionTaskSession {
         guard !running else { return }
         do {
             let invocation = try command.invocation(root: root, values: values)
-            running = true; output = ScriptOutput(); result = nil; error = nil
+            running = true; closed = false; output = ScriptOutput(); result = nil; error = nil
             task = Task {
                 do {
-                    result = try await ScriptRunner.run(invocation) { output in await self.update(output) }
-                } catch { self.error = error.localizedDescription }
+                    let completed = try await ScriptRunner.run(invocation) { output in await self.update(output) }
+                    if !closed { result = completed }
+                } catch { if !closed { self.error = error.localizedDescription } }
                 running = false; task = nil
             }
         } catch { self.error = error.localizedDescription }
     }
 
-    private func update(_ output: ScriptOutput) { self.output = output }
+    private func update(_ output: ScriptOutput) { if !closed { self.output = output } }
     func cancel() { task?.cancel() }
-    func stop() { cancel(); window?.orderOut(nil); window?.contentView = nil; window = nil }
+    func stop() {
+        closed = true; cancel(); window?.orderOut(nil); window?.contentView = nil; window = nil
+        output = ScriptOutput(); result = nil; values = (command.parameters ?? []).map { $0.defaultValue ?? "" }; error = nil
+    }
     func waitForStop() async { await task?.value }
     func copy(_ value: String) {
         let board = NSPasteboard.general

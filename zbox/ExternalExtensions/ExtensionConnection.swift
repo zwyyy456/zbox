@@ -1,3 +1,4 @@
+import ZboxExtensionProtocol
 import Foundation
 import Darwin
 

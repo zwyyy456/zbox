@@ -2,7 +2,7 @@
 
 ## 项目事实
 
-- zbox 是 macOS 15+ 本地命令中心：Swift 6、SwiftUI + AppKit、单进程、后台常驻、无 Dock 图标、Developer ID 直发。
+- zbox 是 macOS 15+ 本地命令中心：Swift 6、SwiftUI + AppKit、宿主单进程（外部扩展使用子进程）、后台常驻、无 Dock 图标、Developer ID 直发。
 - App Sandbox 关闭，Hardened Runtime 开启；Window Management 内置插件使用 Accessibility 移动和缩放前台窗口，Text Lookup 内置独立扩展在用户启用并触发时读取有限的选区或指针文本，Calculator 内置独立扩展提供本地整数计算。
 - `docs/product-design-v0.1.md` 是核心命令中心产品真源，`docs/product/window-management.md`、`docs/product/text-lookup.md` 与 `docs/product/calculator.md` 分别是对应内置插件的产品真源，`docs/product/screenshot.md` 定义 Screenshot 的截图及上传行为；`engineering-guidelines.md` 是项目工程规则真源。
 - 活动文档按开发与架构规范、产品约定、技术合同、按需操作参考四类路由；`AGENTS.md` 只提供执行入口，已完成的阶段方案和证据位于非规范的 `docs/archive/`。

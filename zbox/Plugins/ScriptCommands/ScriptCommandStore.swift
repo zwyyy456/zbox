@@ -67,14 +67,13 @@ nonisolated struct ScriptCommand: Codable, Identifiable, Equatable, Sendable {
 }
 
 nonisolated enum ScriptCommandError: LocalizedError {
-    case invalidConfiguration, missingParameter, unavailable, unreadableData, launchFailed
+    case invalidConfiguration, missingParameter, unavailable, unreadableData
     var errorDescription: String? {
         switch self {
         case .invalidConfiguration: String(localized: "Enter a name, absolute file paths, named parameters, and a timeout between 1 and 3600 seconds.")
         case .missingParameter: String(localized: "Fill in every required parameter. Null characters are not supported.")
         case .unavailable: String(localized: "The script, interpreter, or working directory is unavailable. Check the paths and executable permissions.")
         case .unreadableData: String(localized: "Script commands could not be read. The saved file has been preserved.")
-        case .launchFailed: String(localized: "The script process could not be started.")
         }
     }
 }

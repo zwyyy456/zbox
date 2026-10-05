@@ -1,11 +1,10 @@
+import ZboxExtensionProtocol
 import SwiftUI
 
 @MainActor @Observable
 final class ExtensionSession: NSObject, NSWindowDelegate {
-    let installation: ExtensionInstallation
     let command: ExtensionCommand
     let root: URL
-    let context: CommandContext
     let host: ExtensionHostAPI
     private(set) var viewRevision = 0
     var snapshot = ExtensionViewSnapshot()
@@ -21,22 +20,25 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
         let timeout: Task<Void, Never>
     }
     private var ending = false
+    private var closed = false
     @ObservationIgnored private var stopTask: Task<Void, Never>?
     @ObservationIgnored private var hostTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var pending: [String: PendingCall] = [:]
     let connection = ExtensionConnection()
     var values: [String]
+    var hasPendingWork: Bool { running || !hostTasks.isEmpty }
     private(set) var running = false
     private(set) var ready = false
     private(set) var eventID = 0
     var error: String?
     var diagnostics = ""
+    var needsAccessibility = false
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var handshakeTimeout: Task<Void, Never>?
     @ObservationIgnored private var window: NSWindow?
 
-    init(installation: ExtensionInstallation, command: ExtensionCommand, root: URL, context: CommandContext, host: ExtensionHostAPI) {
-        self.installation = installation; self.command = command; self.root = root; self.context = context; self.host = host
+    init(command: ExtensionCommand, root: URL, host: ExtensionHostAPI) {
+        self.command = command; self.root = root; self.host = host
         values = (command.parameters ?? []).map { $0.defaultValue ?? "" }
     }
 
@@ -56,7 +58,8 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
         guard !running else { return }
         do {
             let invocation = try command.invocation(root: root, values: values)
-            running = true; ready = false; ending = false; error = nil; eventID = 0
+            running = true; ready = false; ending = false; closed = false; error = nil; eventID = 0
+            needsAccessibility = false
             snapshot = ExtensionViewSnapshot(); fieldValues = [:]; query = ""; selectedID = nil
             clipboardCount = NSPasteboard.general.changeCount; userEvent = true; usedSensitiveMethods = []
             let initial = ExtensionMessage(id: "initialize", method: "initialize", params: .object([
@@ -73,7 +76,7 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
                     let result = try await connection.run(invocation, initial: initial, stopping: { await self.transportStopped() }) { message in
                         try await self.receive(message)
                     }
-                    diagnostics = String(decoding: result.output.stderr, as: UTF8.self)
+                    if !closed { diagnostics = String(decoding: result.output.stderr, as: UTF8.self) }
                     if !result.cancelled && !ending { error = "The extension exited (status \(result.status))." }
                 } catch { if !Task.isCancelled && !ending { self.error = error.localizedDescription } }
                 cancelPending(); ready = false; running = false; handshakeTimeout?.cancel(); handshakeTimeout = nil; task = nil
@@ -134,7 +137,15 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
                 }
                 response = ExtensionMessage(id: id, result: value)
                 if method == "selection.read", ready, eventID == event { show() }
-            } catch { response = ExtensionMessage(id: id, error: ExtensionRPCError(code: -32000, message: error.localizedDescription)) }
+            } catch {
+                if ready, eventID == event {
+                    switch error {
+                    case SelectedTextError.permissionRequired, ClipboardPasteError.permissionRequired: needsAccessibility = true
+                    default: break
+                    }
+                }
+                response = ExtensionMessage(id: id, error: ExtensionRPCError(code: -32000, message: error.localizedDescription))
+            }
             guard ready, eventID == event, pending[id]?.token == token, !Task.isCancelled else { return }
             pending.removeValue(forKey: id)?.timeout.cancel()
             do { try await connection.send(response) } catch { fail(error) }
@@ -166,6 +177,7 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
     private func sendEvent(_ method: String, values: [String: ExtensionValue], userAction: Bool) {
         let previous = eventID
         eventID += 1; userEvent = userAction; usedSensitiveMethods = []
+        if userAction { needsAccessibility = false }
         clipboardCount = NSPasteboard.general.changeCount
         cancelPending()
         var params = values
@@ -200,7 +212,10 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
             execution?.cancel()
         }
     }
-    func stop() { cancel(); window?.orderOut(nil); window?.contentView = nil; window = nil }
+    func stop() {
+        closed = true; cancel(); window?.orderOut(nil); window?.contentView = nil; window = nil
+        snapshot = ExtensionViewSnapshot(); fieldValues = [:]; query = ""; values = (command.parameters ?? []).map { $0.defaultValue ?? "" }; diagnostics = ""; error = nil
+    }
     func waitForStop() async {
         await stopTask?.value
         await task?.value

@@ -41,6 +41,7 @@ nonisolated enum ExtensionArchive {
             }
         }
         if let enumerationError { throw enumerationError }
+        try preserveQuarantine(from: source, to: destination)
     }
 
     static func extract(_ source: URL, to destination: URL) throws {
@@ -104,14 +105,23 @@ nonisolated enum ExtensionArchive {
             cursor = next
         }
         guard cursor == centralEnd else { throw ExtensionFailure("Invalid ZIP directory size.") }
-        // Retain download provenance instead of stripping quarantine during extraction.
+        try preserveQuarantine(from: source, to: destination)
+    }
+
+    private static func preserveQuarantine(from source: URL, to destination: URL) throws {
+        // Keep the root directory's provenance as well as ZIP download provenance.
         var quarantine = [UInt8](repeating: 0, count: 4096)
         let length = getxattr(source.path, "com.apple.quarantine", &quarantine, quarantine.count, 0, 0)
-        if length > 0, let entries = FileManager.default.enumerator(at: destination, includingPropertiesForKeys: nil) {
-            for case let file as URL in entries {
-                guard setxattr(file.path, "com.apple.quarantine", quarantine, length, 0, 0) == 0 else {
-                    throw ExtensionFailure("Could not preserve package download provenance.")
-                }
+        if length < 0 {
+            guard errno == ENOATTR else { throw ExtensionFailure("Could not read package download provenance.") }
+            return
+        }
+        guard length > 0 else { return }
+        let entries = FileManager.default.enumerator(at: destination, includingPropertiesForKeys: nil)
+        let paths = [destination] + (entries?.allObjects as? [URL] ?? [])
+        for file in paths {
+            guard setxattr(file.path, "com.apple.quarantine", quarantine, length, 0, 0) == 0 else {
+                throw ExtensionFailure("Could not preserve package download provenance.")
             }
         }
     }

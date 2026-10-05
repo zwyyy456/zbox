@@ -1,3 +1,4 @@
+import ZboxExtensionProtocol
 import SwiftUI
 
 struct ExtensionSessionView: View {
@@ -45,6 +46,9 @@ struct ExtensionSessionView: View {
             }.frame(maxHeight: .infinity)
             if let message = session.snapshot.message { Text(message).font(.callout) }
             if let error = session.error ?? session.snapshot.error { SettingsErrorView(message: error) }
+            if session.needsAccessibility {
+                Button("Open Accessibility Settings") { AccessibilityAuthorization().openSystemSettings() }
+            }
             ScrollView(.horizontal) {
                 HStack {
                     ForEach(Array((session.snapshot.actions ?? []).enumerated()), id: \.element.id) { index, action in

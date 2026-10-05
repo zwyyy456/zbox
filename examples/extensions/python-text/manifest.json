@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "org.zbox.examples.python-text",
+  "name": "Text Case · Python",
+  "version": "1.0.0",
+  "capabilities": ["selection.read", "clipboard.write"],
+  "commands": [{
+    "id": "convert", "name": "Convert Selected Text (Python)",
+    "mode": "interactive", "protocolVersion": 1,
+    "entry": "main.py", "interpreter": "python3"
+  }]
+}

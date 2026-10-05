@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor @Observable
 final class ExtensionManager {
-    let store = ExtensionPackageStore()
+    let store: ExtensionPackageStore
     private let coordinator: ClipboardAccessCoordinator
     private(set) var items: [ExtensionInstallation] = []
     private(set) var busy = true
@@ -15,8 +15,10 @@ final class ExtensionManager {
     @ObservationIgnored private var interactiveSessions: [String: ExtensionSession] = [:]
     @ObservationIgnored private var sessions: [String: ExtensionTaskSession] = [:]
 
-    init(coordinator: ClipboardAccessCoordinator) { self.coordinator = coordinator }
-    var hasRunningTasks: Bool { busy || sessions.values.contains { $0.running } || interactiveSessions.values.contains { $0.running } }
+    init(coordinator: ClipboardAccessCoordinator, store: ExtensionPackageStore = ExtensionPackageStore()) {
+        self.coordinator = coordinator; self.store = store
+    }
+    var hasRunningTasks: Bool { busy || sessions.values.contains { $0.running } || interactiveSessions.values.contains { $0.hasPendingWork } }
     var shortcutTargets: [CommandShortcutTarget] {
         items.flatMap { item in item.manifest.commands.map { CommandShortcutTarget(id: $0.commandID(in: item.id), title: $0.name) } }
     }
@@ -139,12 +141,12 @@ final class ExtensionManager {
         guard !stopping, !busy, let item = items.first(where: { $0.id == id && $0.enabled }),
               let command = item.manifest.commands.first(where: { $0.id == commandID }) else { throw ExtensionFailure("The extension is unavailable.") }
         if let session = sessions[id], session.running { session.show(); return }
-        if let session = interactiveSessions[id], session.running { session.show(); return }
+        if let session = interactiveSessions[id], session.hasPendingWork { session.show(); return }
         interactiveSessions[id]?.stop()
         if command.mode == "interactive" {
             try item.manifest.checkEnvironment()
             sessions[id]?.stop()
-            let session = ExtensionSession(installation: item, command: command, root: store.packageURL(item), context: context,
+            let session = ExtensionSession(command: command, root: store.packageURL(item),
                 host: ExtensionHostAPI(installation: item, data: dataStore(item.id), coordinator: coordinator, context: context))
             interactiveSessions[id] = session
             session.show()
@@ -153,7 +155,7 @@ final class ExtensionManager {
         }
         try item.manifest.checkEnvironment()
         sessions[id]?.stop()
-        let session = ExtensionTaskSession(installation: item, command: command, root: store.packageURL(item), coordinator: coordinator)
+        let session = ExtensionTaskSession(command: command, root: store.packageURL(item), coordinator: coordinator)
         sessions[id] = session
         session.show()
         if (command.parameters ?? []).isEmpty { session.run() }

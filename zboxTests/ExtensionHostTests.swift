@@ -1,3 +1,4 @@
+import ZboxExtensionProtocol
 import Foundation
 import Testing
 @testable import zbox
@@ -52,7 +53,7 @@ struct ExtensionHostTests {
         var item = try installation(); item.grants = ["storage"]
         let data = ExtensionDataStore(root: root.appending(path: "data"), id: item.id)
         let context = CommandContext(source: .rootSearch, frontmostApplicationPID: nil)
-        let session = ExtensionSession(installation: item, command: item.manifest.commands[0], root: root, context: context,
+        let session = ExtensionSession(command: item.manifest.commands[0], root: root,
             host: ExtensionHostAPI(installation: item, data: data, coordinator: ClipboardAccessCoordinator(), context: context))
         session.start()
         for _ in 0..<200 where session.snapshot.title != "initial" { try await Task.sleep(for: .milliseconds(10)) }
