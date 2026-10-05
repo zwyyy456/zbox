@@ -7,8 +7,13 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class ScreenshotPlugin {
+    private enum CapturePurpose { case edit, text }
+    static let textCommandID = CommandID("screenshot.ocr")
+    private let textWindow = ScreenshotTextWindow()
+
     static var shortcutTargets: [CommandShortcutTarget] {
         ScreenshotMode.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
+        + [CommandShortcutTarget(id: textCommandID, title: String(localized: "Capture Text"))]
     }
     let hosting: ScreenshotHostingSettings
     private let defaults: UserDefaults
@@ -52,6 +57,12 @@ final class ScreenshotPlugin {
                 capture(mode)
             }
         }
+        try registry.register(CommandDescriptor(id: Self.textCommandID, title: String(localized: "Capture Text"),
+            subtitle: String(localized: "Screenshot"), keywords: ["ocr", "text", "识别文字", "截图文字"])) { [weak self] _ in
+            guard let self else { return }
+            guard isEnabled else { try openSettings(); return }
+            capture(.area, purpose: .text)
+        }
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -61,6 +72,7 @@ final class ScreenshotPlugin {
     }
 
     func stop() {
+        textWindow.close()
         cancelCapture()
         document?.ocr.invalidate()
         cancelUpload()
@@ -277,7 +289,8 @@ final class ScreenshotPlugin {
         }
     }
 
-    private func capture(_ mode: ScreenshotMode) {
+    private func capture(_ mode: ScreenshotMode, purpose: CapturePurpose = .edit) {
+        textWindow.close()
         cancelCapture()
         document?.ocr.invalidate()
         cancelUpload()
@@ -298,10 +311,10 @@ final class ScreenshotPlugin {
                 guard let self, captureID == id else { return }
                 if mode == .screen {
                     guard let screen else { throw ScreenshotError.unavailable }
-                    finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id)
+                    finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id, purpose: purpose)
                 } else {
                     selection.show(mode: mode, windows: content.windows) { [weak self] screen, area, selectedWindow in
-                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id)
+                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: purpose)
                     } cancelled: { [weak self] in
                         self?.cancelCapture()
                         if self?.document != nil { self?.show(on: screen) }
@@ -314,7 +327,7 @@ final class ScreenshotPlugin {
         }
     }
 
-    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID) {
+    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID, purpose: CapturePurpose) {
         selection.finishChoosing()
         captureTask = Task { [weak self] in
             do {
@@ -327,8 +340,14 @@ final class ScreenshotPlugin {
                 let image = try await ScreenshotCapture.image(content: captureContent, screen: screen, area: area, window: selectedWindow)
                 try Task.checkCancellation()
                 guard captureID == id, isEnabled else { return }
-                self.document = ScreenshotDocument(image: image)
-                show(on: screen)
+                switch purpose {
+                case .edit:
+                    self.document = ScreenshotDocument(image: image)
+                    show(on: screen)
+                case .text:
+                    if document != nil { show(on: screen) }
+                    textWindow.show(image: image) { [weak self] in self?.copyText($0) }
+                }
             } catch {
                 guard !Task.isCancelled, self?.captureID == id else { return }
                 self?.selection.close()
