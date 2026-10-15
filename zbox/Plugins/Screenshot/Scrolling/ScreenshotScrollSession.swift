@@ -68,9 +68,7 @@ final class ScreenshotScrollSession {
                 while !Task.isCancelled {
                     guard NSScreen.screens.contains(screen), screen.frame == screenFrame, screen.backingScaleFactor == screenScale,
                           CGPreflightScreenCaptureAccess() else { throw ScreenshotError.unavailable }
-                    let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area)
-                    try Task.checkCancellation()
-                    let update = try await stitcher.append(image)
+                    let update = try await captureNextFrame()
                     guard active, !Task.isCancelled else { return }
                     if let update { preview = update.preview; height = update.height }
                     try await Task.sleep(for: .milliseconds(200))
@@ -93,6 +91,13 @@ final class ScreenshotScrollSession {
                 }
             }
         }
+    }
+
+    private func captureNextFrame() async throws -> ScreenshotScrollStitcher.Update? {
+        let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area)
+        try Task.checkCancellation()
+        // End the full-resolution frame's lifetime before the sampling delay.
+        return try await stitcher.append(image)
     }
 
     func finish() {

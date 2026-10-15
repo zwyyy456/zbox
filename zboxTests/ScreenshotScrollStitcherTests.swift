@@ -111,4 +111,74 @@ struct ScreenshotScrollStitcherTests {
         #expect(try await stitcher.finish().height == 743)
     }
 
+    @Test func similarNeighboringRowsDoNotShiftTheSeam() async throws {
+        let w = 320, h = 1200
+        var bytes = [UInt8](repeating: 255, count: w * h * 4)
+        var seed: UInt64 = 123
+        let anchors = (0..<(w * (h / 32 + 2))).map { _ -> Int in
+            seed = seed &* 6364136223846793005 &+ 1
+            return Int((seed >> 32) & 255)
+        }
+        for y in 0..<h {
+            for x in 0..<w {
+                // Unique horizontal texture with smoothly interpolated vertical rows.
+                let a = anchors[(y / 32) * w + x], b = anchors[(y / 32 + 1) * w + x]
+                let value = UInt8((a * (32 - y % 32) + b * (y % 32)) / 32)
+                let i = (y * w + x) * 4
+                bytes[i] = value; bytes[i + 1] = value; bytes[i + 2] = value
+            }
+        }
+        let provider = try #require(CGDataProvider(data: Data(bytes) as CFData))
+        let page = try #require(CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 32,
+            bytesPerRow: w * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let stitcher = ScreenshotScrollStitcher()
+        _ = try await stitcher.append(frame(page, 0))
+        let update = try #require(await stitcher.append(frame(page, 53)))
+        #expect(update.height == 653)
+        let expected = try #require(page.cropping(to: CGRect(x: 0, y: 0, width: 320, height: 653)))
+        #expect(try await pixels(stitcher.finish()) == pixels(expected))
+    }
+
+    private final class CapturePixels {
+        let storage: UnsafeMutableRawPointer
+        init(count: Int) {
+            storage = .allocate(byteCount: count, alignment: 16)
+            storage.initializeMemory(as: UInt8.self, repeating: 127, count: count)
+        }
+        deinit { storage.deallocate() }
+    }
+
+    @Test func independentStripsReleaseSourcePixelsAndCancelledWorkerReleasesEngine() async throws {
+        var owner: CapturePixels? = CapturePixels(count: 320 * 600 * 4)
+        weak var releasedPixels = owner
+        var image: CGImage? = try {
+            let owner = try #require(owner)
+            let source = CGDataProvider(dataInfo: Unmanaged.passRetained(owner).toOpaque(),
+                data: owner.storage, size: 320 * 600 * 4, releaseData: { info, _, _ in
+                    if let info { Unmanaged<CapturePixels>.fromOpaque(info).release() }
+                })
+            let provider = try #require(source)
+            return try #require(CGImage(width: 320, height: 600, bitsPerComponent: 8, bitsPerPixel: 32,
+                bytesPerRow: 1280, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+                provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        }()
+        owner = nil
+        var stitcher: ScreenshotScrollStitcher? = ScreenshotScrollStitcher()
+        weak var releasedEngine = stitcher
+        _ = try await stitcher?.append(#require(image))
+        image = nil
+        #expect(releasedPixels == nil)
+        let next = try frame(page(), 0)
+        let worker = Task { [engine = try #require(stitcher)] in
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await engine.append(next)
+        }
+        await #expect(throws: CancellationError.self) { _ = try await worker.value }
+        stitcher = nil
+        #expect(releasedEngine == nil)
+    }
+
 }
