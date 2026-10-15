@@ -2,10 +2,11 @@ import AppKit
 import ScreenCaptureKit
 
 nonisolated enum ScreenshotMode: String, CaseIterable {
-    case area, window, screen
+    case area, window, screen, scrolling
     var commandID: CommandID { CommandID("screenshot.\(rawValue)") }
     var title: String {
         switch self {
+        case .scrolling: String(localized: "Capture Scrolling Area")
         case .area: String(localized: "Capture Area")
         case .window: String(localized: "Capture Window")
         case .screen: String(localized: "Capture Screen")

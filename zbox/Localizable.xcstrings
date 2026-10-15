@@ -7527,6 +7527,116 @@
           }
         }
       }
+    },
+    "Capture Scrolling Area": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚动截图"
+          }
+        }
+      }
+    },
+    "Scrolling Screenshot": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚动截图"
+          }
+        }
+      }
+    },
+    "Scroll slowly downward. Keep fixed headers and footers outside the selection.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请缓慢向下滚动，将固定导航栏和页脚排除在选区外。预览面板可拖开。"
+          }
+        }
+      }
+    },
+    "Alignment lost. Scroll back to the last preview, then retry; or finish with the captured content.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法对齐，已暂停。请滚回最后预览的位置后重试，或完成已捕获的内容。"
+          }
+        }
+      }
+    },
+    "The long-image limit was reached. Finish with the captured content.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已达到长图上限。可以完成已捕获的内容。"
+          }
+        }
+      }
+    },
+    "Capture stopped. The display, permission, or selection is unavailable. You can finish with the captured content.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "采集已停止，显示器、权限或选区不可用。可以完成已捕获的内容。"
+          }
+        }
+      }
+    },
+    "The long image could not be assembled. Try finishing again or cancel.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "长图合成失败，请重新点击完成或取消。"
+          }
+        }
+      }
+    },
+    "Stitched screenshot preview": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已拼接的截图预览"
+          }
+        }
+      }
+    },
+    "Finish": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "%lld captured rows": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已捕获 %lld 行"
+          }
+        }
+      }
+    },
+    "Choose an area at least 64 pixels wide and high, up to 16 million pixels. Cancel and select a new area.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选区宽高至少为 64 像素，最多 1600 万像素。请取消后重新框选。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

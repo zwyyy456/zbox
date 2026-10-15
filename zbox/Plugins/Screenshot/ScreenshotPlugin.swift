@@ -7,7 +7,8 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class ScreenshotPlugin {
-    private enum CapturePurpose { case edit, text, pin }
+    private enum CapturePurpose { case edit, text, pin, scroll }
+    private var scrollSession: ScreenshotScrollSession?
     private enum PinCommand: String, CaseIterable {
         case capture, clipboard, toggle, close
         var id: CommandID { CommandID("screenshot.pin.\(rawValue)") }
@@ -67,7 +68,7 @@ final class ScreenshotPlugin {
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for mode in ScreenshotMode.allCases {
             try registry.register(CommandDescriptor(id: mode.commandID, title: mode.title,
-                subtitle: String(localized: "Screenshot"), keywords: ["screenshot", "capture", "截图", "截屏"])) { [weak self] _ in
+                subtitle: String(localized: "Screenshot"), keywords: ["screenshot", "capture", "截图", "截屏"] + (mode == .scrolling ? ["scroll", "滚动截图"] : []))) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
                 capture(mode)
@@ -129,6 +130,8 @@ final class ScreenshotPlugin {
 
     func cancelCapture() {
         captureID = nil
+        scrollSession?.close()
+        scrollSession = nil
         captureTask?.cancel()
         captureTask = nil
         selection.close()
@@ -398,7 +401,7 @@ final class ScreenshotPlugin {
                     finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id, purpose: purpose, pinGeneration: generation)
                 } else {
                     selection.show(mode: mode, windows: content.windows) { [weak self] screen, area, selectedWindow in
-                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: purpose, pinGeneration: generation)
+                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: mode == .scrolling ? .scroll : purpose, pinGeneration: generation)
                     } cancelled: { [weak self] in
                         self?.cancelCapture()
                         if self?.document != nil { self?.show(on: screen) }
@@ -421,11 +424,27 @@ final class ScreenshotPlugin {
                 try Task.checkCancellation()
                 guard let self, captureID == id else { return }
                 selection.close()
+                if purpose == .scroll, let area {
+                    let session = ScreenshotScrollSession(content: captureContent, screen: screen, area: area) { [weak self] image in
+                        guard let self, captureID == id, isEnabled else { return }
+                        scrollSession = nil
+                        captureID = nil
+                        document = ScreenshotDocument(image: image)
+                        show(on: screen)
+                    } cancelled: { [weak self] in
+                        guard let self, captureID == id else { return }
+                        cancelCapture()
+                        if document != nil { show(on: screen) }
+                    }
+                    scrollSession = session
+                    session.start()
+                    return
+                }
                 let image = try await ScreenshotCapture.image(content: captureContent, screen: screen, area: area, window: selectedWindow)
                 try Task.checkCancellation()
                 guard captureID == id, isEnabled else { return }
                 switch purpose {
-                case .edit:
+                case .edit, .scroll:
                     self.document = ScreenshotDocument(image: image)
                     show(on: screen)
                 case .pin:

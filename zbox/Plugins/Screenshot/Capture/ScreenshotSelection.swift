@@ -91,7 +91,7 @@ private final class ScreenshotSelectionView: NSView {
         anchor = convert(event.locationInWindow, from: nil)
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let anchor, mode == .area else { return }
+        guard let anchor, mode == .area || mode == .scrolling else { return }
         let end = convert(event.locationInWindow, from: nil)
         selection = CGRect(x: min(anchor.x, end.x), y: min(anchor.y, end.y),
                            width: abs(end.x - anchor.x), height: abs(end.y - anchor.y)).intersection(bounds)
