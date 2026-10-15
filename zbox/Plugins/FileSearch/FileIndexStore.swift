@@ -12,7 +12,7 @@ nonisolated struct IndexedFile: Identifiable, Sendable, Equatable {
     var fileExtension: String { (name as NSString).pathExtension.lowercased() }
     static func normalized(_ value: String) -> String {
         if value.utf8.allSatisfy({ $0 < 128 && !($0 >= 65 && $0 <= 90) }) { return value }
-        return value.precomposedStringWithCanonicalMapping.lowercased()
+        return value.precomposedStringWithCanonicalMapping.lowercased().precomposedStringWithCanonicalMapping
     }
 }
 
@@ -221,7 +221,15 @@ actor FileIndexStore {
                     }
                 }
             }
-            for path in state.changes.keys where vanished.contains(where: { path.hasPrefix($0 + "/") }) { stale.append(path) }
+            let vanishedSet = Set(vanished)
+            for path in state.changes.keys {
+                try Task.checkCancellation()
+                var ancestor = path[...]
+                while let slash = ancestor.lastIndex(of: "/") {
+                    ancestor = ancestor[..<slash]
+                    if vanishedSet.contains(String(ancestor)) { stale.append(path); break }
+                }
+            }
         }
         for directory in replacedDirectories {
             if let base = state.base {
@@ -367,7 +375,7 @@ actor FileIndexStore {
                     } else { positions = group.range }
                     for position in positions {
                         let id = paths.map { $0.names[position] } ?? position
-                        if id % 64 == 0 { try Task.checkCancellation() }
+                        if position % 64 == 0 { try Task.checkCancellation() }
                         guard base.nameMask(id) & mask == mask else { continue }
                         guard asciiFragments.isEmpty || base.containsASCIIFragments(asciiFragments, name: id) else { continue }
                         let normalized = try base.normalizedName(id)

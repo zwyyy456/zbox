@@ -245,4 +245,22 @@ struct FileMappedIndexTests {
         }
     }
 
+    @Test func lowercaseNormalizationCannotCauseBytePrefilterFalseNegatives() async throws {
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let root = FileSearchRoot(url: URL(fileURLWithPath: "/Unicode"), volumeID: "test", fileID: 1)
+        let files = [file(root.id, "a/Ϊ́-42.txt"), file(root.id, "b/ΐ-42.txt")]
+        let store = FileIndexStore(url: directory)
+        try await store.upsert(files, generation: UUID())
+        for input in ["ΐ", "Ϊ́", "path:ΐ", "path:Ϊ́"] {
+            let query = try FileSearchQuery(input)
+            #expect(try await store.search(query, roots: [root], sort: .name).files.count == 2)
+        }
+        try await store.setCursor(1, root: root.id, persist: true)
+        for input in ["ΐ", "Ϊ́", "path:ΐ", "path:Ϊ́"] {
+            let query = try FileSearchQuery(input)
+            #expect(try await store.search(query, roots: [root], sort: .name).files.count == 2)
+        }
+    }
+
 }

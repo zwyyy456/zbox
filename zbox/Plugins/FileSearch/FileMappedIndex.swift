@@ -26,7 +26,7 @@ nonisolated struct FileMappedIndex: Sendable {
         func word(_ offset: Int) -> UInt64 {
             data.withUnsafeBytes { UInt64(littleEndian: $0.loadUnaligned(fromByteOffset: offset, as: UInt64.self)) }
         }
-        guard word(0) == Self.magic, word(8) == 4,
+        guard word(0) == Self.magic, word(8) == 5,
               word(24) <= UInt64((data.count - 64) / 56),
               word(32) <= UInt64((data.count - 64) / 72) else { throw FormatError.invalid }
         self.data = data
@@ -199,9 +199,13 @@ nonisolated struct FileMappedIndex: Sendable {
             let canonical = ascii ? file.name : file.name.precomposedStringWithCanonicalMapping
             let raw = arena.append(file.name, canonical: canonical)
             rawNames.append(raw)
-            let folded = canonical.lowercased()
+            let lowercase = canonical.lowercased()
+            // If casing did not change the already-NFC bytes (e.g. Chinese),
+            // normalization is still valid and need not scan the name again.
+            let folded = ascii || lowercase.utf8.elementsEqual(canonical.utf8)
+                ? lowercase : lowercase.precomposedStringWithCanonicalMapping
             normalized.append(folded.utf8.elementsEqual(file.name.utf8) ? raw :
-                arena.append(folded, canonical: ascii ? folded : folded.precomposedStringWithCanonicalMapping))
+                arena.append(folded, canonical: folded))
         }
         timing.mark("collect")
         var paths = (0..<count).map(UInt32.init)
@@ -333,7 +337,7 @@ nonisolated struct FileMappedIndex: Sendable {
         try strings.bytes(metadata)
         for section in [records, nameRecords, dirRecords, postings, dirPostings, strings] { try section.close() }
         let header = try FileIndexSectionWriter(url: url, offset: 0)
-        for value in [magic, 4, cursor, UInt64(count), UInt64(uniqueNameCount), UInt64(directories.count), UInt64(stringCount), UInt64(metadata.count)] {
+        for value in [magic, 5, cursor, UInt64(count), UInt64(uniqueNameCount), UInt64(directories.count), UInt64(stringCount), UInt64(metadata.count)] {
             try header.word(value)
         }
         try header.close()
