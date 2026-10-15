@@ -20,7 +20,7 @@ struct FileIndexChangeTests {
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
         try Data().write(to: rootURL.appending(path: "file.txt"))
         let root = try FileSearchRoot.selected(rootURL)
-        let store = FileIndexStore(url: folder.appending(path: "index.sqlite"))
+        let store = FileIndexStore(url: folder.appending(path: "index"))
         let scanner = FileIndexScanner()
         try await scanner.reconcile(root, change: FileIndexChange(directories: [""], eventID: 10), store: store)
         #expect(try await store.cursor(root: root.id) == 10)

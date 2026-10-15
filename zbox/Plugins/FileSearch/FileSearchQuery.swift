@@ -43,17 +43,25 @@ nonisolated struct FileSearchQuery: Sendable {
     }
 
     func score(_ file: IndexedFile, root: FileSearchRoot) -> Int? {
+        guard matchesFilters(file, root: root) else { return nil }
+        return nameScore(IndexedFile.normalized(file.name))
+    }
+
+    func matchesFilters(_ file: IndexedFile, root: FileSearchRoot) -> Bool {
         guard !root.exclusions.contains(where: { file.path == $0 || file.path.hasPrefix($0 + "/") }),
               root.includesHidden || !file.path.split(separator: "/").contains(where: { $0.hasPrefix(".") }),
               types.allSatisfy({ $0 == (file.isDirectory ? "folder" : "file") }),
-              extensions.allSatisfy({ !file.isDirectory && file.fileExtension == $0 }) else { return nil }
-        let name = IndexedFile.normalized(file.name)
-        guard names.allSatisfy({ name.contains($0) }) else { return nil }
+              extensions.allSatisfy({ !file.isDirectory && file.fileExtension == $0 }) else { return false }
+        guard !paths.isEmpty else { return true }
         let path = IndexedFile.normalized(root.url.appending(path: file.path).path)
-        guard paths.allSatisfy({ path.contains($0) }) else { return nil }
+        return paths.allSatisfy { path.contains($0) }
+    }
+
+    func nameScore(_ normalizedName: String) -> Int? {
+        guard names.allSatisfy({ normalizedName.contains($0) }) else { return nil }
         let phrase = names.joined(separator: " ")
-        if !phrase.isEmpty && name == phrase { return 3 }
-        if !phrase.isEmpty && name.hasPrefix(phrase) { return 2 }
+        if !phrase.isEmpty && normalizedName == phrase { return 3 }
+        if !phrase.isEmpty && normalizedName.hasPrefix(phrase) { return 2 }
         return 1
     }
 }

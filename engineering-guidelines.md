@@ -90,8 +90,8 @@
 - File Search 的 FinderSelection 隔离静态 AppleScript 与 Automation 授权错误，仅返回显式选择的本地 URL。NSAppleScript 保持 Main Actor，不与索引 actor 共享平台对象；临时选择由插件会话持有，执行复用 FileSearchActions。
 
 - 产品行为由 `docs/product/file-search.md` 定义。FileSearchPlugin 拥有范围设置、面板、扫描／查询任务和 FSEvents 生命周期；AppEnvironment 组合 Registry 与共享快捷键。
-- FileIndexStore actor 隔离 SQLite，FileIndexScanner actor 隔离目录访问。查询解析和排序规则使用值类型；扫描分批写入、查询逐条检查取消，UI 不遍历目录或执行数据库查询。
-- FSEvents 使用主队列回调并显式管理 C context 生命周期；停用先停止监听再取消任务。事件只是重新核对目录的依据，只有对应更新成功才推进事件位置。扫描失败不清理未读范围。
+- FileIndexStore actor 拥有各根目录的只读 mmap 快照、内存增量和事件位置；查询取得不可变快照后在后台执行，调用方取消必须传播到查询任务。FileIndexScanner actor 隔离目录访问，普通文件元数据由 getattrlistbulk 分批读取，目录包、链接和特殊对象的资源语义由 Foundation 处理；读取失败不得当作空目录。查询解析和排序规则使用值类型；目录表缩减 path 包含匹配的候选，仍保留跨目录与文件名边界的语义。增量记录分块存储，块内文件名使用 UTF-8 字节区与偏移，根目录身份由整个增量区共享。建库的逐文件辅助编号使用 UInt32（构建入口检查数量上限），文件偏移仍为 64 位；临时名称存储和辅助数组按阶段释放，快照按区段流式写入。名称在建库时生成 NFC 比较键，按 UTF-8 字节序比较以保留 Swift 字符串的 Unicode 等价与排序语义，原始名称仍按字节去重存储。文件记录只保存目录和名称编号，目录路径在目录表中保存一次；组合路径保留原始 Unicode 字节，记录继续按完整路径排序以支持子树查找。时间戳使用 Date 参考纪元的 Double 表示，避免转换纪元时损失小数精度。查询的 ASCII 字节片段只用于必要条件预筛选，最终仍由 Unicode 匹配规则决定命中；扫描与查询检查取消，UI 不遍历目录或执行索引查询。
+- FSEvents 使用主队列回调并显式管理 C context 生命周期；停用先停止监听再取消任务。事件只是重新核对目录的依据，只有对应更新成功才推进事件位置。启动重放必须校验快照记录的范围配置与事件日志 UUID，并等待 HistoryDone 后完成目录核对；普通文件事件只扫描父目录直接子项，结构变化及事件丢失按相应子树或根目录核对。扫描失败不清理未读范围。
 - 文件操作及 Quick Look 留在插件内。剪贴板写入复用 ClipboardAccessCoordinator，不为此扩展通用文件操作框架。
 
 ## Developer Tools 边界

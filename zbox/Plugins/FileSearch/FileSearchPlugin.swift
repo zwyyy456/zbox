@@ -67,7 +67,7 @@ final class FileSearchPlugin {
                 })
             }
         }
-        for root in settings.roots { rescan(root) }
+        for root in settings.roots { rescan(root, forceFull: false) }
     }
 
     func stop() {
@@ -81,17 +81,26 @@ final class FileSearchPlugin {
         runIDs = [:]
         pending = [:]
         rootStatus = [:]
+        let scans = Array(scanTasks.values)
+        let previous = cleanupTask
+        cleanupTask = Task { [weak self] in
+            await previous?.value
+            for task in scans { await task.value }
+            guard let self, !isRunning else { return }
+            await index.releaseMemory()
+        }
     }
 
     private func refreshVolumes() {
         guard isEnabled, isRunning, !isClearing else { return }
-        for root in settings.roots { rescan(root) }
+        for root in settings.roots { rescan(root, forceFull: false) }
         search()
     }
 
-    func rescan(_ root: FileSearchRoot) {
+    func rescan(_ root: FileSearchRoot, forceFull: Bool = true) {
         guard isEnabled, isRunning, !isClearing else { return }
         let previous = scanTasks[root.id]
+        let cleanup = cleanupTask
         previous?.cancel()
         watchers.removeValue(forKey: root.id)?.stop()
         pending[root.id] = nil
@@ -99,24 +108,40 @@ final class FileSearchPlugin {
         runIDs[root.id] = runID
         rootStatus[root.id] = String(localized: "Building index…")
         scanTasks[root.id] = Task { [weak self] in
+            await cleanup?.value
             await previous?.value
             guard let self, !Task.isCancelled, isEnabled else { return }
             defer { if runIDs[root.id] == runID { scanTasks[root.id] = nil } }
             do {
                 guard await scanner.availableRoots([root]).count == 1 else { throw FileSearchError.unavailable }
                 let baseline = FSEventsGetCurrentEventId()
-                let cursor = try await index.cursor(root: root.id)
+                let journal = try FileIndexWatcher.journalID(for: root)
+                let cursor = try await index.prepare(root, journalID: journal)
                 try Task.checkCancellation()
-                watchers[root.id] = try FileIndexWatcher(root: root, since: min(cursor ?? baseline, baseline)) { [weak self] change in
-                    self?.enqueue(change, for: root)
+                let replay = !forceFull && cursor.map { $0 <= baseline } == true
+                let watcher = try FileIndexWatcher(root: root, since: replay ? cursor! : baseline) { [weak self] change in
+                    guard let self, runIDs[root.id] == runID else { return }
+                    enqueue(change, for: root)
                 }
-                let count = try await scanner.scan(root, store: index)
+                watchers[root.id] = watcher
+                if replay {
+                    rootStatus[root.id] = String(localized: "Updating index…")
+                    // HistoryDone is the barrier: an empty pending batch before it is not proof
+                    // that the on-disk snapshot is current. Dropped history enqueues a full scan.
+                    try await watcher.waitForHistory()
+                    try await drainChanges(for: root)
+                    let updated = try await index.cursor(root: root.id) ?? baseline
+                    try await index.setCursor(max(updated, baseline), root: root.id)
+                    rootStatus[root.id] = String(localized: "Index ready")
+                } else {
+                    let count = try await scanner.scan(root, store: index)
+                    try await watcher.waitForHistory()
+                    try Task.checkCancellation()
+                    try await index.setCursor(baseline, root: root.id, persist: true)
+                    try await drainChanges(for: root)
+                    rootStatus[root.id] = String(localized: "Index ready (initial scan: \(count) items)")
+                }
                 try Task.checkCancellation()
-                // The full scan covers changes before baseline; buffered later events are reconciled next.
-                try await index.setCursor(baseline, root: root.id)
-                try await drainChanges(for: root)
-                try Task.checkCancellation()
-                rootStatus[root.id] = String(localized: "Index ready (initial scan: \(count) items)")
                 search()
             } catch is CancellationError { return }
             catch { reportScanError(error, root: root) }
@@ -127,8 +152,8 @@ final class FileSearchPlugin {
         guard isEnabled, isRunning, !isClearing, settings.roots.contains(root) else { return }
         pending[root.id, default: FileIndexChange()].merge(change)
         guard scanTasks[root.id] == nil else { return }
-        let runID = UUID()
-        runIDs[root.id] = runID
+        // Keep the watcher's lifecycle identity across successive live batches.
+        let runID = runIDs[root.id]
         scanTasks[root.id] = Task { [weak self] in
             guard let self else { return }
             defer { if runIDs[root.id] == runID { scanTasks[root.id] = nil } }
@@ -249,7 +274,6 @@ final class FileSearchPlugin {
                 let parsed = try FileSearchQuery(input, extensionFilter: ext, typeFilter: type)
                 guard !parsed.isEmpty else { return }
                 isSearching = true
-                try await Task.sleep(for: .milliseconds(120))
                 let available = await scanner.availableRoots(roots)
                 try Task.checkCancellation()
                 let result = try await index.search(parsed, roots: available, sort: ordering)

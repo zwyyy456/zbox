@@ -20,7 +20,7 @@ struct FileSearchQueryTests {
     @Test func limitsOnlyAfterRankingAllMatches() async throws {
         let folder = URL.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: folder) }
-        let store = FileIndexStore(url: folder.appending(path: "index.sqlite"))
+        let store = FileIndexStore(url: folder.appending(path: "index"))
         let names = ["zzz-report", "report-final", "report"]
         try await store.upsert(names.map { IndexedFile(rootID: root.id, path: $0, name: $0, isDirectory: false, size: 0, modified: .distantPast) }, generation: UUID())
         let page = try await store.search(FileSearchQuery("report"), roots: [root], sort: .relevance, limit: 2)
