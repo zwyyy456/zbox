@@ -23,7 +23,6 @@ public struct ExtensionContext: Sendable {
 public actor ExtensionClient {
     public typealias Handler = @Sendable (ExtensionEvent, ExtensionContext) async throws -> Void
     private struct Pending {
-        let eventID: Int
         let continuation: CheckedContinuation<ExtensionValue, any Error>
         let timeout: Task<Void, Never>
     }
@@ -122,7 +121,7 @@ public actor ExtensionClient {
                     do { try await Task.sleep(for: .seconds(30)) } catch { return }
                     await self?.fail(id, error: ExtensionProtocolError("Host request timed out."))
                 }
-                pending[id] = Pending(eventID: eventID, continuation: continuation, timeout: timeout)
+                pending[id] = Pending(continuation: continuation, timeout: timeout)
                 do { try send(message) } catch { fail(id, error: error) }
             }
         } onCancel: { Task { await self.fail(id, error: CancellationError()) } }
