@@ -549,22 +549,14 @@ final class AppEnvironment {
     }
 
     func saveSnippet(_ item: Snippet) -> Bool {
-        do {
-            try snippetsPlugin.store.save(item)
-            snippetsPlugin.stop()
-            try rebuildCommandRegistry()
-            snippetsPlugin.statusMessage = nil
-            return true
-        } catch { snippetsPlugin.statusMessage = error.localizedDescription; return false }
+        snippetsPlugin.save(item, updateCommands: rebuildCommandRegistry)
     }
 
     func deleteSnippet(_ item: Snippet) {
-        do {
-            try snippetsPlugin.store.delete(item.id)
-            snippetsPlugin.stop()
+        snippetsPlugin.delete(item) {
             removeCommandHotkey(item.commandID)
             try rebuildCommandRegistry()
-        } catch { snippetsPlugin.statusMessage = error.localizedDescription }
+        }
     }
 
     func setScriptCommandsEnabled(_ enabled: Bool) {
@@ -579,29 +571,14 @@ final class AppEnvironment {
     }
 
     func saveScriptCommand(_ item: ScriptCommand) -> Bool {
-        do {
-            let previous = scriptCommandsPlugin.store.items.first { $0.id == item.id }
-            try scriptCommandsPlugin.store.save(item)
-            do { try applyHotkeyRegistrations() }
-            catch {
-                if let previous { try scriptCommandsPlugin.store.save(previous) }
-                else { try scriptCommandsPlugin.store.delete(item.id) }
-                throw error
-            }
-            scriptCommandsPlugin.stop()
-            try rebuildCommandRegistry()
-            scriptCommandsPlugin.statusMessage = nil
-            return true
-        } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription; return false }
+        scriptCommandsPlugin.save(item, registerHotkeys: applyHotkeyRegistrations, updateCommands: rebuildCommandRegistry)
     }
 
     func deleteScriptCommand(_ item: ScriptCommand) {
-        do {
-            try scriptCommandsPlugin.store.delete(item.id)
-            scriptCommandsPlugin.stop()
+        scriptCommandsPlugin.delete(item) {
             removeCommandHotkey(item.commandID)
             try rebuildCommandRegistry()
-        } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription }
+        }
     }
 
     func setQuicklinksEnabled(_ enabled: Bool) {
@@ -616,22 +593,14 @@ final class AppEnvironment {
     }
 
     func saveQuicklink(_ item: Quicklink) -> Bool {
-        do {
-            try quicklinksPlugin.store.save(item)
-            quicklinksPlugin.stop()
-            try rebuildCommandRegistry()
-            quicklinksPlugin.statusMessage = nil
-            return true
-        } catch { quicklinksPlugin.statusMessage = error.localizedDescription; return false }
+        quicklinksPlugin.save(item, updateCommands: rebuildCommandRegistry)
     }
 
     func deleteQuicklink(_ item: Quicklink) {
-        do {
-            try quicklinksPlugin.store.delete(item.id)
-            quicklinksPlugin.stop()
+        quicklinksPlugin.delete(item) {
             removeCommandHotkey(item.commandID)
             try rebuildCommandRegistry()
-        } catch { quicklinksPlugin.statusMessage = error.localizedDescription }
+        }
     }
 
     func setDisplayEnabled(_ enabled: Bool) {
@@ -650,20 +619,14 @@ final class AppEnvironment {
     func applyDisplayPreset(_ preset: DisplayPreset) { executeDirectCommand(preset.commandID) }
 
     func saveDisplayPreset(_ preset: DisplayPreset) -> Bool {
-        do {
-            try displayPlugin.presets.save(preset)
-            try rebuildCommandRegistry()
-            displayPlugin.statusMessage = nil
-            return true
-        } catch { displayPlugin.statusMessage = error.localizedDescription; return false }
+        displayPlugin.save(preset, updateCommands: rebuildCommandRegistry)
     }
 
     func deleteDisplayPreset(_ preset: DisplayPreset) {
-        do {
-            try displayPlugin.presets.delete(preset.id)
+        displayPlugin.delete(preset) {
             removeCommandHotkey(preset.commandID)
             try rebuildCommandRegistry()
-        } catch { displayPlugin.statusMessage = error.localizedDescription }
+        }
     }
 
     func setWorkspaceEnabled(_ enabled: Bool) {
@@ -691,23 +654,14 @@ final class AppEnvironment {
     }
 
     func saveWorkspace(_ layout: WorkspaceLayout) -> Bool {
-        do {
-            try workspacePlugin.store.save(layout)
-            try rebuildCommandRegistry()
-            workspacePlugin.statusMessage = nil
-            return true
-        } catch {
-            workspacePlugin.statusMessage = error.localizedDescription
-            return false
-        }
+        workspacePlugin.save(layout, updateCommands: rebuildCommandRegistry)
     }
 
     func deleteWorkspace(_ layout: WorkspaceLayout) {
-        do {
-            try workspacePlugin.store.delete(layout.id)
+        workspacePlugin.delete(layout) {
             removeCommandHotkey(layout.commandID)
             try rebuildCommandRegistry()
-        } catch { workspacePlugin.statusMessage = error.localizedDescription }
+        }
     }
 
     func setScreenshotEnabled(_ enabled: Bool) {

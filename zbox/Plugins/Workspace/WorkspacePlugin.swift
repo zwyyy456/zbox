@@ -29,6 +29,25 @@ final class WorkspacePlugin {
         isEnabled = defaults.bool(forKey: "workspace.enabled")
     }
 
+    func save(_ layout: WorkspaceLayout, updateCommands: () throws -> Void) -> Bool {
+        do {
+            try store.save(layout)
+            try updateCommands()
+            statusMessage = nil
+            return true
+        } catch {
+            statusMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func delete(_ layout: WorkspaceLayout, updateCommands: () throws -> Void) {
+        do {
+            try store.delete(layout.id)
+            try updateCommands()
+        } catch { statusMessage = error.localizedDescription }
+    }
+
     func setEnabled(_ enabled: Bool) {
         if !enabled { stop() }
         isEnabled = enabled

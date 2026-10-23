@@ -29,6 +29,31 @@ final class ScriptCommandsPlugin {
         isEnabled = defaults.bool(forKey: "scripts.enabled")
     }
 
+    func save(_ item: ScriptCommand, registerHotkeys: () throws -> Void, updateCommands: () throws -> Void) -> Bool {
+        do {
+            let previous = store.items.first { $0.id == item.id }
+            try store.save(item)
+            do { try registerHotkeys() }
+            catch {
+                if let previous { try store.save(previous) }
+                else { try store.delete(item.id) }
+                throw error
+            }
+            stop()
+            try updateCommands()
+            statusMessage = nil
+            return true
+        } catch { statusMessage = error.localizedDescription; return false }
+    }
+
+    func delete(_ item: ScriptCommand, updateCommands: () throws -> Void) {
+        do {
+            try store.delete(item.id)
+            stop()
+            try updateCommands()
+        } catch { statusMessage = error.localizedDescription }
+    }
+
     func setEnabled(_ enabled: Bool) {
         if !enabled { stop() }
         isEnabled = enabled

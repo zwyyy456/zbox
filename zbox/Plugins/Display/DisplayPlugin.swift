@@ -48,6 +48,22 @@ final class DisplayPlugin {
         screenObserver = nil
     }
 
+    func save(_ preset: DisplayPreset, updateCommands: () throws -> Void) -> Bool {
+        do {
+            try presets.save(preset)
+            try updateCommands()
+            statusMessage = nil
+            return true
+        } catch { statusMessage = error.localizedDescription; return false }
+    }
+
+    func delete(_ preset: DisplayPreset, updateCommands: () throws -> Void) {
+        do {
+            try presets.delete(preset.id)
+            try updateCommands()
+        } catch { statusMessage = error.localizedDescription }
+    }
+
     func setEnabled(_ enabled: Bool) {
         guard !hiDPI.isBusy else { return }
         if !enabled {

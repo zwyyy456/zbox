@@ -26,6 +26,24 @@ final class QuicklinksPlugin {
         isEnabled = defaults.bool(forKey: "quicklinks.enabled")
     }
 
+    func save(_ item: Quicklink, updateCommands: () throws -> Void) -> Bool {
+        do {
+            try store.save(item)
+            stop()
+            try updateCommands()
+            statusMessage = nil
+            return true
+        } catch { statusMessage = error.localizedDescription; return false }
+    }
+
+    func delete(_ item: Quicklink, updateCommands: () throws -> Void) {
+        do {
+            try store.delete(item.id)
+            stop()
+            try updateCommands()
+        } catch { statusMessage = error.localizedDescription }
+    }
+
     func setEnabled(_ enabled: Bool) {
         if !enabled { stop() }
         isEnabled = enabled
