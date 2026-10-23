@@ -77,7 +77,7 @@ final class ExtensionSession: NSObject, NSWindowDelegate {
                         try await self.receive(message)
                     }
                     if !closed { diagnostics = String(decoding: result.output.stderr, as: UTF8.self) }
-                    if !result.cancelled && !ending { error = "The extension exited (status \(result.status))." }
+                    if !result.cancelled && !ending { error = "The extension exited (\(result.terminationDescription))." }
                 } catch { if !Task.isCancelled && !ending { self.error = error.localizedDescription } }
                 cancelPending(); ready = false; running = false; handshakeTimeout?.cancel(); handshakeTimeout = nil; task = nil
             }

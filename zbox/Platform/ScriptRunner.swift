@@ -9,6 +9,10 @@ nonisolated struct ScriptOutput: Sendable {
 
 nonisolated struct ScriptRunResult: Sendable {
     let output: ScriptOutput
+    var terminationDescription: String {
+        if status & 0x7f != 0 { return "Signal: \(status & 0x7f)" }
+        return "Exit Code: \((status >> 8) & 0xff)"
+    }
     let status: Int32
     let cancelled: Bool
     let timedOut: Bool

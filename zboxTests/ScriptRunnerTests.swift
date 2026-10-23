@@ -19,7 +19,7 @@ struct ScriptRunnerTests {
         """)
         defer { try? FileManager.default.removeItem(at: directory) }
         let result = try await ScriptRunner.run(command) { _ in }
-        #expect(result.status >> 8 == 7)
+        #expect(result.terminationDescription == "Exit Code: 7")
         #expect(result.output.stdout.count == ScriptRunner.outputLimit)
         #expect(result.output.stderr.count == ScriptRunner.outputLimit)
         #expect(result.output.truncated)

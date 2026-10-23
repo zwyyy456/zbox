@@ -77,7 +77,7 @@ private struct ExtensionTaskView: View {
                 Button("Stop", action: session.cancel).disabled(!session.running)
                 if session.running { ProgressView().controlSize(.small) }
                 if let result = session.result {
-                    Text(result.cancelled ? String(localized: "Cancelled") : result.timedOut ? String(localized: "Timed Out") : "Exit status: \(result.status)")
+                    Text(result.cancelled ? String(localized: "Cancelled") : result.timedOut ? String(localized: "Timed Out") : result.terminationDescription)
                 }
             }
             Picker("Output", selection: $stderr) {

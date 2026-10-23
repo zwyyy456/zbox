@@ -184,8 +184,7 @@ struct ScriptCommandView: View {
                     else if let result = plugin.result {
                         if result.cancelled { Text(item.shortcut == nil ? String(localized: "Cancelled") : String(localized: "Stopped Waiting")) }
                         else if result.timedOut { Text("Timed Out") }
-                        else if result.status & 0x7f != 0 { Text("Signal: \(result.status & 0x7f)") }
-                        else { Text("Exit Code: \((result.status >> 8) & 0xff)") }
+                        else { Text(result.terminationDescription) }
                     }
                 }
             }
