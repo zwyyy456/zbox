@@ -131,9 +131,10 @@ struct TextLookupPresentationTests {
         }
     }
 
-    @Test @MainActor
+    @Test(.timeLimit(.minutes(1))) @MainActor
     func staleDictionaryFailureDoesNotReplaceNewerEntry() async throws {
-        let flashDict = OutOfOrderFlashDictService()
+        let (handled, completion) = AsyncStream<Void>.makeStream()
+        let flashDict = OutOfOrderFlashDictService(failureHandled: completion)
         let model = TextLookupSessionModel(flashDict: flashDict)
         model.beginLookup(
             with: capture(id: UUID(), term: "old"),
@@ -144,8 +145,9 @@ struct TextLookupPresentationTests {
         model.handle(.entryRequested(term: "new", anchor: nil))
         await waitUntilLoaded(term: "new", in: model)
         await flashDict.releaseOldLookup()
-        await flashDict.waitUntilOldLookupReturns()
-        for _ in 0..<20 { await Task.yield() }
+        // Error release occurs after the receiving catch has consumed it. Resuming
+        // this MainActor test then observes the completed synchronous state update.
+        for await _ in handled { break }
 
         guard case .loaded(let document) = model.dictionaryState else {
             Issue.record("Expected the newer dictionary entry to remain loaded")
@@ -216,12 +218,16 @@ struct TextLookupPresentationTests {
 }
 
 private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
-    private struct ExpectedFailure: Error {}
+    private final class ExpectedFailure: Error {
+        let completion: AsyncStream<Void>.Continuation
+        init(completion: AsyncStream<Void>.Continuation) { self.completion = completion }
+        deinit { completion.yield(()); completion.finish() }
+    }
+    private let failureHandled: AsyncStream<Void>.Continuation
+    init(failureHandled: AsyncStream<Void>.Continuation) { self.failureHandled = failureHandled }
     private var oldLookupStarted = false
-    private var oldLookupReturned = false
     private var oldLookupReleased = false
     private var startWaiters: [CheckedContinuation<Void, Never>] = []
-    private var returnWaiters: [CheckedContinuation<Void, Never>] = []
     private var releaseWaiter: CheckedContinuation<Void, Never>?
 
     func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
@@ -232,10 +238,7 @@ private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
             if !oldLookupReleased {
                 await withCheckedContinuation { releaseWaiter = $0 }
             }
-            oldLookupReturned = true
-            returnWaiters.forEach { $0.resume() }
-            returnWaiters = []
-            throw ExpectedFailure()
+            throw ExpectedFailure(completion: failureHandled)
         }
         return LookupDocument(
             requestID: requestID,
@@ -255,11 +258,6 @@ private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
         oldLookupReleased = true
         releaseWaiter?.resume()
         releaseWaiter = nil
-    }
-
-    func waitUntilOldLookupReturns() async {
-        guard !oldLookupReturned else { return }
-        await withCheckedContinuation { returnWaiters.append($0) }
     }
 
     func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
