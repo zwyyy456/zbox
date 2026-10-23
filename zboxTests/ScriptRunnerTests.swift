@@ -19,11 +19,19 @@ struct ScriptRunnerTests {
         """)
         defer { try? FileManager.default.removeItem(at: directory) }
         let result = try await ScriptRunner.run(command) { _ in }
-        #expect(result.terminationDescription == "Exit Code: 7")
+        #expect(result.status == 7 << 8)
         #expect(result.output.stdout.count == ScriptRunner.outputLimit)
         #expect(result.output.stderr.count == ScriptRunner.outputLimit)
         #expect(result.output.truncated)
         #expect(!result.timedOut && !result.cancelled)
+    }
+
+    @Test(arguments: [(Int32(7 << 8), "Exit Code: 7", "退出码：7"),
+                      (Int32(15), "Signal: 15", "终止信号：15")])
+    func localizesTerminationStatus(status: Int32, english: String, chinese: String) {
+        let result = ScriptRunResult(output: ScriptOutput(), status: status, cancelled: false, timedOut: false)
+        let expected = Bundle.main.preferredLocalizations.first == "zh-Hans" ? chinese : english
+        #expect(result.terminationDescription == expected)
     }
 
     @Test(arguments: [false, true]) func stopsProcessGroup(cancel: Bool) async throws {
