@@ -64,6 +64,25 @@ struct ExtensionPackageTests {
         #expect(try await store.load().first?.manifest.version == "1.0.0")
         await manager.discardCandidate()
     }
+    @MainActor @Test func startupRegistrationFailureStillAllowsUninstall() async throws {
+        let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appending(path: "source")
+        try makePackage(at: source)
+        let store = ExtensionPackageStore(root: root.appending(path: "installed"))
+        let item = try await store.prepare(source)
+        try await store.save([item])
+        let manager = ExtensionManager(coordinator: ClipboardAccessCoordinator(), store: store)
+        manager.applyCommands = { throw ExtensionFailure("Registration failed") }
+        await manager.load()
+        #expect(manager.error != nil)
+        #expect(!manager.loadFailed)
+        manager.applyCommands = nil
+        await manager.uninstall(item, deleteData: false)
+        #expect(manager.items.isEmpty)
+        #expect(try await store.load().isEmpty)
+    }
+
     @Test func extractsDeflateAndRejectsTraversal() throws {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

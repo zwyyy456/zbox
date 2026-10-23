@@ -27,9 +27,11 @@ final class ExtensionManager {
     }
 
     func load() async {
-        do { items = try await store.load(); try applyCommands?() }
-        catch { self.error = error.localizedDescription; loadFailed = true }
-        busy = false
+        defer { busy = false }
+        do { items = try await store.load(); loadFailed = false }
+        catch { self.error = error.localizedDescription; loadFailed = true; return }
+        do { try applyCommands?() }
+        catch { self.error = error.localizedDescription }
     }
 
     func prepare(_ url: URL) async {
