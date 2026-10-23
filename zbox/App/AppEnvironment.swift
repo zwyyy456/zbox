@@ -153,13 +153,20 @@ final class AppEnvironment {
         guard !hasStarted else { return }
         hasStarted = true
 
-        extensionManager.applyCommands = { [weak self] in
+        extensionManager.applyCommands = { [weak self] commandIDs in
             guard let self else { return }
             for target in extensionManager.shortcutTargets where commandHotkeys[target.id] == nil {
                 commandHotkeys[target.id] = hotkeyStore.commandHotkeys(for: [target.id])[target.id]
             }
             try rebuildCommandRegistry()
-            try applyHotkeyRegistrations()
+            let ids = Set(commandIDs.map(\.rawValue))
+            let requests = extensionHotkeyRequests().filter { ids.contains($0.id) }
+            if !requests.isEmpty {
+                try validateHotkeyAssignments(textLookupShortcut: textLookupPlugin.settings.shortcut)
+            }
+            try hotkeyRegistrar.replace(ids: ids, with: requests)
+            registeredExtensionIDs.subtract(ids)
+            registeredExtensionIDs.formUnion(requests.map(\.id))
         }
         extensionManager.didCommit = { [weak self] removed in
             guard let self else { return }
@@ -892,16 +899,20 @@ final class AppEnvironment {
                 }
             }
         }
-        for target in extensionManager.shortcutTargets where extensionManager.enabledCommandIDs.contains(target.id) {
-            if let hotkey = commandHotkeys[target.id] {
-                requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                    self?.executeDirectCommand(target.id)
-                })
-            }
-        }
+        requests += extensionHotkeyRequests()
         let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue)).union(registeredExtensionIDs)
         try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)
         registeredExtensionIDs = Set(extensionManager.shortcutTargets.map(\.id.rawValue))
+    }
+
+    private func extensionHotkeyRequests() -> [HotkeyRegistrationRequest] {
+        let enabledIDs = extensionManager.enabledCommandIDs
+        return extensionManager.shortcutTargets.compactMap { target in
+            guard enabledIDs.contains(target.id), let hotkey = commandHotkeys[target.id] else { return nil }
+            return HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
+                self?.executeDirectCommand(target.id)
+            }
+        }
     }
 
     private func validateHotkeyAssignments(

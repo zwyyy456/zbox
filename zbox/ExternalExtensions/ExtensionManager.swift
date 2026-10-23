@@ -11,7 +11,7 @@ final class ExtensionManager {
     var error: String?
     var candidate: ExtensionInstallation?
     @ObservationIgnored var didCommit: ((Set<CommandID>) -> Void)?
-    @ObservationIgnored var applyCommands: (() throws -> Void)?
+    @ObservationIgnored var applyCommands: ((Set<CommandID>) throws -> Void)?
     @ObservationIgnored private var interactiveSessions: [String: ExtensionSession] = [:]
     @ObservationIgnored private var sessions: [String: ExtensionTaskSession] = [:]
 
@@ -30,7 +30,7 @@ final class ExtensionManager {
         defer { busy = false }
         do { items = try await store.load(); loadFailed = false }
         catch { self.error = error.localizedDescription; loadFailed = true; return }
-        do { try applyCommands?() }
+        do { try applyCommands?(Set(shortcutTargets.map(\.id))) }
         catch { self.error = error.localizedDescription }
     }
 
@@ -56,7 +56,7 @@ final class ExtensionManager {
         await stop(item.id)
         item.enabled = previous?.enabled ?? true
         do {
-            try await replace(items.filter { $0.id != item.id } + [item])
+            try await replace(items.filter { $0.id != item.id } + [item], updating: item.id)
             candidate = nil
             if let previous { try await store.discard(previous) }
         } catch { self.error = error.localizedDescription }
@@ -71,7 +71,7 @@ final class ExtensionManager {
             if enabled { try item.manifest.checkEnvironment() }
             var next = items
             if let index = next.firstIndex(where: { $0.id == item.id }) { next[index].enabled = enabled }
-            try await replace(next)
+            try await replace(next, updating: item.id)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -81,7 +81,7 @@ final class ExtensionManager {
         defer { busy = false }
         await stop(item.id)
         do {
-            try await replace(items.filter { $0.id != item.id })
+            try await replace(items.filter { $0.id != item.id }, updating: item.id)
             try await store.discard(item)
             if deleteData { try await dataStore(item.id).deleteAll() }
         } catch { self.error = error.localizedDescription }
@@ -107,22 +107,25 @@ final class ExtensionManager {
             if let index = next.firstIndex(where: { $0.id == item.id }) {
                 next[index].grants = grants.filter { (item.manifest.capabilities ?? []).contains($0) }
             }
-            try await replace(next)
+            try await replace(next, updating: item.id)
             return true
         } catch { self.error = error.localizedDescription; return false }
     }
 
-    private func replace(_ next: [ExtensionInstallation]) async throws {
+    private func replace(_ next: [ExtensionInstallation], updating id: String) async throws {
         let previous = items
+        let commandIDs = Set((previous + next).filter { $0.id == id }.flatMap { item in
+            item.manifest.commands.map { $0.commandID(in: item.id) }
+        })
         items = next
         do {
-            try applyCommands?()
+            try applyCommands?(commandIDs)
             try await store.save(next)
             let oldIDs = Set(previous.flatMap { item in item.manifest.commands.map { $0.commandID(in: item.id) } })
             didCommit?(oldIDs.subtracting(Set(shortcutTargets.map(\.id))))
         } catch {
             items = previous
-            do { try applyCommands?() }
+            do { try applyCommands?(commandIDs) }
             catch { throw ExtensionFailure("The extension change and command restoration failed: \(error.localizedDescription)") }
             throw error
         }

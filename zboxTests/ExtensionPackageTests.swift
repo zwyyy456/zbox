@@ -4,10 +4,10 @@ import Testing
 @testable import zbox
 
 struct ExtensionPackageTests {
-    private func makePackage(at root: URL, version: String = "1.0.0") throws {
+    private func makePackage(at root: URL, id: String = "org.example.hello", version: String = "1.0.0") throws {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         try Data("""
-        {"schemaVersion":1,"id":"org.example.hello","name":"Hello","version":"\(version)",
+        {"schemaVersion":1,"id":"\(id)","name":"Hello","version":"\(version)",
         "commands":[{"id":"hello","name":"Hello","mode":"task","entry":"main.zsh","interpreter":"/bin/zsh"}]}
         """.utf8).write(to: root.appending(path: "manifest.json"))
         try Data("print hello".utf8).write(to: root.appending(path: "main.zsh"))
@@ -53,7 +53,7 @@ struct ExtensionPackageTests {
         await manager.prepare(source)
         await manager.install()
         #expect(manager.items.first?.manifest.version == "1.0.0")
-        manager.applyCommands = {
+        manager.applyCommands = { _ in
             if manager.items.first?.manifest.version == "2.0.0" { throw ExtensionFailure("Registration failed") }
         }
         try makePackage(at: source, version: "2.0.0")
@@ -64,23 +64,47 @@ struct ExtensionPackageTests {
         #expect(try await store.load().first?.manifest.version == "1.0.0")
         await manager.discardCandidate()
     }
-    @MainActor @Test func startupRegistrationFailureStillAllowsUninstall() async throws {
+    @MainActor @Test(arguments: [false, true])
+    func persistentRegistrationFailureStillAllowsRemoval(uninstall: Bool) async throws {
         let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let source = root.appending(path: "source")
         try makePackage(at: source)
         let store = ExtensionPackageStore(root: root.appending(path: "installed"))
         let item = try await store.prepare(source)
-        try await store.save([item])
+        try makePackage(at: source, id: "org.example.conflict")
+        let conflictingItem = try await store.prepare(source)
+        let commandID = item.manifest.commands[0].commandID(in: item.id)
+        let conflictingID = conflictingItem.manifest.commands[0].commandID(in: conflictingItem.id)
+        try await store.save([item, conflictingItem])
         let manager = ExtensionManager(coordinator: ClipboardAccessCoordinator(), store: store)
-        manager.applyCommands = { throw ExtensionFailure("Registration failed") }
+        var registeredIDs: Set<CommandID> = [commandID]
+        var removedIDs = Set<CommandID>()
+        var registry = CommandRegistry()
+        manager.applyCommands = { commandIDs in
+            registry = CommandRegistry()
+            try manager.register(in: registry)
+            let requestedIDs = manager.enabledCommandIDs.intersection(commandIDs)
+            if requestedIDs.contains(conflictingID) { throw ExtensionFailure("Registration failed") }
+            registeredIDs.subtract(commandIDs)
+            registeredIDs.formUnion(requestedIDs)
+        }
+        manager.didCommit = { removedIDs = $0 }
         await manager.load()
         #expect(manager.error != nil)
         #expect(!manager.loadFailed)
-        manager.applyCommands = nil
-        await manager.uninstall(item, deleteData: false)
-        #expect(manager.items.isEmpty)
-        #expect(try await store.load().isEmpty)
+        if uninstall { await manager.uninstall(item, deleteData: false) }
+        else { await manager.setEnabled(item, false) }
+        #expect(manager.error == nil)
+        #expect(manager.items.first { $0.id == item.id }?.enabled == (uninstall ? nil : false))
+        #expect(try await store.load().first { $0.id == item.id }?.enabled == (uninstall ? nil : false))
+        #expect(manager.enabledCommandIDs == [conflictingID])
+        #expect(registeredIDs.isEmpty)
+        #expect(!registry.descriptors.contains { $0.id == commandID })
+        #expect(removedIDs == (uninstall ? [commandID] : []))
+        #expect(FileManager.default.fileExists(atPath: store.packageURL(item).path) == !uninstall)
+        // The unrelated conflict is still present after the management operation.
+        #expect(throws: ExtensionFailure.self) { try manager.applyCommands?([conflictingID]) }
     }
 
     @Test func extractsDeflateAndRejectsTraversal() throws {
