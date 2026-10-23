@@ -35,7 +35,8 @@ struct ScriptRunnerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let (updates, continuation) = AsyncStream<Void>.makeStream()
         let task = Task {
-            try await ScriptRunner.run(command) { output in
+            defer { continuation.finish() }
+            return try await ScriptRunner.run(command) { output in
                 if !output.stdout.isEmpty { continuation.yield(()) }
             }
         }

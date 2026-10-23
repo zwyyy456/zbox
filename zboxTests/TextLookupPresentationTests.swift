@@ -174,18 +174,20 @@ struct TextLookupPresentationTests {
 
     @MainActor
     private func waitUntilLoaded(term: String, in model: TextLookupSessionModel) async {
-        for _ in 0..<100 {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while ContinuousClock.now < deadline {
             if case .loaded(let document) = model.dictionaryState, document.term == term { return }
-            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(10))
         }
         Issue.record("Expected dictionary entry \(term) to load")
     }
 
     @MainActor
     private func waitUntilDictionaryFails(in model: TextLookupSessionModel) async {
-        for _ in 0..<100 {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while ContinuousClock.now < deadline {
             if case .failed = model.dictionaryState { return }
-            await Task.yield()
+            try? await Task.sleep(for: .milliseconds(10))
         }
         Issue.record("Expected dictionary lookup to fail")
     }

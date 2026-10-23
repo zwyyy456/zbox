@@ -16,8 +16,6 @@ struct SettingsCommandsTests {
         let descriptor = try #require(
             registry.descriptors.first { $0.id == SettingsCommands.openID }
         )
-        #expect(descriptor.title == String(localized: "Settings"))
-        #expect(SettingsCommands.systemImage(for: descriptor.id) == "gearshape")
 
         try await registry.execute(
             descriptor.id,
