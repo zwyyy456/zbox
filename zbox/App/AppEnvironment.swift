@@ -544,14 +544,15 @@ final class AppEnvironment {
             snippetsPlugin.setEnabled(!enabled)
             snippetsPlugin.statusMessage = error.localizedDescription
         }
-        reloadApplications()
+        do { try rebuildCommandRegistry() }
+        catch { applicationReloadError = error.localizedDescription }
     }
 
     func saveSnippet(_ item: Snippet) -> Bool {
         do {
             try snippetsPlugin.store.save(item)
             snippetsPlugin.stop()
-            reloadApplications()
+            try rebuildCommandRegistry()
             snippetsPlugin.statusMessage = nil
             return true
         } catch { snippetsPlugin.statusMessage = error.localizedDescription; return false }
@@ -561,11 +562,8 @@ final class AppEnvironment {
         do {
             try snippetsPlugin.store.delete(item.id)
             snippetsPlugin.stop()
-            hotkeyRegistrar.unregister(id: item.commandID.rawValue)
-            commandHotkeys[item.commandID] = nil
-            commandHotkeyErrors[item.commandID] = nil
-            hotkeyStore.setCommandHotkey(nil, for: item.commandID)
-            reloadApplications()
+            removeCommandHotkey(item.commandID)
+            try rebuildCommandRegistry()
         } catch { snippetsPlugin.statusMessage = error.localizedDescription }
     }
 
@@ -576,7 +574,8 @@ final class AppEnvironment {
             scriptCommandsPlugin.setEnabled(!enabled)
             scriptCommandsPlugin.statusMessage = error.localizedDescription
         }
-        reloadApplications()
+        do { try rebuildCommandRegistry() }
+        catch { applicationReloadError = error.localizedDescription }
     }
 
     func saveScriptCommand(_ item: ScriptCommand) -> Bool {
@@ -590,7 +589,7 @@ final class AppEnvironment {
                 throw error
             }
             scriptCommandsPlugin.stop()
-            reloadApplications()
+            try rebuildCommandRegistry()
             scriptCommandsPlugin.statusMessage = nil
             return true
         } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription; return false }
@@ -600,11 +599,8 @@ final class AppEnvironment {
         do {
             try scriptCommandsPlugin.store.delete(item.id)
             scriptCommandsPlugin.stop()
-            hotkeyRegistrar.unregister(id: item.commandID.rawValue)
-            commandHotkeys[item.commandID] = nil
-            commandHotkeyErrors[item.commandID] = nil
-            hotkeyStore.setCommandHotkey(nil, for: item.commandID)
-            reloadApplications()
+            removeCommandHotkey(item.commandID)
+            try rebuildCommandRegistry()
         } catch { scriptCommandsPlugin.statusMessage = error.localizedDescription }
     }
 
@@ -615,14 +611,15 @@ final class AppEnvironment {
             quicklinksPlugin.setEnabled(!enabled)
             quicklinksPlugin.statusMessage = error.localizedDescription
         }
-        reloadApplications()
+        do { try rebuildCommandRegistry() }
+        catch { applicationReloadError = error.localizedDescription }
     }
 
     func saveQuicklink(_ item: Quicklink) -> Bool {
         do {
             try quicklinksPlugin.store.save(item)
             quicklinksPlugin.stop()
-            reloadApplications()
+            try rebuildCommandRegistry()
             quicklinksPlugin.statusMessage = nil
             return true
         } catch { quicklinksPlugin.statusMessage = error.localizedDescription; return false }
@@ -632,11 +629,8 @@ final class AppEnvironment {
         do {
             try quicklinksPlugin.store.delete(item.id)
             quicklinksPlugin.stop()
-            hotkeyRegistrar.unregister(id: item.commandID.rawValue)
-            commandHotkeys[item.commandID] = nil
-            commandHotkeyErrors[item.commandID] = nil
-            hotkeyStore.setCommandHotkey(nil, for: item.commandID)
-            reloadApplications()
+            removeCommandHotkey(item.commandID)
+            try rebuildCommandRegistry()
         } catch { quicklinksPlugin.statusMessage = error.localizedDescription }
     }
 
@@ -658,7 +652,7 @@ final class AppEnvironment {
     func saveDisplayPreset(_ preset: DisplayPreset) -> Bool {
         do {
             try displayPlugin.presets.save(preset)
-            reloadApplications()
+            try rebuildCommandRegistry()
             displayPlugin.statusMessage = nil
             return true
         } catch { displayPlugin.statusMessage = error.localizedDescription; return false }
@@ -667,11 +661,8 @@ final class AppEnvironment {
     func deleteDisplayPreset(_ preset: DisplayPreset) {
         do {
             try displayPlugin.presets.delete(preset.id)
-            hotkeyRegistrar.unregister(id: preset.commandID.rawValue)
-            commandHotkeys[preset.commandID] = nil
-            commandHotkeyErrors[preset.commandID] = nil
-            hotkeyStore.setCommandHotkey(nil, for: preset.commandID)
-            reloadApplications()
+            removeCommandHotkey(preset.commandID)
+            try rebuildCommandRegistry()
         } catch { displayPlugin.statusMessage = error.localizedDescription }
     }
 
@@ -702,7 +693,7 @@ final class AppEnvironment {
     func saveWorkspace(_ layout: WorkspaceLayout) -> Bool {
         do {
             try workspacePlugin.store.save(layout)
-            reloadApplications()
+            try rebuildCommandRegistry()
             workspacePlugin.statusMessage = nil
             return true
         } catch {
@@ -714,11 +705,8 @@ final class AppEnvironment {
     func deleteWorkspace(_ layout: WorkspaceLayout) {
         do {
             try workspacePlugin.store.delete(layout.id)
-            hotkeyRegistrar.unregister(id: layout.commandID.rawValue)
-            commandHotkeys[layout.commandID] = nil
-            commandHotkeyErrors[layout.commandID] = nil
-            hotkeyStore.setCommandHotkey(nil, for: layout.commandID)
-            reloadApplications()
+            removeCommandHotkey(layout.commandID)
+            try rebuildCommandRegistry()
         } catch { workspacePlugin.statusMessage = error.localizedDescription }
     }
 
@@ -834,6 +822,13 @@ final class AppEnvironment {
             textLookupPlugin.stop()
             textLookupError = String(localized: "Accessibility-dependent features were disabled. Re-enable them after granting permission.")
         }
+    }
+
+    private func removeCommandHotkey(_ id: CommandID) {
+        hotkeyRegistrar.unregister(id: id.rawValue)
+        commandHotkeys[id] = nil
+        commandHotkeyErrors[id] = nil
+        hotkeyStore.setCommandHotkey(nil, for: id)
     }
 
     private func applyHotkeyRegistrations() throws {
