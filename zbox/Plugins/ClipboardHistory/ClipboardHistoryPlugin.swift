@@ -54,7 +54,7 @@ final class ClipboardHistoryPlugin {
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "Clipboard History"),
+        try registry.register(CommandDescriptor(systemImage: "clipboard", id: Self.commandID, title: String(localized: "Clipboard History"),
             subtitle: String(localized: "Browse recently copied items"),
             keywords: ["clipboard", "history", "paste", "剪贴板", "剪贴板历史", "粘贴"])) { [weak self] context in
             guard let self else { return }

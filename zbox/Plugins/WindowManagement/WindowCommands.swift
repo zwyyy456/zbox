@@ -54,7 +54,7 @@ nonisolated enum WindowCommands {
         isEnabled: @escaping @MainActor () -> Bool
     ) throws {
         for definition in definitions {
-            let descriptor = CommandDescriptor(
+            let descriptor = CommandDescriptor(systemImage: definition.systemImage,
                 id: definition.id,
                 title: definition.title,
                 subtitle: String(localized: "Window Management"),
@@ -70,7 +70,4 @@ nonisolated enum WindowCommands {
         }
     }
 
-    nonisolated static func systemImage(for commandID: CommandID) -> String? {
-        definitions.first { $0.id == commandID }?.systemImage
-    }
 }

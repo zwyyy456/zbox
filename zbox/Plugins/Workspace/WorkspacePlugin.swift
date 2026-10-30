@@ -128,7 +128,7 @@ final class WorkspacePlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for layout in store.layouts {
-            try registry.register(CommandDescriptor(id: layout.commandID,
+            try registry.register(CommandDescriptor(systemImage: "rectangle.3.group", id: layout.commandID,
                 title: String(localized: "Restore Workspace: \(layout.name)"),
                 subtitle: layout.entries.map(\.applicationName).joined(separator: ", "),
                 keywords: ["workspace", "restore", "工作区", "恢复", layout.name])) { [weak self] _ in
@@ -140,7 +140,7 @@ final class WorkspacePlugin {
                 }
             }
         }
-        try registry.register(CommandDescriptor(id: Self.captureCommandID,
+        try registry.register(CommandDescriptor(systemImage: "rectangle.3.group", id: Self.captureCommandID,
             title: String(localized: "Save Current Workspace"), subtitle: nil,
             keywords: ["workspace", "save", "保存工作区", "布局"])) { [weak self] _ in
             guard let self else { return }
@@ -149,7 +149,7 @@ final class WorkspacePlugin {
             do { try openSettings() }
             catch { capture = nil; throw error }
         }
-        try registry.register(CommandDescriptor(id: Self.manageCommandID,
+        try registry.register(CommandDescriptor(systemImage: "rectangle.3.group", id: Self.manageCommandID,
             title: String(localized: "Manage Workspaces"), subtitle: nil,
             keywords: ["workspace", "layout", "工作区", "布局"])) { _ in
             try openSettings()

@@ -23,9 +23,11 @@ nonisolated struct CommandDescriptor: Identifiable, Sendable {
     let title: String
     let subtitle: String?
     let keywords: [String]
+    let systemImage: String?
     let searchAliases: [CommandSearchAlias]
 
     init(
+        systemImage: String? = nil,
         id: CommandID,
         title: String,
         subtitle: String?,
@@ -36,6 +38,7 @@ nonisolated struct CommandDescriptor: Identifiable, Sendable {
         self.title = title
         self.subtitle = subtitle
         self.keywords = keywords
+        self.systemImage = systemImage
         self.searchAliases = searchAliases
     }
 }

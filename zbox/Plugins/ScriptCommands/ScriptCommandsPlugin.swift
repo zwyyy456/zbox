@@ -77,11 +77,11 @@ final class ScriptCommandsPlugin {
     func waitForStop() async { await task?.value }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(id: Self.manageID, title: String(localized: "Automation"),
+        try registry.register(CommandDescriptor(systemImage: "terminal", id: Self.manageID, title: String(localized: "Automation"),
             subtitle: nil, keywords: ["script", "shell", "shortcuts", "automation", "脚本", "命令", "快捷指令", "自动化"])) { _ in try openSettings() }
         guard isEnabled else { return }
         for item in store.items where item.enabled {
-            try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
+            try registry.register(CommandDescriptor(systemImage: "terminal", id: item.commandID, title: item.name,
                 subtitle: String(localized: "Automation"), keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] _ in
                 self?.show(item)
             }

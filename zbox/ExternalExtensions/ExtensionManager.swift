@@ -134,7 +134,7 @@ final class ExtensionManager {
     func register(in registry: CommandRegistry) throws {
         for item in items where item.enabled {
             for command in item.manifest.commands {
-                try registry.register(CommandDescriptor(id: command.commandID(in: item.id), title: command.name,
+                try registry.register(CommandDescriptor(systemImage: "puzzlepiece.extension", id: command.commandID(in: item.id), title: command.name,
                     subtitle: item.manifest.name, keywords: command.keywords ?? [])) { [weak self] context in
                         try self?.execute(item.id, commandID: command.id, context: context)
                     }

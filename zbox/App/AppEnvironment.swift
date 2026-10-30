@@ -305,10 +305,6 @@ final class AppEnvironment {
         selectedCommandID = commandID
     }
 
-    func isSelected(_ commandID: CommandID) -> Bool {
-        selectedCommandID == commandID
-            || (selectedCommandID == nil && searchResults.first?.id == commandID)
-    }
 
     func moveSelection(by offset: Int) {
         let results = searchResults
@@ -408,23 +404,6 @@ final class AppEnvironment {
         return showsApplicationPathsInSearchResults ? descriptor.subtitle : nil
     }
 
-    func systemImage(for commandID: CommandID) -> String? {
-        if commandID == AppMenuPlugin.commandID { return "menubar.rectangle" }
-        if commandID.rawValue.hasPrefix("audio.") { return "speaker.wave.2" }
-        if commandID.rawValue.hasPrefix("filesearch.") { return "doc.text.magnifyingglass" }
-        if commandID.rawValue.hasPrefix("extensions.") { return "puzzlepiece.extension" }
-        if commandID.rawValue.hasPrefix("scripts.") { return "terminal" }
-        if commandID.rawValue.hasPrefix("snippets.") { return "text.quote" }
-        if commandID.rawValue.hasPrefix("quicklinks.") { return "link" }
-        if commandID.rawValue.hasPrefix("display.") { return "display" }
-        if commandID.rawValue.hasPrefix("workspace.") { return "rectangle.3.group" }
-        if ScreenshotPlugin.shortcutTargets.contains(where: { $0.id == commandID }) { return "camera.viewfinder" }
-        if commandID == ClipboardHistoryPlugin.commandID { return "clipboard" }
-        return WindowCommands.systemImage(for: commandID)
-            ?? SettingsCommands.systemImage(for: commandID)
-            ?? calculatorPlugin.systemImage(for: commandID)
-            ?? developerToolsPlugin.systemImage(for: commandID)
-    }
 
     func commandHotkey(for commandID: CommandID) -> Hotkey? {
         commandHotkeys[commandID]

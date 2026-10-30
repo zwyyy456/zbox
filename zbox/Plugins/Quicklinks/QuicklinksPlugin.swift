@@ -88,9 +88,9 @@ final class QuicklinksPlugin {
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "Quicklinks"),
+        try registry.register(CommandDescriptor(systemImage: "link", id: Self.commandID, title: String(localized: "Quicklinks"),
             subtitle: nil, keywords: ["quicklinks", "links", "快捷入口", "链接"])) { _ in try openSettings() }
-        try registry.register(CommandDescriptor(id: Self.selectionCommandID, title: String(localized: "Quicklink with Selected Text"),
+        try registry.register(CommandDescriptor(systemImage: "link", id: Self.selectionCommandID, title: String(localized: "Quicklink with Selected Text"),
             subtitle: String(localized: "Quicklinks"), keywords: ["selection", "selected", "选中", "搜索", "链接"])) { [weak self] context in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
@@ -101,7 +101,7 @@ final class QuicklinksPlugin {
             }
         guard isEnabled else { return }
         for item in store.items {
-            try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
+            try registry.register(CommandDescriptor(systemImage: "link", id: item.commandID, title: item.name,
                 subtitle: String(localized: "Quicklinks"), keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] _ in
                 guard let self, isEnabled else { return }
                 if item.kind == .template { showParameters(for: item); return }

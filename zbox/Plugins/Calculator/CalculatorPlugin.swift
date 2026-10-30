@@ -23,7 +23,7 @@ final class CalculatorPlugin {
     }
 
     func register(in registry: CommandRegistry) throws {
-        let descriptor = CommandDescriptor(
+        let descriptor = CommandDescriptor(systemImage: "function",
             id: Self.commandID,
             title: String(localized: "Calculator"),
             subtitle: String(localized: "Built-in Calculator"),
@@ -37,9 +37,6 @@ final class CalculatorPlugin {
         }
     }
 
-    func systemImage(for commandID: CommandID) -> String? {
-        commandID == Self.commandID ? "function" : nil
-    }
 
     func press(_ key: CalculatorEngine.Key) { engine.press(key, radix: inputRadix) }
 

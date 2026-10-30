@@ -8,7 +8,7 @@ nonisolated enum SettingsCommands {
         in registry: CommandRegistry,
         openSettings: @escaping @MainActor () throws -> Void
     ) throws {
-        let descriptor = CommandDescriptor(
+        let descriptor = CommandDescriptor(systemImage: "gearshape",
             id: openID,
             title: String(localized: "Settings"),
             subtitle: String(localized: "zbox Settings"),
@@ -19,7 +19,4 @@ nonisolated enum SettingsCommands {
         }
     }
 
-    nonisolated static func systemImage(for commandID: CommandID) -> String? {
-        commandID == openID ? "gearshape" : nil
-    }
 }

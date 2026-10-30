@@ -7,6 +7,8 @@ struct RootSearchView: View {
 
     var body: some View {
         @Bindable var environment = environment
+        let results = environment.searchResults
+        let selectedID = environment.selectedCommandID ?? results.first?.id
 
         VStack(spacing: 0) {
             TextField("Search applications", text: $environment.searchQuery)
@@ -17,7 +19,7 @@ struct RootSearchView: View {
 
             Divider()
 
-            if environment.searchResults.isEmpty {
+            if results.isEmpty {
                 ContentUnavailableView(
                     "No Commands Found",
                     systemImage: "magnifyingglass",
@@ -27,7 +29,7 @@ struct RootSearchView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        ForEach(environment.searchResults) { match in
+                        ForEach(results) { match in
                             Button {
                                 environment.select(match.id)
                                 environment.executeSelectedCommand()
@@ -35,15 +37,15 @@ struct RootSearchView: View {
                                 CommandResultRow(
                                     match: match,
                                     icon: environment.applicationIcon(for: match.id),
-                                    systemImage: environment.systemImage(for: match.id),
+                                    systemImage: match.descriptor.systemImage,
                                     subtitle: environment.subtitle(for: match.descriptor),
-                                    isSelected: environment.isSelected(match.id)
+                                    isSelected: (match.id == selectedID)
                                 )
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(match.descriptor.title)
                             .accessibilityValue(
-                                environment.isSelected(match.id)
+                                (match.id == selectedID)
                                     ? String(localized: "Selected")
                                     : ""
                             )

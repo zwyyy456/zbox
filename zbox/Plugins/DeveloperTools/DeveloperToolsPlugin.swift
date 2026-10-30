@@ -77,7 +77,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
     func register(in registry: CommandRegistry) throws {
         for target in Self.shortcutTargets {
             let tool = Tool.allCases.first { $0.commandID == target.id }
-            try registry.register(CommandDescriptor(
+            try registry.register(CommandDescriptor(systemImage: "hammer",
                 id: target.id, title: target.title,
                 subtitle: String(localized: "Built-in Developer Tools"),
                 keywords: ["developer", "tools", "开发者", "工具"] + (tool?.keywords ?? [])
@@ -95,9 +95,6 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
         }
     }
 
-    func systemImage(for commandID: CommandID) -> String? {
-        Self.shortcutTargets.contains { $0.id == commandID } ? "hammer" : nil
-    }
 
     var importReplacesDraft: Bool {
         switch importTool {

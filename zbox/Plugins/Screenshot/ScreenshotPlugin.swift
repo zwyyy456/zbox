@@ -67,21 +67,21 @@ final class ScreenshotPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for mode in ScreenshotMode.allCases {
-            try registry.register(CommandDescriptor(id: mode.commandID, title: mode.title,
+            try registry.register(CommandDescriptor(systemImage: "camera.viewfinder", id: mode.commandID, title: mode.title,
                 subtitle: String(localized: "Screenshot"), keywords: ["screenshot", "capture", "截图", "截屏"] + (mode == .scrolling ? ["scroll", "滚动截图"] : []))) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
                 capture(mode)
             }
         }
-        try registry.register(CommandDescriptor(id: Self.textCommandID, title: String(localized: "Capture Text"),
+        try registry.register(CommandDescriptor(systemImage: "camera.viewfinder", id: Self.textCommandID, title: String(localized: "Capture Text"),
             subtitle: String(localized: "Screenshot"), keywords: ["ocr", "text", "识别文字", "截图文字"])) { [weak self] _ in
             guard let self else { return }
             guard isEnabled else { try openSettings(); return }
             capture(.area, purpose: .text)
         }
         for command in PinCommand.allCases {
-            try registry.register(CommandDescriptor(id: command.id, title: command.title,
+            try registry.register(CommandDescriptor(systemImage: "camera.viewfinder", id: command.id, title: command.title,
                 subtitle: String(localized: "Screenshot"), keywords: ["pin", "image", "贴图", "悬浮", "图片"])) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }

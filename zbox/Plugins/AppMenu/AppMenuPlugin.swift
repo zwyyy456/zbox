@@ -42,7 +42,7 @@ final class AppMenuPlugin {
         items = []; query = ""; selectedID = nil; applicationName = ""; isLoading = false
     }
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(id: Self.commandID, title: Self.shortcutTarget.title, subtitle: nil,
+        try registry.register(CommandDescriptor(systemImage: "menubar.rectangle", id: Self.commandID, title: Self.shortcutTarget.title, subtitle: nil,
             keywords: ["menu", "application", "菜单", "应用菜单"])) { [weak self] context in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }

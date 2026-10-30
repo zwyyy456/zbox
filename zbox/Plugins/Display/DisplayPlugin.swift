@@ -98,7 +98,7 @@ final class DisplayPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for preset in presets.presets {
-            try registry.register(CommandDescriptor(id: preset.commandID,
+            try registry.register(CommandDescriptor(systemImage: "display", id: preset.commandID,
                 title: String(localized: "Apply Display Preset: \(preset.name)"),
                 subtitle: preset.selections.map(\.displayName).joined(separator: ", "),
                 keywords: ["display", "preset", "显示器", "预设", preset.name])) { [weak self] _ in
@@ -108,7 +108,7 @@ final class DisplayPlugin {
                 refresh()
             }
         }
-        try registry.register(CommandDescriptor(id: Self.manageCommandID, title: String(localized: "Manage Displays"),
+        try registry.register(CommandDescriptor(systemImage: "display", id: Self.manageCommandID, title: String(localized: "Manage Displays"),
             subtitle: nil, keywords: ["display", "resolution", "HiDPI", "显示器", "分辨率"])) { _ in try openSettings() }
     }
 }

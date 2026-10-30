@@ -67,7 +67,7 @@ final class AudioPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for action in Action.allCases {
-            try registry.register(CommandDescriptor(id: action.id, title: action.title, subtitle: String(localized: "Audio"),
+            try registry.register(CommandDescriptor(systemImage: "speaker.wave.2", id: action.id, title: action.title, subtitle: String(localized: "Audio"),
                 keywords: ["audio", "sound", "volume", "microphone", "音频", "音量", "静音", "设备", "麦克风"])) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }

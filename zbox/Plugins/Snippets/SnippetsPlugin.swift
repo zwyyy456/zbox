@@ -76,13 +76,13 @@ final class SnippetsPlugin {
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(id: Self.commandID, title: String(localized: "Snippets"),
+        try registry.register(CommandDescriptor(systemImage: "text.quote", id: Self.commandID, title: String(localized: "Snippets"),
             subtitle: nil, keywords: ["snippets", "text", "文本片段", "模板"])) { [weak self] context in
             guard let self else { return }
             guard isEnabled else { try openSettings(); return }
             show(targetPID: context.frontmostApplicationPID)
         }
-        try registry.register(CommandDescriptor(id: Self.selectionCommandID, title: String(localized: "Save Selected Text as Snippet"),
+        try registry.register(CommandDescriptor(systemImage: "text.quote", id: Self.selectionCommandID, title: String(localized: "Save Selected Text as Snippet"),
             subtitle: String(localized: "Snippets"), keywords: ["selection", "selected", "选中", "片段", "保存"])) { [weak self] context in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
@@ -96,7 +96,7 @@ final class SnippetsPlugin {
             }
         guard isEnabled else { return }
         for item in store.items {
-            try registry.register(CommandDescriptor(id: item.commandID, title: item.name,
+            try registry.register(CommandDescriptor(systemImage: "text.quote", id: item.commandID, title: item.name,
                 subtitle: String(localized: "Snippets"), keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] context in
                 guard let self, isEnabled else { return }
                 show(targetPID: context.frontmostApplicationPID)
