@@ -174,6 +174,47 @@ struct TextLookupPresentationTests {
         #expect(await flashDict.lookupTerms == ["original", "linked", "linked"])
     }
 
+    @Test(.timeLimit(.minutes(1)), arguments: [false, true]) @MainActor
+    func cancelledCardFailureDoesNotRestoreOldState(replaceSameSelection: Bool) async throws {
+        let (started, start) = AsyncStream<Void>.makeStream()
+        let (handled, completion) = AsyncStream<Void>.makeStream()
+        let service = DelayedCardService(start: start, completion: completion)
+        let model = TextLookupSessionModel(flashDict: service)
+        model.beginLookup(with: capture(id: UUID(), term: "swift"), targetLanguageIdentifier: "zh-Hans")
+        let seed = FlashcardSeed(
+            dictionaryStableID: "primary",
+            dictionaryName: "Main",
+            term: "swift",
+            headerHTML: nil,
+            subHeaderHTML: nil,
+            phraseHeaderHTML: nil,
+            senseHTML: "<p>moving quickly</p>",
+            senseIndex: 0,
+            subsenseSelector: nil,
+            resourceTagsVersion: 2,
+            cssTagsHTML: nil,
+            scriptTagsHTML: nil
+        )
+        model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
+        var starts = started.makeAsyncIterator()
+        _ = await starts.next()
+        if replaceSameSelection {
+            model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
+            _ = await starts.next()
+        } else {
+            model.handle(.entryRequested(term: "new", anchor: nil))
+        }
+        await service.fail()
+        for await _ in handled { break }
+        if replaceSameSelection {
+            #expect(model.selectionStates["sense-1"] == .adding)
+            model.clear()
+            await service.finish()
+        } else {
+            #expect(model.selectionStates.isEmpty)
+        }
+    }
+
     @MainActor
     private func waitUntilLoaded(term: String, in model: TextLookupSessionModel) async {
         let deadline = ContinuousClock.now.advanced(by: .seconds(2))
@@ -313,5 +354,41 @@ private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
         createdContext = context
         createdSeed = seed
         return creationResult
+    }
+}
+
+
+private actor DelayedCardService: TextLookupFlashDictServicing {
+    private final class Failure: Error {
+        let completion: AsyncStream<Void>.Continuation
+        init(_ completion: AsyncStream<Void>.Continuation) { self.completion = completion }
+        deinit { completion.yield(()); completion.finish() }
+    }
+    let start: AsyncStream<Void>.Continuation
+    let completion: AsyncStream<Void>.Continuation
+    private var continuations: [CheckedContinuation<FlashcardCreationResult, any Error>] = []
+    init(start: AsyncStream<Void>.Continuation, completion: AsyncStream<Void>.Continuation) {
+        self.start = start
+        self.completion = completion
+    }
+    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
+        LookupDocument(requestID: requestID, dictionaryStableID: "primary",
+                       dictionaryName: "Main", term: term, htmlDocument: "<html></html>")
+    }
+    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
+        LookupResource(data: Data(), mimeType: "application/octet-stream")
+    }
+    func createFlashcard(seed: FlashcardSeed, context: FlashcardCreationContext) async throws -> FlashcardCreationResult {
+        try await withCheckedThrowingContinuation {
+            continuations.append($0)
+            start.yield(())
+        }
+    }
+    func finish() {
+        continuations.removeFirst().resume(returning: .added(cardID: UUID()))
+        start.finish()
+    }
+    func fail() {
+        continuations.removeFirst().resume(throwing: Failure(completion))
     }
 }

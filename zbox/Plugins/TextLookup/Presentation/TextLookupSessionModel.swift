@@ -289,7 +289,7 @@ final class TextLookupSessionModel {
             } catch is CancellationError {
                 return
             } catch {
-                guard let self, self.accepts(sessionID) else { return }
+                guard !Task.isCancelled, let self, self.accepts(sessionID) else { return }
                 selectionStates[selectionID] = .failed(message: Self.map(error).message)
                 cardTasks[selectionID] = nil
             }
