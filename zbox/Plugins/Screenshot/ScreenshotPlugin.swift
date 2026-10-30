@@ -116,16 +116,24 @@ final class ScreenshotPlugin {
     private func closeEditor() {
         cancelCapture()
         document?.ocr.invalidate()
-        cancelUpload()
-        uploadedURL = nil
-        pendingUpload = nil
+        discardUpload()
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil
+        cancelExport()
+        document = nil
+    }
+
+    private func discardUpload() {
+        cancelUpload()
+        uploadedURL = nil
+        pendingUpload = nil
+    }
+
+    private func cancelExport() {
         exportTask?.cancel()
         exportTask = nil
         isExporting = false
-        document = nil
     }
 
     func cancelCapture() {
@@ -379,11 +387,8 @@ final class ScreenshotPlugin {
         textWindow.close()
         cancelCapture()
         document?.ocr.invalidate()
-        cancelUpload()
-        uploadedURL = nil
-        pendingUpload = nil
-        exportTask?.cancel()
-        isExporting = false
+        discardUpload()
+        cancelExport()
         window?.orderOut(nil)
         statusMessage = nil
         needsScreenRecordingPermission = false
