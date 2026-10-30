@@ -40,7 +40,7 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
             case .timestamp: "clock"
             case .uuid: "number"
             case .url: "link"
-            case .base64: "textformat.abc"
+            case .base64: "number.square"
             }
         }
         var commandID: CommandID { CommandID("developer-tools.\(rawValue)") }

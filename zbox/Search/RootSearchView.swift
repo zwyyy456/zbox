@@ -11,11 +11,16 @@ struct RootSearchView: View {
         let selectedID = environment.selectedCommandID ?? results.first?.id
 
         VStack(spacing: 0) {
-            TextField("Search applications", text: $environment.searchQuery)
-                .textFieldStyle(.plain)
-                .font(.title2)
-                .focused($isSearchFocused)
-                .padding(18)
+            HStack(spacing: 12) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                TextField("Search apps and commands", text: $environment.searchQuery)
+                    .textFieldStyle(.plain)
+                    .focused($isSearchFocused)
+            }
+            .font(.title2)
+            .padding(18)
 
             Divider()
 
@@ -27,31 +32,37 @@ struct RootSearchView: View {
                 )
                 .frame(maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(results) { match in
-                            Button {
-                                environment.select(match.id)
-                                environment.executeSelectedCommand()
-                            } label: {
-                                CommandResultRow(
-                                    match: match,
-                                    icon: environment.applicationIcon(for: match.id),
-                                    systemImage: match.descriptor.systemImage,
-                                    subtitle: environment.subtitle(for: match.descriptor),
-                                    isSelected: (match.id == selectedID)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(results) { match in
+                                Button {
+                                    environment.select(match.id)
+                                    environment.executeSelectedCommand()
+                                } label: {
+                                    CommandResultRow(
+                                        match: match,
+                                        icon: environment.applicationIcon(for: match.id),
+                                        systemImage: match.descriptor.systemImage,
+                                        subtitle: environment.subtitle(for: match.descriptor),
+                                        isSelected: (match.id == selectedID)
+                                    )
+                                }
+                                .id(match.id)
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(match.descriptor.title)
+                                .accessibilityValue(
+                                    (match.id == selectedID)
+                                        ? String(localized: "Selected")
+                                        : ""
                                 )
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(match.descriptor.title)
-                            .accessibilityValue(
-                                (match.id == selectedID)
-                                    ? String(localized: "Selected")
-                                    : ""
-                            )
                         }
+                        .padding(8)
                     }
-                    .padding(8)
+                    .onChange(of: selectedID) { _, id in
+                        if let id { proxy.scrollTo(id) }
+                    }
                 }
             }
 

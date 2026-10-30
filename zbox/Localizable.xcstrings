@@ -7637,6 +7637,176 @@
           }
         }
       }
+    },
+    "Add a script or Apple Shortcut to run from zbox.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加脚本或 Apple 快捷指令，即可从 zbox 运行。"
+          }
+        }
+      }
+    },
+    "Add a website, file, or parameterized URL to open from zbox.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加网站、文件或带参数的网址，即可从 zbox 打开。"
+          }
+        }
+      }
+    },
+    "Add reusable text to copy or paste from zbox.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加常用文本，即可从 zbox 复制或粘贴。"
+          }
+        }
+      }
+    },
+    "Extensions": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扩展"
+          }
+        }
+      }
+    },
+    "Extensions run as your user and can access files and the network. Install only code you trust.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扩展以你的用户身份运行，可以访问文件和网络。请仅安装可信的代码。"
+          }
+        }
+      }
+    },
+    "Import Package…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入扩展包…"
+          }
+        }
+      }
+    },
+    "Import a trusted extension package to add commands to zbox.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入可信的扩展包，为 zbox 添加命令。"
+          }
+        }
+      }
+    },
+    "No Automation Yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚无自动化"
+          }
+        }
+      }
+    },
+    "No Extensions Installed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未安装扩展"
+          }
+        }
+      }
+    },
+    "No Quicklinks Yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚无快捷入口"
+          }
+        }
+      }
+    },
+    "No Snippets Yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚无文本片段"
+          }
+        }
+      }
+    },
+    "Search Command Shortcuts": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索命令快捷键"
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统"
+          }
+        }
+      }
+    },
+    "Tools": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工具"
+          }
+        }
+      }
+    },
+    "Search apps and commands": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索应用和命令"
+          }
+        }
+      }
+    },
+    "No UUIDs Yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未生成 UUID"
+          }
+        }
+      }
+    },
+    "Choose a count, then generate UUIDs.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择数量，然后生成 UUID。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

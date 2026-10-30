@@ -8,11 +8,12 @@ struct SnippetsSettingsView: View {
 
     var body: some View {
         @Bindable var plugin = plugin
-        VStack(alignment: .leading) {
+        let items = plugin.store.items.filter { query.isEmpty || [$0.name, $0.keywords, $0.body].contains { $0.localizedStandardContains(query) } }
+        VStack(alignment: .leading, spacing: 12) {
             Toggle("Enable Snippets", isOn: Binding(get: { plugin.isEnabled }, set: environment.setSnippetsEnabled))
             TextField("Search Snippets", text: $query)
             List {
-                ForEach(plugin.store.items.filter { query.isEmpty || [$0.name, $0.keywords, $0.body].contains { $0.localizedStandardContains(query) } }) { item in
+                ForEach(items) { item in
                     HStack {
                         VStack(alignment: .leading) {
                             Text(item.name)
@@ -24,7 +25,18 @@ struct SnippetsSettingsView: View {
                     }
                 }
             }
+            .overlay {
+                if plugin.store.loadError == nil && items.isEmpty {
+                    if query.isEmpty {
+                        ContentUnavailableView("No Snippets Yet", systemImage: "text.quote",
+                                               description: Text("Add reusable text to copy or paste from zbox."))
+                    } else {
+                        ContentUnavailableView.search(text: query)
+                    }
+                }
+            }
             Button("Add Snippet") { plugin.editingSnippet = Snippet() }
+                .buttonStyle(.borderedProminent)
             if let error = plugin.store.loadError ?? plugin.statusMessage { SettingsErrorView(message: error) }
         }
         .padding(20)

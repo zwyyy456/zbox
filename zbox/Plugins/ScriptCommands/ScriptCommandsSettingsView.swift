@@ -22,6 +22,12 @@ struct ScriptCommandsSettingsView: View {
                     Button("Delete", role: .destructive) { environment.deleteScriptCommand(item) }
                 }
             }
+            .overlay {
+                if plugin.store.items.isEmpty && plugin.store.loadError == nil {
+                    ContentUnavailableView("No Automation Yet", systemImage: "terminal",
+                                           description: Text("Add a script or Apple Shortcut to run from zbox."))
+                }
+            }
             HStack {
                 Button("Add Script") { editing = ScriptCommand() }
                 Button("Add Apple Shortcut") {

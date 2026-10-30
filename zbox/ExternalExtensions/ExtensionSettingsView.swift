@@ -23,8 +23,15 @@ struct ExtensionSettingsView: View {
                     Button("Uninstall") { deleteData = false; removing = item }
                 }
             }
+            .overlay {
+                if manager.items.isEmpty && !manager.busy && !manager.loadFailed {
+                    ContentUnavailableView("No Extensions Installed", systemImage: "puzzlepiece.extension",
+                                           description: Text("Import a trusted extension package to add commands to zbox."))
+                }
+            }
             HStack {
                 Button("Import Package…", action: choosePackage)
+                    .buttonStyle(.borderedProminent)
                 if manager.busy { ProgressView().controlSize(.small) }
             }
             if let error = manager.error { SettingsErrorView(message: error) }

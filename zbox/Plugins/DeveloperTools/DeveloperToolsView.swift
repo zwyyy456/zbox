@@ -71,6 +71,12 @@ struct DeveloperToolsView: View {
                     Button("Copy") { plugin.copy(plugin.uuidText(uuid)) }
                 }
             }
+            .overlay {
+                if plugin.uuids.isEmpty {
+                    ContentUnavailableView("No UUIDs Yet", systemImage: "number",
+                                           description: Text("Choose a count, then generate UUIDs."))
+                }
+            }
             HStack {
                 Button("Clear") { plugin.clearUUIDs() }.disabled(plugin.uuids.isEmpty)
                 Spacer()

@@ -7,11 +7,12 @@ struct QuicklinksSettingsView: View {
     private var plugin: QuicklinksPlugin { environment.quicklinksPlugin }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        let items = plugin.store.items.filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.keywords.localizedStandardContains(query) }
+        VStack(alignment: .leading, spacing: 12) {
             Toggle("Enable Quicklinks", isOn: Binding(get: { plugin.isEnabled }, set: environment.setQuicklinksEnabled))
             TextField("Search Quicklinks", text: $query)
             List {
-                ForEach(plugin.store.items.filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.keywords.localizedStandardContains(query) }) { item in
+                ForEach(items) { item in
                     HStack {
                         VStack(alignment: .leading) {
                             Text(item.name)
@@ -23,7 +24,18 @@ struct QuicklinksSettingsView: View {
                     }
                 }
             }
+            .overlay {
+                if plugin.store.loadError == nil && items.isEmpty {
+                    if query.isEmpty {
+                        ContentUnavailableView("No Quicklinks Yet", systemImage: "link",
+                                               description: Text("Add a website, file, or parameterized URL to open from zbox."))
+                    } else {
+                        ContentUnavailableView.search(text: query)
+                    }
+                }
+            }
             Button("Add Quicklink") { editing = Quicklink() }
+                .buttonStyle(.borderedProminent)
             if let error = plugin.store.loadError ?? plugin.statusMessage { SettingsErrorView(message: error) }
         }
         .padding(20)

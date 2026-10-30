@@ -12,5 +12,6 @@ struct ZBoxApp: App {
         Settings {
             SettingsView(environment: appDelegate.environment)
         }
+        .windowResizability(.contentMinSize)
     }
 }
