@@ -51,7 +51,7 @@ final class AppEnvironment {
     private(set) var targetApplicationPID: pid_t?
     private(set) var selectedCommandID: CommandID?
     private(set) var rootSearchHotkey: Hotkey
-    private(set) var commandHotkeys: [CommandID: Hotkey]
+    private(set) var commandHotkeys: [CommandID: Hotkey] = [:]
     private(set) var rootSearchHotkeyError: String?
     private(set) var commandHotkeyErrors: [CommandID: String] = [:]
     private(set) var applicationReloadError: String?
@@ -144,9 +144,7 @@ final class AppEnvironment {
         rootSearchHotkey = hotkeyStore.rootSearchHotkey()
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
-        commandHotkeys = hotkeyStore.commandHotkeys(
-            for: DeveloperToolsPlugin.shortcutTargets.map(\.id) + [AppMenuPlugin.commandID] + AudioPlugin.shortcutTargets.map(\.id) + scriptCommandsPlugin.shortcutTargets.map(\.id) + FileSearchPlugin.shortcutTargets.map(\.id) + snippetsPlugin.shortcutTargets.map(\.id) + quicklinksPlugin.shortcutTargets.map(\.id) + displayPlugin.shortcutTargets.map(\.id) + workspacePlugin.shortcutTargets.map(\.id) + WindowCommands.shortcutTargets.map(\.id) + ScreenshotPlugin.shortcutTargets.map(\.id) + [ClipboardHistoryPlugin.commandID]
-        )
+        commandHotkeys = hotkeyStore.commandHotkeys(for: commandShortcutTargets.map(\.id))
     }
 
     func start() {
@@ -515,20 +513,30 @@ final class AppEnvironment {
     }
 
     func setFileSearchEnabled(_ enabled: Bool) {
+        let previous = fileSearchPlugin.isEnabled
         fileSearchPlugin.setEnabled(enabled)
-        do { try applyHotkeyRegistrations(); fileSearchPlugin.statusMessage = nil }
-        catch {
-            fileSearchPlugin.setEnabled(!enabled)
-            fileSearchPlugin.statusMessage = error.localizedDescription
+        if enabled {
+            do { try applyHotkeyRegistrations(); fileSearchPlugin.statusMessage = nil }
+            catch {
+                fileSearchPlugin.setEnabled(previous)
+                fileSearchPlugin.statusMessage = error.localizedDescription
+            }
+        } else {
+            for target in FileSearchPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
         }
     }
 
     func setSnippetsEnabled(_ enabled: Bool) {
+        let previous = snippetsPlugin.isEnabled
         snippetsPlugin.setEnabled(enabled)
-        do { try applyHotkeyRegistrations(); snippetsPlugin.statusMessage = nil }
-        catch {
-            snippetsPlugin.setEnabled(!enabled)
-            snippetsPlugin.statusMessage = error.localizedDescription
+        if enabled {
+            do { try applyHotkeyRegistrations(); snippetsPlugin.statusMessage = nil }
+            catch {
+                snippetsPlugin.setEnabled(previous)
+                snippetsPlugin.statusMessage = error.localizedDescription
+            }
+        } else {
+            for target in snippetsPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
         }
         do { try rebuildCommandRegistry() }
         catch { applicationReloadError = error.localizedDescription }
@@ -546,11 +554,16 @@ final class AppEnvironment {
     }
 
     func setScriptCommandsEnabled(_ enabled: Bool) {
+        let previous = scriptCommandsPlugin.isEnabled
         scriptCommandsPlugin.setEnabled(enabled)
-        do { try applyHotkeyRegistrations(); scriptCommandsPlugin.statusMessage = nil }
-        catch {
-            scriptCommandsPlugin.setEnabled(!enabled)
-            scriptCommandsPlugin.statusMessage = error.localizedDescription
+        if enabled {
+            do { try applyHotkeyRegistrations(); scriptCommandsPlugin.statusMessage = nil }
+            catch {
+                scriptCommandsPlugin.setEnabled(previous)
+                scriptCommandsPlugin.statusMessage = error.localizedDescription
+            }
+        } else {
+            for target in scriptCommandsPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
         }
         do { try rebuildCommandRegistry() }
         catch { applicationReloadError = error.localizedDescription }
@@ -568,11 +581,16 @@ final class AppEnvironment {
     }
 
     func setQuicklinksEnabled(_ enabled: Bool) {
+        let previous = quicklinksPlugin.isEnabled
         quicklinksPlugin.setEnabled(enabled)
-        do { try applyHotkeyRegistrations(); quicklinksPlugin.statusMessage = nil }
-        catch {
-            quicklinksPlugin.setEnabled(!enabled)
-            quicklinksPlugin.statusMessage = error.localizedDescription
+        if enabled {
+            do { try applyHotkeyRegistrations(); quicklinksPlugin.statusMessage = nil }
+            catch {
+                quicklinksPlugin.setEnabled(previous)
+                quicklinksPlugin.statusMessage = error.localizedDescription
+            }
+        } else {
+            for target in quicklinksPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }
         }
         do { try rebuildCommandRegistry() }
         catch { applicationReloadError = error.localizedDescription }
@@ -796,87 +814,34 @@ final class AppEnvironment {
             })
         }
         if fileSearchPlugin.isEnabled {
-            for target in FileSearchPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: FileSearchPlugin.shortcutTargets)
         }
         if appMenuPlugin.isEnabled, isAccessibilityTrusted, let hotkey = commandHotkeys[AppMenuPlugin.commandID] {
             requests.append(HotkeyRegistrationRequest(id: AppMenuPlugin.commandID.rawValue, hotkey: hotkey,
                 label: AppMenuPlugin.shortcutTarget.title) { [weak self] in self?.executeDirectCommand(AppMenuPlugin.commandID) })
         }
         if audioPlugin.isEnabled {
-            for target in AudioPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: AudioPlugin.shortcutTargets)
         }
-        for target in DeveloperToolsPlugin.shortcutTargets {
-            if let hotkey = commandHotkeys[target.id] {
-                requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                    self?.executeDirectCommand(target.id)
-                })
-            }
-        }
+        requests += commandHotkeyRequests(for: DeveloperToolsPlugin.shortcutTargets)
+
         if snippetsPlugin.isEnabled {
-            for target in snippetsPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: snippetsPlugin.shortcutTargets)
         }
         if scriptCommandsPlugin.isEnabled {
-            for item in scriptCommandsPlugin.store.items where item.enabled {
-                if let hotkey = commandHotkeys[item.commandID] {
-                    requests.append(HotkeyRegistrationRequest(id: item.commandID.rawValue, hotkey: hotkey, label: item.name) { [weak self] in
-                        self?.executeDirectCommand(item.commandID)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: scriptCommandsPlugin.enabledShortcutTargets)
         }
         if quicklinksPlugin.isEnabled {
-            for target in quicklinksPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: quicklinksPlugin.shortcutTargets)
         }
         if displayPlugin.isEnabled {
-            for target in displayPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: displayPlugin.shortcutTargets)
         }
         if workspacePlugin.isEnabled {
-            for target in workspacePlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: workspacePlugin.shortcutTargets)
         }
         if screenshotPlugin.isEnabled {
-            for target in ScreenshotPlugin.shortcutTargets {
-                if let hotkey = commandHotkeys[target.id] {
-                    requests.append(HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
-                        self?.executeDirectCommand(target.id)
-                    })
-                }
-            }
+            requests += commandHotkeyRequests(for: ScreenshotPlugin.shortcutTargets)
         }
         requests += extensionHotkeyRequests()
         let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue)).union(registeredExtensionIDs)
@@ -884,14 +849,18 @@ final class AppEnvironment {
         registeredExtensionIDs = Set(extensionManager.shortcutTargets.map(\.id.rawValue))
     }
 
-    private func extensionHotkeyRequests() -> [HotkeyRegistrationRequest] {
-        let enabledIDs = extensionManager.enabledCommandIDs
-        return extensionManager.shortcutTargets.compactMap { target in
-            guard enabledIDs.contains(target.id), let hotkey = commandHotkeys[target.id] else { return nil }
+    private func commandHotkeyRequests(for targets: [CommandShortcutTarget]) -> [HotkeyRegistrationRequest] {
+        targets.compactMap { target in
+            guard let hotkey = commandHotkeys[target.id] else { return nil }
             return HotkeyRegistrationRequest(id: target.id.rawValue, hotkey: hotkey, label: target.title) { [weak self] in
                 self?.executeDirectCommand(target.id)
             }
         }
+    }
+
+    private func extensionHotkeyRequests() -> [HotkeyRegistrationRequest] {
+        let enabledIDs = extensionManager.enabledCommandIDs
+        return commandHotkeyRequests(for: extensionManager.shortcutTargets.filter { enabledIDs.contains($0.id) })
     }
 
     private func validateHotkeyAssignments(

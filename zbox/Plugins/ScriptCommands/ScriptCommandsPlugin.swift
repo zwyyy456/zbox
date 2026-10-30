@@ -22,6 +22,10 @@ final class ScriptCommandsPlugin {
         store.items.map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
     }
 
+    var enabledShortcutTargets: [CommandShortcutTarget] {
+        store.items.filter(\.enabled).map { CommandShortcutTarget(id: $0.commandID, title: $0.name) }
+    }
+
     init(defaults: UserDefaults, coordinator: ClipboardAccessCoordinator) {
         self.coordinator = coordinator
         self.defaults = defaults

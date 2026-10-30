@@ -4,6 +4,25 @@ import Testing
 
 @MainActor
 struct HotkeyConfigurationTests {
+    @Test(arguments: ["filesearch", "snippets", "scripts", "quicklinks"])
+    func disablingDoesNotRegisterOtherHotkeys(feature: String) throws {
+        let suite = "HotkeyConfigurationTests.disable.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: feature + ".enabled")
+        let registrar = FailingHotkeyRegistrar()
+        registrar.shouldFail = true
+        let environment = AppEnvironment(defaults: defaults, hotkeyRegistrar: registrar)
+        switch feature {
+        case "filesearch": environment.setFileSearchEnabled(false)
+        case "snippets": environment.setSnippetsEnabled(false)
+        case "scripts": environment.setScriptCommandsEnabled(false)
+        default: environment.setQuicklinksEnabled(false)
+        }
+        #expect(!defaults.bool(forKey: feature + ".enabled"))
+        #expect(registrar.replacements == 0)
+    }
+
     @Test
     func persistsArbitraryHotkeysAndIgnoresUnknownCommands() throws {
         let suiteName = "HotkeyConfigurationTests.\(UUID().uuidString)"
@@ -135,8 +154,10 @@ struct HotkeyConfigurationTests {
 @MainActor
 private final class FailingHotkeyRegistrar: HotkeyRegistering {
     var shouldFail = false
+    var replacements = 0
 
     func replace(ids: Set<String>, with requests: [HotkeyRegistrationRequest]) throws {
+        replacements += 1
         if shouldFail { throw TestRegistrationError.failed }
     }
 
