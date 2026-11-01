@@ -1,0 +1,5 @@
+zbox UI Catalog
+
+This is public demonstration text for interface capture.
+Tasks: search files, preview a document, and inspect available actions.
+No personal data or credentials are included.

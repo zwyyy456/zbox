@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "org.zbox.uicatalog.pythontext",
+  "name": "UI Catalog Text Case",
+  "version": "1.0.0",
+  "capabilities": [
+    "selection.read",
+    "clipboard.write"
+  ],
+  "commands": [
+    {
+      "id": "convert",
+      "name": "Convert Selected Text (Python)",
+      "mode": "interactive",
+      "protocolVersion": 1,
+      "entry": "main.py",
+      "interpreter": "python3"
+    }
+  ]
+}
