@@ -124,8 +124,12 @@ final class ShortcutRecorderButton: NSButton {
 
     func refreshTitle() {
         guard !isRecording else { return }
-        title = hotkey.map(HotkeyFormatter.displayName(for:)) ?? String(localized: "Not Set")
-        setAccessibilityValue(title)
+        let text = hotkey.map(HotkeyFormatter.displayName(for:)) ?? String(localized: "Record Shortcut")
+        attributedTitle = NSAttributedString(string: text, attributes: [
+            .foregroundColor: hotkey == nil ? NSColor.tertiaryLabelColor : NSColor.labelColor,
+            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
+        ])
+        setAccessibilityValue(hotkey == nil ? String(localized: "Not Set") : text)
     }
 
     private func beginRecording() {

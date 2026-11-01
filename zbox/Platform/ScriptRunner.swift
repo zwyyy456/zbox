@@ -1,5 +1,6 @@
-import Foundation
 import Darwin
+import Foundation
+import SwiftUI
 
 nonisolated struct ScriptOutput: Sendable {
     var stdout = Data()
@@ -13,9 +14,28 @@ nonisolated struct ScriptRunResult: Sendable {
         if status & 0x7f != 0 { return String(localized: "Signal: \(status & 0x7f)") }
         return String(localized: "Exit Code: \((status >> 8) & 0xff)")
     }
+    var succeeded: Bool { !cancelled && !timedOut && status == 0 }
     let status: Int32
     let cancelled: Bool
     let timedOut: Bool
+}
+
+/// Termination status with a success or failure symbol, shared by script and extension task windows.
+struct ScriptResultLabel: View {
+    let result: ScriptRunResult
+    let cancelledTitle: String
+
+    var body: some View {
+        if result.cancelled {
+            Label(cancelledTitle, systemImage: "stop.circle").foregroundStyle(.secondary)
+        } else if result.timedOut {
+            Label("Timed Out", systemImage: "clock.badge.exclamationmark").foregroundStyle(.orange)
+        } else {
+            Label(result.terminationDescription,
+                  systemImage: result.succeeded ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                .foregroundStyle(result.succeeded ? .green : .red)
+        }
+    }
 }
 
 nonisolated enum ScriptRunner {

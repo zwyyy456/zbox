@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E10000010000000000000001 /* ZboxExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZboxExtensionProtocol */; };
 		A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000030000000000000003 /* FlashDictIntegrationKit */; };
+		E10000010000000000000001 /* ZboxExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZboxExtensionProtocol */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -487,19 +487,25 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZboxExtensionKit" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ZboxExtensionKit; };
 		A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../zdict/Packages/FlashDictIntegrationKit;
 		};
+		E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZboxExtensionKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ZboxExtensionKit;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		E10000030000000000000003 /* ZboxExtensionProtocol */ = {isa = XCSwiftPackageProductDependency; productName = ZboxExtensionProtocol; };
 		A10000030000000000000003 /* FlashDictIntegrationKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */;
 			productName = FlashDictIntegrationKit;
+		};
+		E10000030000000000000003 /* ZboxExtensionProtocol */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ZboxExtensionProtocol;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

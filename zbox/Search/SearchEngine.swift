@@ -125,3 +125,10 @@ nonisolated struct SearchEngine {
             .lowercased()
     }
 }
+
+nonisolated struct SearchResultSection: Identifiable, Sendable {
+    let title: String?
+    let matches: [SearchMatch]
+
+    var id: String { title ?? "results" }
+}

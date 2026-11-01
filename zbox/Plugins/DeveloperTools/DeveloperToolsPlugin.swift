@@ -79,7 +79,8 @@ final class DeveloperToolsPlugin: NSObject, NSWindowDelegate {
             let tool = Tool.allCases.first { $0.commandID == target.id }
             try registry.register(CommandDescriptor(systemImage: "hammer",
                 id: target.id, title: target.title,
-                subtitle: String(localized: "Built-in Developer Tools"),
+                category: String(localized: "Developer Tools"),
+                subtitle: nil,
                 keywords: ["developer", "tools", "开发者", "工具"] + (tool?.keywords ?? [])
             )) { [weak self] context in
                 if target.id == Self.selectionCommandID {

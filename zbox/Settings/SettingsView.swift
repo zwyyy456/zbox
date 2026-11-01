@@ -31,8 +31,20 @@ struct SettingsView: View {
     private func settingsSection(_ title: LocalizedStringKey, tabs: [SettingsTab]) -> some View {
         Section(title) {
             ForEach(tabs, id: \.self) { tab in
-                Label(tab.title, systemImage: tab.systemImage)
-                    .tag(tab)
+                let isEnabled = environment.isPluginEnabled(tab)
+                HStack {
+                    Label(tab.title, systemImage: tab.systemImage)
+                    Spacer()
+                    if let isEnabled {
+                        Text(isEnabled ? String(localized: "On") : String(localized: "Off"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize()
+                            .accessibilityHidden(true)
+                    }
+                }
+                .tag(tab)
+                .accessibilityValue(isEnabled.map { $0 ? String(localized: "On") : String(localized: "Off") } ?? "")
             }
         }
     }
@@ -91,6 +103,10 @@ private struct GeneralSettingsView: View {
                         set: { environment.setShowsApplicationPathsInSearchResults($0) }
                     )
                 )
+                LabeledContent("Recent Commands") {
+                    Button("Clear Recent Commands", action: environment.clearRecentCommands)
+                        .disabled(environment.recentCommandIDs.isEmpty)
+                }
             }
 
             Section("Applications") {
@@ -110,19 +126,29 @@ private struct GeneralSettingsView: View {
 private struct ShortcutSettingsView: View {
     let environment: AppEnvironment
     @State private var query = ""
+    @State private var onlyAssigned = false
 
     var body: some View {
         @Bindable var environment = environment
 
-        let targets = environment.commandShortcutTargets.filter {
-            query.isEmpty || $0.title.localizedStandardContains(query)
+        let sections = environment.commandShortcutSections.compactMap { section in
+            let targets = section.targets.filter {
+                (query.isEmpty || $0.title.localizedStandardContains(query))
+                    && (!onlyAssigned || environment.commandHotkey(for: $0.id) != nil)
+            }
+            return targets.isEmpty ? nil : (title: section.title, targets: targets)
         }
 
         VStack(spacing: 0) {
-            TextField("Search Command Shortcuts", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+            HStack {
+                TextField("Search Command Shortcuts", text: $query)
+                    .textFieldStyle(.roundedBorder)
+                Toggle("Only Show Assigned", isOn: $onlyAssigned)
+                    .toggleStyle(.checkbox)
+                    .fixedSize()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
             Form {
                 Section("Root Search") {
                     VStack(alignment: .leading, spacing: 6) {
@@ -138,7 +164,7 @@ private struct ShortcutSettingsView: View {
                                 onInvalid: environment.reportInvalidRootSearchHotkey,
                                 onRecordingChanged: environment.setShortcutRecordingActive
                             )
-                            .frame(width: 180)
+                            .frame(width: 140)
                         }
                         if let error = environment.rootSearchHotkeyError {
                             Text(error)
@@ -148,35 +174,20 @@ private struct ShortcutSettingsView: View {
                     }
                 }
 
-                Section("Command Shortcuts") {
-                    if targets.isEmpty {
-                        ContentUnavailableView.search(text: query)
+                if sections.isEmpty {
+                    Section("Command Shortcuts") {
+                        if query.isEmpty {
+                            ContentUnavailableView("No Assigned Shortcuts", systemImage: "keyboard",
+                                                   description: Text("Turn off the filter to assign a shortcut."))
+                        } else {
+                            ContentUnavailableView.search(text: query)
+                        }
                     }
-                    ForEach(targets) { target in
-                        VStack(alignment: .leading, spacing: 6) {
-                            LabeledContent(target.title) {
-                                ShortcutRecorder(
-                                    hotkey: environment.commandHotkey(for: target.id),
-                                    allowsClearing: true,
-                                    accessibilityLabel: String(localized: "\(target.title) shortcut"),
-                                    onChange: { hotkey in
-                                        environment.setCommandHotkey(hotkey, for: target.id)
-                                    },
-                                    onInvalid: { message in
-                                        environment.reportInvalidCommandHotkey(
-                                            message,
-                                            for: target.id
-                                        )
-                                    },
-                                    onRecordingChanged: environment.setShortcutRecordingActive
-                                )
-                                .frame(width: 180)
-                            }
-                            if let error = environment.commandHotkeyErrors[target.id] {
-                                Text(error)
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
+                }
+                ForEach(sections, id: \.title) { section in
+                    Section(section.title) {
+                        ForEach(section.targets) { target in
+                            commandShortcutRow(target)
                         }
                     }
                 }
@@ -186,6 +197,58 @@ private struct ShortcutSettingsView: View {
                 }
             }
             .settingsPane()
+        }
+    }
+}
+
+/// Accessibility status with a request action shown only while permission is missing.
+struct AccessibilityPermissionRow: View {
+    let isTrusted: Bool
+    let request: () -> Void
+    let openSettings: () -> Void
+
+    var body: some View {
+        LabeledContent("Accessibility") {
+            if isTrusted {
+                Label("Granted", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Label("Permission Required", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+        }
+        HStack {
+            if !isTrusted {
+                Button("Request Permission", action: request)
+            }
+            Button("Open System Settings", action: openSettings)
+        }
+    }
+}
+
+private extension ShortcutSettingsView {
+    func commandShortcutRow(_ target: CommandShortcutTarget) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent(target.title) {
+                ShortcutRecorder(
+                    hotkey: environment.commandHotkey(for: target.id),
+                    allowsClearing: true,
+                    accessibilityLabel: String(localized: "\(target.title) shortcut"),
+                    onChange: { hotkey in
+                        environment.setCommandHotkey(hotkey, for: target.id)
+                    },
+                    onInvalid: { message in
+                        environment.reportInvalidCommandHotkey(message, for: target.id)
+                    },
+                    onRecordingChanged: environment.setShortcutRecordingActive
+                )
+                .frame(width: 140)
+            }
+            if let error = environment.commandHotkeyErrors[target.id] {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
     }
 }

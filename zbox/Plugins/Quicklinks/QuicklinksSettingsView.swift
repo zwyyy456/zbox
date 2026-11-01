@@ -53,16 +53,16 @@ private struct QuicklinkEditor: View {
 
     var body: some View {
         Form {
-            TextField("Name", text: $item.name)
+            TextField("Name", text: $item.name, prompt: Text("Required Field"))
             Picker("Type", selection: $item.kind) {
                 Text("Parameterized URL").tag(Quicklink.Kind.template)
                 Text("URL").tag(Quicklink.Kind.url)
                 Text("File or Folder").tag(Quicklink.Kind.file)
             }
-            TextField("Target", text: $item.target)
+            TextField("Target", text: $item.target, prompt: Text(targetPrompt))
             if item.kind == .template {
                 TextField("Parameter Prompt", text: Binding(get: { item.parameterPrompt ?? "" }, set: { item.parameterPrompt = $0 }))
-                Text("Insert {query} where the search value belongs.").font(.caption)
+                Text("Insert {query} where the search value belongs.").font(.caption).foregroundStyle(.secondary)
                 if let url = try? item.destination() {
                     Text(url.absoluteString).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 }
@@ -76,11 +76,13 @@ private struct QuicklinkEditor: View {
                     if panel.runModal() == .OK, let url = panel.url { item.target = url.path }
                 }
             }
-            TextField("Keywords (separated by spaces)", text: $item.keywords)
+            TextField("Keywords", text: $item.keywords, prompt: Text("docs search"))
+            Text("Separate keywords with spaces. Root Search matches them in addition to the name.")
+                .font(.caption).foregroundStyle(.secondary)
             if let error { SettingsErrorView(message: error) }
             HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Save") {
                     do {
                         _ = try item.destination()
@@ -93,5 +95,13 @@ private struct QuicklinkEditor: View {
             }
         }
         .padding(24).frame(width: 540)
+    }
+
+    private var targetPrompt: String {
+        switch item.kind {
+        case .template: "https://www.google.com/search?q={query}"
+        case .url: "https://developer.apple.com"
+        case .file: "~/Documents"
+        }
     }
 }

@@ -70,23 +70,34 @@ private struct ExtensionTaskView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(Array((session.command.parameters ?? []).enumerated()), id: \.element.id) { index, field in
-                TextField(field.name, text: $session.values[index]).disabled(session.running)
-            }
-            HStack {
-                Button("Run", action: session.run).keyboardShortcut(.return, modifiers: .command).disabled(session.running)
-                Button("Stop", action: session.cancel).disabled(!session.running)
-                if session.running { ProgressView().controlSize(.small) }
-                if let result = session.result {
-                    Text(result.cancelled ? String(localized: "Cancelled") : result.timedOut ? String(localized: "Timed Out") : result.terminationDescription)
+                LabeledContent(field.name) {
+                    TextField(field.name, text: $session.values[index]).textFieldStyle(.roundedBorder).labelsHidden()
+                        .disabled(session.running)
                 }
             }
-            Picker("Output", selection: $stderr) {
-                Text("Standard Output").tag(false); Text("Standard Error").tag(true)
-            }.pickerStyle(.segmented)
+            HStack {
+                Picker("Output", selection: $stderr) {
+                    Text("Standard Output").tag(false); Text("Standard Error").tag(true)
+                }.pickerStyle(.segmented).labelsHidden().fixedSize()
+                Spacer()
+                if session.running { ProgressView().controlSize(.small) }
+                if let result = session.result {
+                    ScriptResultLabel(result: result, cancelledTitle: String(localized: "Cancelled"))
+                }
+            }
             PlainTextEditor(text: .constant(text), isEditable: false, label: String(localized: "Output"))
-            Button("Copy Output") { session.copy(text) }.disabled(text.isEmpty)
             if session.output.truncated { Text("Output limited to 1 MiB per stream.").font(.caption) }
             if let error = session.error { SettingsErrorView(message: error) }
+            HStack {
+                Button("Copy Output") { session.copy(text) }.disabled(text.isEmpty)
+                Spacer()
+                if session.running {
+                    Button("Stop", action: session.cancel)
+                } else {
+                    Button("Run", action: session.run).keyboardShortcut(.return, modifiers: .command)
+                        .buttonStyle(.borderedProminent)
+                }
+            }
         }.padding(20)
     }
 }

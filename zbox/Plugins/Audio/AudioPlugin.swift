@@ -67,7 +67,7 @@ final class AudioPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         for action in Action.allCases {
-            try registry.register(CommandDescriptor(systemImage: "speaker.wave.2", id: action.id, title: action.title, subtitle: String(localized: "Audio"),
+            try registry.register(CommandDescriptor(systemImage: "speaker.wave.2", id: action.id, title: action.title, category: String(localized: "Audio"), subtitle: nil,
                 keywords: ["audio", "sound", "volume", "microphone", "音频", "音量", "静音", "设备", "麦克风"])) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
@@ -146,16 +146,20 @@ struct AudioControlView: View {
                                 if state.selected == 0 { Text("No Device").tag(AudioDeviceID(0)) }
                                 ForEach(state.devices) { Text($0.name).tag($0.id) }
                             }
-                            if let volume = state.volume {
-                                HStack {
-                                    Slider(value: Binding(get: { volume }, set: { plugin.volume($0, direction: direction, device: state.selected) }), in: 0...1)
-                                        .accessibilityLabel(Text("\(direction.title) Volume"))
-                                    Text("\(Int(volume * 100))%").monospacedDigit().frame(width: 45, alignment: .trailing)
-                                }
-                            } else { Text("Volume control is not supported.").foregroundStyle(.secondary) }
+                            LabeledContent("Volume") {
+                                if let volume = state.volume {
+                                    HStack {
+                                        Slider(value: Binding(get: { volume }, set: { plugin.volume($0, direction: direction, device: state.selected) }), in: 0...1)
+                                            .accessibilityLabel(Text("\(direction.title) Volume"))
+                                        Text("\(Int(volume * 100))%").monospacedDigit().frame(width: 45, alignment: .trailing)
+                                    }
+                                } else { Text("Not Supported").foregroundStyle(.tertiary) }
+                            }
                             if let muted = state.muted {
                                 Toggle("Mute", isOn: Binding(get: { muted }, set: { _ in plugin.mute(direction) }))
-                            } else { Text("Mute is not supported.").foregroundStyle(.secondary) }
+                            } else {
+                                LabeledContent("Mute") { Text("Not Supported").foregroundStyle(.tertiary) }
+                            }
                         }
                     }
                 }.formStyle(.grouped)

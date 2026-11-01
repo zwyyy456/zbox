@@ -41,6 +41,7 @@ struct DeveloperTextToolView: View {
                 Spacer()
                 Button("Run") { session.run() }
                     .keyboardShortcut(.return, modifiers: .command)
+                    .buttonStyle(.borderedProminent)
             }
             Text(hint).font(.caption).foregroundStyle(.secondary)
             HSplitView {

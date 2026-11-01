@@ -31,6 +31,7 @@ struct DeveloperTimestampView: View {
                     Spacer()
                     Button("Convert") { session.run() }
                         .keyboardShortcut(.return, modifiers: .command)
+                        .buttonStyle(.borderedProminent)
                 }
                 if let error = session.error {
                     Text(error).foregroundStyle(.red).textSelection(.enabled)

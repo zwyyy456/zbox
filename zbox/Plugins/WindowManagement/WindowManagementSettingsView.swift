@@ -20,20 +20,9 @@ struct WindowManagementSettingsView: View {
             }
 
             Section("Accessibility") {
-                LabeledContent(
-                    "Permission",
-                    value: environment.isAccessibilityTrusted
-                        ? String(localized: "Granted")
-                        : String(localized: "Required")
-                )
-                HStack {
-                    Button("Request Permission") {
-                        environment.requestAccessibilityPermission()
-                    }
-                    Button("Open System Settings") {
-                        environment.openAccessibilitySettings()
-                    }
-                }
+                AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
+                                           request: environment.requestAccessibilityPermission,
+                                           openSettings: environment.openAccessibilitySettings)
             }
 
             if let error = environment.windowManagementPlugin.statusMessage {

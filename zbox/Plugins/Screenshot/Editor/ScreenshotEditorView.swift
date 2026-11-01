@@ -9,7 +9,7 @@ struct ScreenshotEditorView: View {
                     Picker("View", selection: Bindable(document).showsText) {
                         Text("Image").tag(false)
                         Text("Recognized Text").tag(true)
-                    }.pickerStyle(.segmented).frame(width: 240)
+                    }.pickerStyle(.segmented).labelsHidden().frame(width: 240)
                     Spacer()
                     Button("Pin Image", action: plugin.pinImage).disabled(plugin.isExporting || plugin.isUploading)
                     Button("Recognize Text") {
@@ -32,6 +32,7 @@ struct ScreenshotEditorView: View {
                     Button("Save…", action: plugin.saveImage).keyboardShortcut("s", modifiers: .command)
                     Button("Upload", action: plugin.uploadImage)
                     Button(plugin.completionTitle, action: plugin.finishEditing).keyboardShortcut(.return, modifiers: .command)
+                    .buttonStyle(.borderedProminent)
                 }.padding().disabled(plugin.isExporting || plugin.isUploading)
             }
             if plugin.isUploading {
@@ -66,7 +67,7 @@ private struct ScreenshotDocumentView: View {
             HStack {
                 Picker("Tool", selection: $document.tool) {
                     ForEach(ScreenshotTool.allCases) { Text($0.title).tag($0) }
-                }.pickerStyle(.segmented)
+                }.pickerStyle(.segmented).labelsHidden()
                 Button(action: document.undo) { Image(systemName: "arrow.uturn.backward") }
                     .help("Undo").accessibilityLabel("Undo").keyboardShortcut("z", modifiers: .command).disabled(!document.canUndo)
                 Button(action: document.redo) { Image(systemName: "arrow.uturn.forward") }
@@ -75,9 +76,12 @@ private struct ScreenshotDocumentView: View {
             if document.tool == .text {
                 TextField("Enter text, then click the image", text: $document.text).textFieldStyle(.roundedBorder).padding(.horizontal).padding(.bottom, 8)
             }
-            ScrollView([.horizontal, .vertical]) {
-                ScreenshotCanvas(document: document)
-                    .frame(width: document.edit.crop.width * document.zoom, height: document.edit.crop.height * document.zoom)
+            GeometryReader { proxy in
+                ScrollView([.horizontal, .vertical]) {
+                    ScreenshotCanvas(document: document)
+                        .frame(width: document.edit.crop.width * document.zoom, height: document.edit.crop.height * document.zoom)
+                        .frame(minWidth: proxy.size.width, minHeight: proxy.size.height)
+                }
             }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.black.opacity(0.08))
             HStack {
                 Text("\(Int(document.edit.crop.width)) × \(Int(document.edit.crop.height)) px").monospacedDigit()

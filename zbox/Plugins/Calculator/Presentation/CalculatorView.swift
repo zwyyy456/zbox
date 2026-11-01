@@ -86,6 +86,7 @@ struct CalculatorView: View {
         .padding()
         .frame(minWidth: 360, idealWidth: 420, minHeight: 460, idealHeight: 520)
         .focusable()
+        .focusEffectDisabled()
         .focused($acceptsKeyboardInput)
         .onAppear { acceptsKeyboardInput = true }
         .onKeyPress(phases: .down, action: handleKeyPress)

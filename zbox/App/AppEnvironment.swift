@@ -6,7 +6,19 @@ import Observation
 final class AppEnvironment {
     private enum Key {
         static let showApplicationPaths = "search.show-application-paths"
+        static let recentCommands = "search.recent-command-ids"
     }
+
+    private enum RootSearchLimit {
+        static let results = 8
+        static let recent = 5
+    }
+
+    /// Entry commands suggested on an empty query after recent commands.
+    private static let suggestedCommandIDs = [
+        FileSearchPlugin.commandID, ClipboardHistoryPlugin.commandID, SnippetsPlugin.commandID,
+        CalculatorPlugin.commandID, DeveloperToolsPlugin.commandID, SettingsCommands.openID,
+    ]
 
     private let clipboardCoordinator: ClipboardAccessCoordinator
     private let applicationCatalog = ApplicationCatalog()
@@ -62,25 +74,92 @@ final class AppEnvironment {
     private(set) var isAccessibilityTrusted: Bool
     private(set) var showsApplicationPathsInSearchResults: Bool
     private(set) var commandFeedback: CommandFeedback?
+    private(set) var recentCommandIDs: [CommandID]
+    var isShowingRootSearchActions = false {
+        didSet { selectedRootSearchActionIndex = 0 }
+    }
+    private(set) var selectedRootSearchActionIndex = 0
     var selectedSettingsTab: SettingsTab = .general
     var commandShortcutTargets: [CommandShortcutTarget] {
-        extensionManager.shortcutTargets + [AppMenuPlugin.shortcutTarget] + AudioPlugin.shortcutTargets + scriptCommandsPlugin.shortcutTargets + DeveloperToolsPlugin.shortcutTargets + FileSearchPlugin.shortcutTargets + snippetsPlugin.shortcutTargets + quicklinksPlugin.shortcutTargets + displayPlugin.shortcutTargets + workspacePlugin.shortcutTargets + ScreenshotPlugin.shortcutTargets + WindowCommands.shortcutTargets + [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID,
-                                                               title: String(localized: "Clipboard History"))]
+        commandShortcutSections.flatMap(\.targets)
+    }
+
+    /// Shortcut targets grouped by owning plugin.
+    var commandShortcutSections: [(title: String, targets: [CommandShortcutTarget])] {
+        [
+            (String(localized: "Extensions"), extensionManager.shortcutTargets),
+            (String(localized: "Application Menu"), [AppMenuPlugin.shortcutTarget]),
+            (String(localized: "Audio"), AudioPlugin.shortcutTargets),
+            (String(localized: "Automation"), scriptCommandsPlugin.shortcutTargets),
+            (String(localized: "Developer Tools"), DeveloperToolsPlugin.shortcutTargets),
+            (String(localized: "File Search"), FileSearchPlugin.shortcutTargets),
+            (String(localized: "Snippets"), snippetsPlugin.shortcutTargets),
+            (String(localized: "Quicklinks"), quicklinksPlugin.shortcutTargets),
+            (String(localized: "Display"), displayPlugin.shortcutTargets),
+            (String(localized: "Workspace"), workspacePlugin.shortcutTargets),
+            (String(localized: "Screenshot"), ScreenshotPlugin.shortcutTargets),
+            (String(localized: "Window Management"), WindowCommands.shortcutTargets),
+            (String(localized: "Clipboard History"),
+             [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID, title: String(localized: "Clipboard History"))]),
+        ].filter { !$0.1.isEmpty }
+    }
+
+    /// Whether the plugin behind a settings tab is turned on; nil for tabs without an on/off switch.
+    func isPluginEnabled(_ tab: SettingsTab) -> Bool? {
+        switch tab {
+        case .general, .shortcuts, .extensions: nil
+        case .appMenu: appMenuPlugin.isEnabled
+        case .audio: audioPlugin.isEnabled
+        case .scriptCommands: scriptCommandsPlugin.isEnabled
+        case .fileSearch: fileSearchPlugin.isEnabled
+        case .snippets: snippetsPlugin.isEnabled
+        case .quicklinks: quicklinksPlugin.isEnabled
+        case .display: displayPlugin.isEnabled
+        case .workspace: workspacePlugin.isEnabled
+        case .windowManagement: windowManagementPlugin.isEnabled
+        case .textLookup: textLookupPlugin.settings.isEnabled
+        case .screenshot: screenshotPlugin.isEnabled
+        case .clipboardHistory: clipboardHistoryPlugin.isEnabled
+        }
     }
 
     var searchQuery = "" {
         didSet {
             if searchQuery != oldValue {
                 selectedCommandID = nil
+                isShowingRootSearchActions = false
             }
         }
     }
+    var searchResultSections: [SearchResultSection] {
+        let descriptors = commandRegistry.descriptors
+        guard searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            let matches = searchEngine.search(query: searchQuery, in: descriptors, limit: RootSearchLimit.results)
+            return matches.isEmpty ? [] : [SearchResultSection(title: nil, matches: matches)]
+        }
+
+        let byID = Dictionary(descriptors.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let recent = recentCommandIDs.compactMap { byID[$0] }.prefix(RootSearchLimit.recent)
+        let recentIDs = Set(recent.map(\.id))
+        let suggested = Self.suggestedCommandIDs
+            .filter { !recentIDs.contains($0) }
+            .compactMap { byID[$0] }
+            .prefix(RootSearchLimit.results - recent.count)
+        return [
+            SearchResultSection(title: String(localized: "Recent"),
+                                matches: recent.map { SearchMatch(descriptor: $0, score: 0) }),
+            SearchResultSection(title: String(localized: "Suggestions"),
+                                matches: suggested.map { SearchMatch(descriptor: $0, score: 0) }),
+        ].filter { !$0.matches.isEmpty }
+    }
+
     var searchResults: [SearchMatch] {
-        searchEngine.search(
-            query: searchQuery,
-            in: commandRegistry.descriptors,
-            limit: 8
-        )
+        searchResultSections.flatMap(\.matches)
+    }
+
+    var selectedSearchMatch: SearchMatch? {
+        let results = searchResults
+        return results.first { $0.id == selectedCommandID } ?? results.first
     }
 
     @ObservationIgnored
@@ -144,6 +223,7 @@ final class AppEnvironment {
         rootSearchHotkey = hotkeyStore.rootSearchHotkey()
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
+        recentCommandIDs = (defaults.stringArray(forKey: Key.recentCommands) ?? []).map(CommandID.init)
         commandHotkeys = hotkeyStore.commandHotkeys(for: commandShortcutTargets.map(\.id))
     }
 
@@ -235,6 +315,7 @@ final class AppEnvironment {
         targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         searchQuery = ""
         selectedCommandID = nil
+        isShowingRootSearchActions = false
         commandFeedback = nil
         commandFeedbackPanelController.hide()
         searchPanelController.show()
@@ -305,6 +386,11 @@ final class AppEnvironment {
 
 
     func moveSelection(by offset: Int) {
+        if isShowingRootSearchActions, let selected = selectedSearchMatch {
+            let count = rootSearchActions(for: selected.id).count
+            selectedRootSearchActionIndex = min(max(selectedRootSearchActionIndex + offset, 0), max(count - 1, 0))
+            return
+        }
         let results = searchResults
         guard !results.isEmpty else {
             selectedCommandID = nil
@@ -319,8 +405,7 @@ final class AppEnvironment {
     }
 
     func executeSelectedCommand() {
-        let results = searchResults
-        guard let commandID = selectedCommandID ?? results.first?.id else {
+        guard let commandID = selectedSearchMatch?.id else {
             return
         }
 
@@ -352,6 +437,7 @@ final class AppEnvironment {
             guard let self else { return }
             do {
                 try await registry.execute(commandID, context: context)
+                if context.source == .rootSearch { recordRecentCommand(commandID) }
                 guard isCurrentExecution(
                     executionID,
                     expectedRootSearchSessionID: expectedRootSearchSessionID
@@ -386,6 +472,67 @@ final class AppEnvironment {
         guard !Task.isCancelled, commandExecutionID == executionID else { return false }
         return expectedRootSearchSessionID == nil
             || rootSearchSessionID == expectedRootSearchSessionID
+    }
+
+    private func recordRecentCommand(_ commandID: CommandID) {
+        recentCommandIDs.removeAll { $0 == commandID }
+        recentCommandIDs.insert(commandID, at: 0)
+        recentCommandIDs = Array(recentCommandIDs.prefix(RootSearchLimit.recent * 4))
+        defaults.set(recentCommandIDs.map(\.rawValue), forKey: Key.recentCommands)
+    }
+
+    func clearRecentCommands() {
+        recentCommandIDs = []
+        defaults.removeObject(forKey: Key.recentCommands)
+    }
+
+    func primaryActionTitle(for descriptor: CommandDescriptor) -> String {
+        applicationURLsByCommandID[descriptor.id] != nil
+            ? String(localized: "Open Application")
+            : String(localized: "Run Command")
+    }
+
+    /// Plugin or result type shown at the trailing edge of a Root Search row.
+    func accessoryTitle(for descriptor: CommandDescriptor) -> String {
+        if applicationURLsByCommandID[descriptor.id] != nil { return String(localized: "Application") }
+        return descriptor.category ?? String(localized: "Command")
+    }
+
+    func rootSearchActions(for commandID: CommandID) -> [RootSearchAction] {
+        guard let url = applicationURLsByCommandID[commandID] else { return [] }
+        let isRunning = NSWorkspace.shared.runningApplications.contains { $0.bundleURL == url }
+        return [.open, .showInFinder, .copyPath] + (isRunning ? [.quit] : [])
+    }
+
+    func performSelectedRootSearchAction() {
+        guard let selected = selectedSearchMatch else { return }
+        let actions = rootSearchActions(for: selected.id)
+        guard actions.indices.contains(selectedRootSearchActionIndex) else { return }
+        performRootSearchAction(actions[selectedRootSearchActionIndex])
+    }
+
+    func performRootSearchAction(_ action: RootSearchAction) {
+        isShowingRootSearchActions = false
+        guard let match = selectedSearchMatch else { return }
+        guard action != .open, let url = applicationURLsByCommandID[match.id] else {
+            executeSelectedCommand()
+            return
+        }
+        switch action {
+        case .open:
+            return
+        case .showInFinder:
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        case .copyPath:
+            let board = NSPasteboard.general
+            board.clearContents()
+            board.setString(url.path, forType: .string)
+            clipboardCoordinator.didWrite(changeCount: board.changeCount)
+        case .quit:
+            NSWorkspace.shared.runningApplications.filter { $0.bundleURL == url }.forEach { $0.terminate() }
+        }
+        recordRecentCommand(match.id)
+        hideRootSearch()
     }
 
     func applicationIcon(for commandID: CommandID) -> NSImage? {

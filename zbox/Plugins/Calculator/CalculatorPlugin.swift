@@ -3,7 +3,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class CalculatorPlugin {
-    private static let commandID = CommandID("calculator.open")
+    static let commandID = CommandID("calculator.open")
 
     var inputRadix: CalculatorEngine.Radix = .decimal
     private(set) var engine = CalculatorEngine()
@@ -26,7 +26,8 @@ final class CalculatorPlugin {
         let descriptor = CommandDescriptor(systemImage: "function",
             id: Self.commandID,
             title: String(localized: "Calculator"),
-            subtitle: String(localized: "Built-in Calculator"),
+            category: String(localized: "Calculator"),
+            subtitle: nil,
             keywords: [
                 "calculator", "calculate", "decimal", "hexadecimal", "hex",
                 "计算器", "计算", "十进制", "十六进制",

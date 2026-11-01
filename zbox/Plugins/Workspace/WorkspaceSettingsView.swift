@@ -12,10 +12,9 @@ struct WorkspaceSettingsView: View {
                     set: environment.setWorkspaceEnabled))
                 Text("Save application window layouts and restore them locally using Accessibility permission.")
                     .font(.caption).foregroundStyle(.secondary)
-                if !environment.isAccessibilityTrusted {
-                    Button("Request Accessibility Permission", action: environment.requestAccessibilityPermission)
-                    Button("Open Accessibility Settings", action: environment.openAccessibilitySettings)
-                }
+                AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
+                                           request: environment.requestAccessibilityPermission,
+                                           openSettings: environment.openAccessibilitySettings)
                 if let message = plugin.statusMessage ?? plugin.store.errorMessage {
                     Text(message).font(.caption).foregroundStyle(.secondary)
                 }

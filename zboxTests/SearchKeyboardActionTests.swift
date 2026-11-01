@@ -20,6 +20,14 @@ struct SearchKeyboardActionTests {
         #expect(action(keyCode: 45, characters: "n", modifiers: .command) == nil)
     }
 
+    @Test
+    func recognizesOnlyCommandKAsActionsShortcut() {
+        #expect(SearchKeyboardMapper.isActionsShortcut(charactersIgnoringModifiers: "k", modifierFlags: .command))
+        #expect(!SearchKeyboardMapper.isActionsShortcut(charactersIgnoringModifiers: "k", modifierFlags: []))
+        #expect(!SearchKeyboardMapper.isActionsShortcut(charactersIgnoringModifiers: "k", modifierFlags: [.command, .shift]))
+        #expect(!SearchKeyboardMapper.isActionsShortcut(charactersIgnoringModifiers: "j", modifierFlags: .command))
+    }
+
     private func action(
         keyCode: UInt16,
         characters: String? = nil,

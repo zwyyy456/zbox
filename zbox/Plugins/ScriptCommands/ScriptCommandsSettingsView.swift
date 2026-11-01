@@ -54,8 +54,8 @@ private struct ScriptCommandEditor: View {
     var body: some View {
         VStack {
             Form {
-                TextField("Name", text: $item.name)
-                TextField("Keywords", text: $item.keywords)
+                TextField("Name", text: $item.name, prompt: Text("Required Field"))
+                TextField("Keywords", text: $item.keywords, prompt: Text("Separate keywords with spaces"))
                 Toggle("Enabled", isOn: $item.enabled)
                 if item.shortcut != nil {
                     Picker("Apple Shortcut", selection: Binding(get: { item.shortcut?.identifier }, set: { id in
@@ -84,14 +84,14 @@ private struct ScriptCommandEditor: View {
                     Text(item.path).lineLimit(2).textSelection(.enabled)
                     Button("Choose…") { choose(directory: false) { item.path = $0 } }
                 }
-                TextField("Interpreter (empty = direct execution)", text: $item.interpreter)
+                TextField("Interpreter", text: $item.interpreter, prompt: Text("Empty runs the file directly"))
                 HStack {
                     Button("zsh") { item.interpreter = "/bin/zsh" }
                     Button("bash") { item.interpreter = "/bin/bash" }
                     Button("AppleScript") { item.interpreter = "/usr/bin/osascript" }
                     Button("Choose Interpreter…") { choose(directory: false) { item.interpreter = $0 } }
                 }
-                TextField("Working Directory (empty = script folder)", text: $item.directory)
+                TextField("Working Directory", text: $item.directory, prompt: Text("Empty uses the script folder"))
                 Button("Choose Working Directory…") { choose(directory: true) { item.directory = $0 } }
                 TextField("Timeout (seconds)", value: $item.timeout, format: .number)
                 Text("Fixed Arguments (one argument per line)").font(.headline)
@@ -112,8 +112,8 @@ private struct ScriptCommandEditor: View {
             }.formStyle(.grouped)
             if let error { Text(error).foregroundStyle(.red).padding(.horizontal) }
             HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Save") {
                     do {
                         try item.validate()

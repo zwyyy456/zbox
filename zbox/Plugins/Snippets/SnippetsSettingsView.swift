@@ -72,9 +72,15 @@ private struct SnippetEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField("Name", text: $item.name)
-            TextField("Keywords (separated by spaces)", text: $item.keywords)
-            TextField("Group (optional)", text: $item.group)
+            LabeledContent("Name") {
+                TextField("Name", text: $item.name, prompt: Text("Required Field")).labelsHidden()
+            }
+            LabeledContent("Keywords") {
+                TextField("Keywords", text: $item.keywords, prompt: Text("Separate keywords with spaces")).labelsHidden()
+            }
+            LabeledContent("Group") {
+                TextField("Group", text: $item.group, prompt: Text("Optional")).labelsHidden()
+            }
             HStack {
                 Text("Snippet Text").font(.headline)
                 Spacer()
@@ -92,13 +98,14 @@ private struct SnippetEditor: View {
             Text("Variables expand only when copied or pasted. Prefix {{ with a backslash to keep it literal.").font(.caption).foregroundStyle(.secondary)
             if let error { SettingsErrorView(message: error) }
             HStack {
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Save") {
                     if save(item) { dismiss() }
                     else { error = String(localized: "The changes could not be saved. Check the storage location and try again.") }
                 }
                 .keyboardShortcut("s", modifiers: .command)
+                .buttonStyle(.borderedProminent)
                 .disabled(item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || item.body.isEmpty)
             }
         }.padding(24).frame(width: 580, height: 460)

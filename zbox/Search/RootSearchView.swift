@@ -7,8 +7,9 @@ struct RootSearchView: View {
 
     var body: some View {
         @Bindable var environment = environment
-        let results = environment.searchResults
-        let selectedID = environment.selectedCommandID ?? results.first?.id
+        let sections = environment.searchResultSections
+        let selected = environment.selectedSearchMatch
+        let actions = selected.map { environment.rootSearchActions(for: $0.id) } ?? []
 
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -24,7 +25,7 @@ struct RootSearchView: View {
 
             Divider()
 
-            if results.isEmpty {
+            if sections.isEmpty {
                 ContentUnavailableView(
                     "No Commands Found",
                     systemImage: "magnifyingglass",
@@ -34,74 +35,41 @@ struct RootSearchView: View {
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 4) {
-                            ForEach(results) { match in
-                                Button {
-                                    environment.select(match.id)
-                                    environment.executeSelectedCommand()
-                                } label: {
-                                    CommandResultRow(
-                                        match: match,
-                                        icon: environment.applicationIcon(for: match.id),
-                                        systemImage: match.descriptor.systemImage,
-                                        subtitle: environment.subtitle(for: match.descriptor),
-                                        isSelected: (match.id == selectedID)
-                                    )
+                        LazyVStack(alignment: .leading, spacing: 2) {
+                            ForEach(sections) { section in
+                                if let title = section.title {
+                                    Text(title)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 10)
+                                        .padding(.top, 8)
+                                        .padding(.bottom, 2)
+                                        .accessibilityAddTraits(.isHeader)
                                 }
-                                .id(match.id)
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(match.descriptor.title)
-                                .accessibilityValue(
-                                    (match.id == selectedID)
-                                        ? String(localized: "Selected")
-                                        : ""
-                                )
+                                ForEach(section.matches) { match in
+                                    resultButton(match, isSelected: match.id == selected?.id)
+                                }
                             }
                         }
                         .padding(8)
                     }
-                    .onChange(of: selectedID) { _, id in
+                    .onChange(of: selected?.id) { _, id in
                         if let id { proxy.scrollTo(id) }
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    if environment.isShowingRootSearchActions, !actions.isEmpty {
+                        RootSearchActionsList(actions: actions,
+                                              selectedIndex: environment.selectedRootSearchActionIndex,
+                                              perform: environment.performRootSearchAction)
+                            .padding(10)
                     }
                 }
             }
 
             Divider()
 
-            HStack {
-                if let feedback = environment.commandFeedback {
-                    Text(feedback.message)
-                        .lineLimit(1)
-                    Spacer()
-                } else {
-                    Spacer()
-                    Text("↑↓ Select   ↩ Run   esc Close")
-                }
-                if let recovery = environment.commandFeedback?.recoveryAction {
-                    switch recovery {
-                    case .openAccessibilitySettings:
-                        Button("Open Accessibility Settings") {
-                            environment.performCommandRecovery(recovery)
-                        }
-                        .buttonStyle(.link)
-                    case .openDisplaySettings:
-                        Button("Open Display Settings") { environment.performCommandRecovery(.openDisplaySettings) }
-                    case .openWorkspaceSettings:
-                        Button("Open Workspace Settings") {
-                            environment.performCommandRecovery(.openWorkspaceSettings)
-                        }
-                    case .openWindowManagementSettings:
-                        Button("Open Window Management") {
-                            environment.performCommandRecovery(recovery)
-                        }
-                        .buttonStyle(.link)
-                    }
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            footer(selected: selected, hasActions: !actions.isEmpty)
         }
         .frame(width: 640, height: 420)
         .background(.regularMaterial)
@@ -118,12 +86,121 @@ struct RootSearchView: View {
             environment.hideRootSearch()
         }
     }
+
+    private func resultButton(_ match: SearchMatch, isSelected: Bool) -> some View {
+        Button {
+            environment.select(match.id)
+            environment.executeSelectedCommand()
+        } label: {
+            CommandResultRow(
+                match: match,
+                icon: environment.applicationIcon(for: match.id),
+                subtitle: environment.subtitle(for: match.descriptor),
+                accessory: environment.accessoryTitle(for: match.descriptor),
+                hotkey: environment.commandHotkey(for: match.id).map(HotkeyFormatter.displayName(for:)),
+                isSelected: isSelected
+            )
+        }
+        .id(match.id)
+        .buttonStyle(.plain)
+        .accessibilityLabel(match.descriptor.title)
+        .accessibilityValue(isSelected ? String(localized: "Selected") : "")
+    }
+
+    @ViewBuilder
+    private func footer(selected: SearchMatch?, hasActions: Bool) -> some View {
+        HStack(spacing: 14) {
+            if let feedback = environment.commandFeedback {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(feedback.message, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let recovery = feedback.recoveryAction {
+                        Button(recovery.title) { environment.performCommandRecovery(recovery) }
+                            .buttonStyle(.link)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Spacer()
+                if let selected {
+                    KeyHint(title: environment.primaryActionTitle(for: selected.descriptor), key: "↩")
+                }
+                if hasActions {
+                    Button {
+                        environment.isShowingRootSearchActions.toggle()
+                    } label: {
+                        KeyHint(title: String(localized: "Actions"), key: "⌘K")
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Actions")
+                    .accessibilityValue(environment.isShowingRootSearchActions
+                        ? String(localized: "Expanded") : String(localized: "Collapsed"))
+                }
+                KeyHint(title: String(localized: "Close"), key: "esc")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
 }
+
+struct KeyHint: View {
+    let title: String
+    let key: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+            Text(key)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(.quaternary, in: .rect(cornerRadius: 4))
+        }
+    }
+}
+
+private struct RootSearchActionsList: View {
+    let actions: [RootSearchAction]
+    let selectedIndex: Int
+    let perform: (RootSearchAction) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                Button { perform(action) } label: {
+                    HStack {
+                        Label(action.title, systemImage: action.systemImage)
+                        Spacer()
+                        if index == selectedIndex { Text(verbatim: "↩") }
+                    }
+                    .foregroundStyle(index == selectedIndex ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .contentShape(.rect)
+                    .background(index == selectedIndex ? Color.accentColor : Color.clear, in: .rect(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityValue(index == selectedIndex ? String(localized: "Selected") : "")
+            }
+        }
+        .padding(6)
+        .frame(width: 240)
+        .background(.thickMaterial, in: .rect(cornerRadius: 10))
+        .shadow(radius: 8)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Actions")
+    }
+}
+
 private struct CommandResultRow: View {
     let match: SearchMatch
     let icon: NSImage?
-    let systemImage: String?
     let subtitle: String?
+    let accessory: String
+    let hotkey: String?
     let isSelected: Bool
 
     var body: some View {
@@ -133,13 +210,13 @@ private struct CommandResultRow: View {
                     Image(nsImage: icon)
                         .resizable()
                 } else {
-                    Image(systemName: systemImage ?? "command")
+                    Image(systemName: match.descriptor.systemImage ?? "command")
                         .resizable()
                         .padding(5)
                 }
             }
             .scaledToFit()
-            .frame(width: 32, height: 32)
+            .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(match.descriptor.title)
@@ -147,18 +224,32 @@ private struct CommandResultRow: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.secondary))
                         .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 12)
+
+            if let hotkey {
+                Text(hotkey)
+                    .font(.caption.monospaced())
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(isSelected ? AnyShapeStyle(.white.opacity(0.2)) : AnyShapeStyle(.quaternary),
+                                in: .rect(cornerRadius: 4))
+            }
+            Text(accessory)
+                .font(.caption)
+                .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.secondary))
+                .lineLimit(1)
         }
+        .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
         .contentShape(.rect)
-        .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
-        .clipShape(.rect(cornerRadius: 8))
+        .background(isSelected ? Color.accentColor : Color.clear, in: .rect(cornerRadius: 8))
     }
 }

@@ -82,11 +82,11 @@ final class ScriptCommandsPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(systemImage: "terminal", id: Self.manageID, title: String(localized: "Automation"),
-            subtitle: nil, keywords: ["script", "shell", "shortcuts", "automation", "脚本", "命令", "快捷指令", "自动化"])) { _ in try openSettings() }
+            category: String(localized: "Automation"), subtitle: nil, keywords: ["script", "shell", "shortcuts", "automation", "脚本", "命令", "快捷指令", "自动化"])) { _ in try openSettings() }
         guard isEnabled else { return }
         for item in store.items where item.enabled {
             try registry.register(CommandDescriptor(systemImage: "terminal", id: item.commandID, title: item.name,
-                subtitle: String(localized: "Automation"), keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] _ in
+                category: String(localized: "Automation"), subtitle: nil, keywords: item.keywords.components(separatedBy: .whitespacesAndNewlines))) { [weak self] _ in
                 self?.show(item)
             }
         }
@@ -185,8 +185,21 @@ struct ScriptCommandView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let item = plugin.selected {
-                Text(item.name).font(.title2)
-                Text(item.shortcut?.name ?? item.path).font(.caption).textSelection(.enabled)
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name).font(.title2)
+                        Text(item.shortcut?.name ?? item.path).font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                    }
+                    Spacer()
+                    if plugin.isRunning {
+                        ProgressView().controlSize(.small)
+                        Text("Running…").foregroundStyle(.secondary)
+                    } else if let result = plugin.result {
+                        ScriptResultLabel(result: result, cancelledTitle: item.shortcut == nil
+                                          ? String(localized: "Cancelled") : String(localized: "Stopped Waiting"))
+                    }
+                }
                 if let shortcut = item.shortcut {
                     if shortcut.acceptsText {
                         PlainTextEditor(text: $plugin.shortcutInput, label: String(localized: "Shortcut Input"))
@@ -195,39 +208,44 @@ struct ScriptCommandView: View {
                     Text("Stopping or timing out only stops waiting in zbox. The shortcut may continue in Shortcuts.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
-                ForEach(Array(item.parameters.enumerated()), id: \.element.id) { index, parameter in
-                    TextField(parameter.name, text: $plugin.values[index]).textFieldStyle(.roundedBorder)
-                        .disabled(plugin.isRunning)
-                }
-                }
-                HStack {
-                    Button("Run", action: plugin.run).keyboardShortcut(.return, modifiers: .command).disabled(plugin.isRunning)
-                    Button(item.shortcut == nil ? String(localized: "Stop") : String(localized: "Stop Waiting"), action: plugin.cancel).disabled(!plugin.isRunning)
-                    if item.shortcut != nil {
-                        Button("Open in Shortcuts", action: plugin.openShortcut)
-                    } else {
-                        Button("Reveal Script in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: item.path)]) }
-                    }
-                    Spacer()
-                    if plugin.isRunning { ProgressView().controlSize(.small); Text("Running…") }
-                    else if let result = plugin.result {
-                        if result.cancelled { Text(item.shortcut == nil ? String(localized: "Cancelled") : String(localized: "Stopped Waiting")) }
-                        else if result.timedOut { Text("Timed Out") }
-                        else { Text(result.terminationDescription) }
+                    ForEach(Array(item.parameters.enumerated()), id: \.element.id) { index, parameter in
+                        LabeledContent(parameter.name) {
+                            TextField(parameter.name, text: $plugin.values[index],
+                                      prompt: Text(parameter.required ? String(localized: "Required Field") : String(localized: "Optional")))
+                                .textFieldStyle(.roundedBorder).labelsHidden()
+                                .disabled(plugin.isRunning)
+                        }
                     }
                 }
             }
             Picker("Output", selection: $showsError) {
                 Text("Standard Output").tag(false)
                 Text("Standard Error").tag(true)
-            }.pickerStyle(.segmented)
+            }.pickerStyle(.segmented).labelsHidden().fixedSize()
             PlainTextEditor(text: .constant(text), isEditable: false, label: String(localized: "Output"))
+            if plugin.output.truncated { Text("Output limited to 1 MiB per stream.").font(.caption).foregroundStyle(.secondary) }
+            if let message = plugin.statusMessage { Text(message).foregroundStyle(.red) }
             HStack {
+                if let item = plugin.selected {
+                    if item.shortcut != nil {
+                        Button("Open in Shortcuts", action: plugin.openShortcut)
+                    } else {
+                        Button("Reveal Script in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: item.path)]) }
+                    }
+                }
                 Button("Copy Output") { plugin.copy(text) }.disabled(text.isEmpty)
                 Button("Clear", action: plugin.clear).disabled(plugin.isRunning)
-                if plugin.output.truncated { Text("Output limited to 1 MiB per stream.").font(.caption).foregroundStyle(.secondary) }
+                Spacer()
+                if plugin.isRunning {
+                    Button(plugin.selected?.shortcut == nil ? String(localized: "Stop") : String(localized: "Stop Waiting"),
+                           action: plugin.cancel)
+                } else {
+                    Button("Run", action: plugin.run)
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(plugin.selected == nil)
+                }
             }
-            if let message = plugin.statusMessage { Text(message).foregroundStyle(.red) }
         }.padding(20)
     }
 }

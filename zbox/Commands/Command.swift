@@ -21,6 +21,8 @@ nonisolated struct CommandSearchAlias: Sendable {
 nonisolated struct CommandDescriptor: Identifiable, Sendable {
     let id: CommandID
     let title: String
+    /// Plugin or feature name shown beside the result; nil for applications.
+    let category: String?
     let subtitle: String?
     let keywords: [String]
     let systemImage: String?
@@ -30,12 +32,14 @@ nonisolated struct CommandDescriptor: Identifiable, Sendable {
         systemImage: String? = nil,
         id: CommandID,
         title: String,
+        category: String? = nil,
         subtitle: String?,
         keywords: [String],
         searchAliases: [CommandSearchAlias] = []
     ) {
         self.id = id
         self.title = title
+        self.category = category
         self.subtitle = subtitle
         self.keywords = keywords
         self.systemImage = systemImage

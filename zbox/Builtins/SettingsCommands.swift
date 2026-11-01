@@ -11,7 +11,8 @@ nonisolated enum SettingsCommands {
         let descriptor = CommandDescriptor(systemImage: "gearshape",
             id: openID,
             title: String(localized: "Settings"),
-            subtitle: String(localized: "zbox Settings"),
+            category: "zbox",
+            subtitle: nil,
             keywords: ["settings", "preferences", "configuration", "设置", "偏好设置"]
         )
         try registry.register(descriptor) { _ in

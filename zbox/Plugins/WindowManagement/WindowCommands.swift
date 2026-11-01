@@ -57,7 +57,8 @@ nonisolated enum WindowCommands {
             let descriptor = CommandDescriptor(systemImage: definition.systemImage,
                 id: definition.id,
                 title: definition.title,
-                subtitle: String(localized: "Window Management"),
+                category: String(localized: "Window Management"),
+                subtitle: nil,
                 keywords: definition.keywords
             )
             try registry.register(descriptor) { context in

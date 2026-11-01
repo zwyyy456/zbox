@@ -42,7 +42,7 @@ final class AppMenuPlugin {
         items = []; query = ""; selectedID = nil; applicationName = ""; isLoading = false
     }
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
-        try registry.register(CommandDescriptor(systemImage: "menubar.rectangle", id: Self.commandID, title: Self.shortcutTarget.title, subtitle: nil,
+        try registry.register(CommandDescriptor(systemImage: "menubar.rectangle", id: Self.commandID, title: Self.shortcutTarget.title, category: String(localized: "Application Menu"), subtitle: nil,
             keywords: ["menu", "application", "菜单", "应用菜单"])) { [weak self] context in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
@@ -124,10 +124,16 @@ private struct AppMenuView: View {
     @Bindable var plugin: AppMenuPlugin
     @FocusState private var searchFocused: Bool
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(plugin.applicationName).font(.headline)
-            TextField("Search Menu Items", text: $plugin.query).textFieldStyle(.roundedBorder).focused($searchFocused)
-            if plugin.isLoading { ProgressView() }
+        VStack(spacing: 0) {
+            ToolSearchBar {
+                TextField("Search Menu Items", text: $plugin.query).focused($searchFocused)
+            } accessory: {
+                if plugin.isLoading {
+                    ProgressView()
+                } else if !plugin.applicationName.isEmpty {
+                    Text(plugin.applicationName).foregroundStyle(.secondary)
+                }
+            }
             List(selection: Binding(get: { plugin.selected?.id }, set: { plugin.selectedID = $0 })) {
                 ForEach(plugin.filteredItems) { item in
                     HStack {
@@ -137,15 +143,29 @@ private struct AppMenuView: View {
                         }
                         Spacer()
                         if item.marked { Image(systemName: "checkmark").accessibilityLabel(Text("Checked")) }
-                        Text(item.shortcut).foregroundStyle(.secondary)
+                        if !item.shortcut.isEmpty {
+                            Text(item.shortcut).font(.caption.monospaced()).foregroundStyle(.secondary)
+                        }
                         if !item.enabled { Text("Unavailable").font(.caption) }
                     }.foregroundStyle(item.enabled ? .primary : .secondary).tag(item.id)
                 }
             }
-            if !plugin.isLoading, plugin.filteredItems.isEmpty { Text("No menu items found.").foregroundStyle(.secondary) }
-            if let message = plugin.statusMessage { SettingsErrorView(message: message) }
-            Button("Execute Menu Item", action: plugin.executeSelection).disabled(plugin.selected?.enabled != true || plugin.isLoading)
-        }.padding().onAppear { searchFocused = true }.onChange(of: plugin.query) { plugin.selectedID = nil }
+            .overlay {
+                if !plugin.isLoading, plugin.filteredItems.isEmpty {
+                    ContentUnavailableView("No Menu Items Found", systemImage: "menubar.rectangle",
+                                           description: Text("Try a different menu item name."))
+                }
+            }
+            ToolActionBar(primaryTitle: String(localized: "Execute Menu Item"),
+                          isPrimaryEnabled: plugin.selected?.enabled == true && !plugin.isLoading,
+                          primary: plugin.executeSelection) {
+                if let message = plugin.statusMessage {
+                    SettingsErrorView(message: message)
+                } else {
+                    Text("Esc Close")
+                }
+            }
+        }.onAppear { searchFocused = true }.onChange(of: plugin.query) { plugin.selectedID = nil }
     }
 }
 
@@ -155,10 +175,9 @@ struct AppMenuSettingsView: View {
         Form {
             Toggle("Enable Application Menu Search", isOn: Binding(get: { environment.appMenuPlugin.isEnabled }, set: environment.setAppMenuEnabled))
             Text("Search and execute the original application's accessible menu items. Menu contents are not saved.").foregroundStyle(.secondary)
-            if !environment.isAccessibilityTrusted {
-                Button("Request Accessibility Permission", action: environment.requestAccessibilityPermission)
-                Button("Open Accessibility Settings", action: environment.openAccessibilitySettings)
-            }
+            AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
+                                       request: environment.requestAccessibilityPermission,
+                                       openSettings: environment.openAccessibilitySettings)
             if let message = environment.appMenuPlugin.statusMessage { SettingsErrorView(message: message) }
             if let message = environment.shortcutRegistrationError { SettingsErrorView(message: message) }
         }.settingsPane()

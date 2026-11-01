@@ -5,15 +5,19 @@ struct ClipboardHistoryView: View {
     @FocusState private var searchFocused: Bool
 
     var body: some View {
+        let hasSelection = plugin.selectedID != nil
         VStack(spacing: 0) {
-            TextField("Search Clipboard History", text: $plugin.query)
-                .textFieldStyle(.roundedBorder)
-                .focused($searchFocused)
-                .padding()
-                .onSubmit { plugin.pasteSelection() }
-            Picker("Filter", selection: $plugin.filter) {
-                ForEach(ClipboardHistoryFilter.allCases) { Text($0.title).tag($0) }
-            }.pickerStyle(.segmented).padding(.horizontal).padding(.bottom, 8)
+            ToolSearchBar {
+                TextField("Search Clipboard History", text: $plugin.query)
+                    .focused($searchFocused)
+                    .onSubmit { plugin.pasteSelection() }
+            } accessory: {
+                Picker("Filter", selection: $plugin.filter) {
+                    ForEach(ClipboardHistoryFilter.allCases) { Text($0.title).tag($0) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
             GeometryReader { geometry in
                 HStack(spacing: 0) {
                     List(selection: $plugin.selectedID) {
@@ -27,6 +31,16 @@ struct ClipboardHistoryView: View {
                                 Text(entry.copiedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
                             }
                             .tag(entry.id)
+                            .contextMenu {
+                                Button("Paste") { plugin.selectedID = entry.id; plugin.pasteSelection() }
+                                Button("Copy") { plugin.selectedID = entry.id; plugin.copySelection() }
+                                Button(entry.pinned ? String(localized: "Unpin") : String(localized: "Pin")) {
+                                    plugin.selectedID = entry.id
+                                    plugin.togglePin()
+                                }
+                                Divider()
+                                Button("Delete", role: .destructive) { plugin.selectedID = entry.id; plugin.deleteSelection() }
+                            }
                         }
                     }
                     if geometry.size.width >= 640 {
@@ -52,16 +66,25 @@ struct ClipboardHistoryView: View {
                     }
                 }
             }
-            if let message = plugin.statusMessage {
-                Text(message).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
+            ToolActionBar(primaryTitle: String(localized: "Paste"), isPrimaryEnabled: hasSelection,
+                          primary: plugin.pasteSelection) {
+                if let message = plugin.statusMessage {
+                    Text(message)
+                } else {
+                    Text("⌘↩ Copy · Right-click for more · Esc Close")
+                }
+            } secondary: {
+                Menu("More") {
+                    Button(plugin.entries.first(where: { $0.id == plugin.selectedID })?.pinned == true
+                           ? String(localized: "Unpin") : String(localized: "Pin"), action: plugin.togglePin)
+                    Divider()
+                    Button("Delete", role: .destructive, action: plugin.deleteSelection)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .disabled(!hasSelection)
+                Button("Copy", action: plugin.copySelection).disabled(!hasSelection)
             }
-            HStack {
-                Button("Paste", action: plugin.pasteSelection)
-                Button("Copy", action: plugin.copySelection).keyboardShortcut(.return, modifiers: .command)
-                Spacer()
-                Button("Pin / Unpin", action: plugin.togglePin)
-                Button("Delete", action: plugin.deleteSelection)
-            }.disabled(plugin.selectedID == nil).padding()
         }
         .onAppear { searchFocused = true }
         .onChange(of: plugin.filter) { plugin.selectedID = plugin.filteredEntries.first?.id }
@@ -102,8 +125,11 @@ struct ClipboardHistorySettingsView: View {
                 }
                 Button("Add Application…", action: plugin.chooseExcludedApplication)
             }
-            Button("Request Accessibility for Direct Paste", action: plugin.requestPastePermission)
-            Button("Open Accessibility Settings", action: plugin.openAccessibilitySettings)
+            Section("Direct Paste") {
+                AccessibilityPermissionRow(isTrusted: plugin.isPasteTrusted,
+                                           request: plugin.requestPastePermission,
+                                           openSettings: plugin.openAccessibilitySettings)
+            }
             Button("Clear Clipboard History…", role: .destructive) { confirmsClear = true }
         }
         .settingsPane()

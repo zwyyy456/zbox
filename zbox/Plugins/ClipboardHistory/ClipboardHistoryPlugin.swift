@@ -55,7 +55,7 @@ final class ClipboardHistoryPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(systemImage: "clipboard", id: Self.commandID, title: String(localized: "Clipboard History"),
-            subtitle: String(localized: "Browse recently copied items"),
+            category: String(localized: "Clipboard History"), subtitle: String(localized: "Browse recently copied items"),
             keywords: ["clipboard", "history", "paste", "剪贴板", "剪贴板历史", "粘贴"])) { [weak self] context in
             guard let self else { return }
             guard isEnabled else { try openSettings(); return }
@@ -295,6 +295,7 @@ final class ClipboardHistoryPlugin {
         } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
+    var isPasteTrusted: Bool { authorization.isTrusted }
     func requestPastePermission() { authorization.request() }
     func openAccessibilitySettings() { authorization.openSystemSettings() }
 

@@ -125,12 +125,13 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 
 ### 7.1 搜索行为
 
-- 空查询展示少量固定命令；后续根据实际使用再调整。
+- 空查询先展示“最近使用”，再以“建议”补足固定命令，合计最多 8 项。最近使用只在本机 UserDefaults 保存最多 20 个 Root Search 成功执行的命令 ID，不保存查询文本，可在 General 设置中清除。
 - 搜索数据只来自本机应用和内置命令，不访问网络。
 - 匹配标题和关键词，支持简单、确定性的模糊匹配。
 - 中文应用名在 Command 创建时预生成带空格全拼、无空格全拼和拼音首字母别名；SearchEngine 仍保持与应用枚举和拼音转写无关的同步纯匹配器。
 - 排名保持字面标题高于全拼别名、全拼别名高于首字母别名、首字母别名高于模糊匹配；同分结果保持固定顺序。
-- 暂不加入 frecency、别名学习或搜索历史排序。
+- 非空查询的排名不受最近使用影响；暂不加入 frecency、别名学习或搜索历史排序。
+- 结果行右侧显示类型（应用、插件名或命令）及已设置的快捷键。应用结果可用 `Command-K` 打开操作列表（打开、在 Finder 中显示、拷贝路径，运行中时可退出）；操作列表中方向键选择、Return 执行、Escape 先关闭列表。其它结果没有操作列表，执行仍经同一 Command Registry。
 
 ### 7.2 窗口管理插件
 
@@ -207,7 +208,7 @@ Screenshot 作为默认关闭的内置插件独立实施和验收，包含用户
 | ID | 决策 |
 | --- | --- |
 | OQ-01 | 默认不开启开机启动；用户通过 Settings 中的 Launch at Login 显式控制。 |
-| OQ-02 | 空查询先展示 Left Half、Right Half、Maximize，再展示应用命令。 |
+| OQ-02 | 空查询先展示最近使用，再展示固定建议（File Search、Clipboard History、Snippets、Calculator、Developer Tools、Settings）；取代 M1 的窗口命令优先顺序，见 7.1。 |
 | OQ-03 | M1 只枚举 `/Applications`、`/System/Applications` 和 `~/Applications`，不支持自定义目录。 |
 | OQ-04 | 优先按窗口中心点选择显示器；中心点不在任何显示器时，以最大交叠面积回退；完全离屏时明确失败。 |
 | OQ-05 | Window Management 默认关闭；窗口 Command 始终留在 Root Search 中，功能关闭时执行只引导用户进入对应设置。 |

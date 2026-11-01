@@ -368,7 +368,7 @@ final class FileSearchPlugin {
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
         try registry.register(CommandDescriptor(systemImage: "doc.text.magnifyingglass", id: Self.selectionCommandID, title: String(localized: "Actions for Finder Selection"),
-            subtitle: String(localized: "File Search"), keywords: ["Finder", "selection", "file", "访达", "选中", "文件操作"])) { [weak self] context in
+            category: String(localized: "File Search"), subtitle: nil, keywords: ["Finder", "selection", "file", "访达", "选中", "文件操作"])) { [weak self] context in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
                 guard let pid = context.frontmostApplicationPID,
@@ -385,7 +385,7 @@ final class FileSearchPlugin {
                 show(finderSelection: url)
             }
         try registry.register(CommandDescriptor(systemImage: "doc.text.magnifyingglass", id: Self.commandID, title: String(localized: "File Search"),
-            subtitle: nil, keywords: ["file", "search", "find", "文件搜索", "查找文件"])) { [weak self] _ in
+            category: String(localized: "File Search"), subtitle: nil, keywords: ["file", "search", "find", "文件搜索", "查找文件"])) { [weak self] _ in
                 guard let self else { return }
                 guard isEnabled else { try openSettings(); return }
                 show()

@@ -72,21 +72,9 @@ struct TextLookupSettingsView: View {
                     }
                 }
 
-                LabeledContent(
-                    "Accessibility",
-                    value: environment.isAccessibilityTrusted
-                        ? String(localized: "Granted")
-                        : String(localized: "Required")
-                )
-
-                HStack {
-                    Button("Request Permission") {
-                        environment.requestAccessibilityPermission()
-                    }
-                    Button("Open System Settings") {
-                        environment.openAccessibilitySettings()
-                    }
-                }
+                AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
+                                           request: environment.requestAccessibilityPermission,
+                                           openSettings: environment.openAccessibilitySettings)
                 Text("Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

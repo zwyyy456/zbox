@@ -38,7 +38,15 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
             self?.moveSelection(by: offset)
         }
         panel.onEscape = { [weak environment] in
-            environment?.hideRootSearch()
+            guard let environment else { return }
+            if environment.isShowingRootSearchActions {
+                environment.isShowingRootSearchActions = false
+            } else {
+                environment.hideRootSearch()
+            }
+        }
+        panel.onToggleActions = { [weak self] in
+            self?.toggleActions()
         }
         panel.delegate = self
         panel.isFloatingPanel = true
@@ -88,7 +96,23 @@ final class SearchPanelController: NSObject, NSWindowDelegate {
     private func executeSelectedCommand() {
         guard let environment else { return }
         synchronizeSearchQuery(with: environment)
-        environment.executeSelectedCommand()
+        if environment.isShowingRootSearchActions {
+            environment.performSelectedRootSearchAction()
+        } else {
+            environment.executeSelectedCommand()
+        }
+    }
+
+    private func toggleActions() {
+        guard let environment else { return }
+        synchronizeSearchQuery(with: environment)
+        guard let selected = environment.selectedSearchMatch,
+              !environment.rootSearchActions(for: selected.id).isEmpty else {
+            environment.isShowingRootSearchActions = false
+            NSSound.beep()
+            return
+        }
+        environment.isShowingRootSearchActions.toggle()
     }
 
     private func moveSelection(by offset: Int) {
@@ -124,11 +148,20 @@ private final class SearchPanel: NSPanel {
     var onReturn: (() -> Void)?
     var onEscape: (() -> Void)?
     var onMoveSelection: ((Int) -> Void)?
+    var onToggleActions: (() -> Void)?
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown,
+           SearchKeyboardMapper.isActionsShortcut(
+            charactersIgnoringModifiers: event.charactersIgnoringModifiers,
+            modifierFlags: event.modifierFlags
+           ) {
+            onToggleActions?()
+            return
+        }
         if event.type == .keyDown,
            let action = SearchKeyboardMapper.action(
             keyCode: event.keyCode,

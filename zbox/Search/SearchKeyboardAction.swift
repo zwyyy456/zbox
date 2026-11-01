@@ -31,4 +31,12 @@ nonisolated enum SearchKeyboardMapper {
         default: nil
         }
     }
+
+    static func isActionsShortcut(
+        charactersIgnoringModifiers: String?,
+        modifierFlags: NSEvent.ModifierFlags
+    ) -> Bool {
+        modifierFlags.intersection([.command, .control, .option, .shift]) == .command
+            && charactersIgnoringModifiers?.lowercased() == "k"
+    }
 }
