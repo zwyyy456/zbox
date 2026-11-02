@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
+  <defs>
+    <!-- Layer 01 Defs -->
+    <filter id="squircle-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000000" flood-opacity="0.22" />
+    </filter>
+    <linearGradient id="ceramic-grad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="55%" stop-color="#FAFAFC" />
+      <stop offset="100%" stop-color="#F0F0F3" />
+    </linearGradient>
+    <linearGradient id="ceramic-rim" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#DADAE0" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Layer 02 Defs -->
+    <filter id="card-shadow" x="-12%" y="-10%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#1C1917" flood-opacity="0.14" />
+    </filter>
+    <linearGradient id="slate-card" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#3F3F46" />
+      <stop offset="100%" stop-color="#27272A" />
+    </linearGradient>
+    <linearGradient id="amber-card" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFCA28" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Layer 03 Defs -->
+    <filter id="bar-shadow" x="-12%" y="-12%" width="124%" height="135%">
+      <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#18181B" flood-opacity="0.20" />
+    </filter>
+    <linearGradient id="carbon-bar" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#323236" />
+      <stop offset="100%" stop-color="#18181B" />
+    </linearGradient>
+    <linearGradient id="bar-rim" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.04" />
+    </linearGradient>
+
+    <!-- Layer 04 Defs -->
+    <linearGradient id="vermilion-key" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35" />
+      <stop offset="100%" stop-color="#E84118" />
+    </linearGradient>
+    <filter id="key-shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- 01: Ceramic Base -->
+  <g id="layer-01-ceramic-base">
+    <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#ceramic-grad)" filter="url(#squircle-shadow)" />
+    <rect x="103" y="103" width="818" height="818" rx="182" fill="none" stroke="url(#ceramic-rim)" stroke-width="6" />
+  </g>
+
+  <!-- 02: Bento Modules -->
+  <g id="layer-02-bento-modules">
+    <rect x="216" y="496" width="276" height="276" rx="72" fill="url(#slate-card)" filter="url(#card-shadow)" />
+    <rect x="532" y="496" width="276" height="276" rx="72" fill="url(#amber-card)" filter="url(#card-shadow)" />
+  </g>
+
+  <!-- 03: Launcher Bar -->
+  <g id="layer-03-launcher-bar">
+    <rect x="216" y="244" width="592" height="212" rx="76" fill="url(#carbon-bar)" filter="url(#bar-shadow)" />
+    <rect x="218" y="246" width="588" height="208" rx="74" fill="none" stroke="url(#bar-rim)" stroke-width="4" />
+  </g>
+
+  <!-- 04: Command Glyphs -->
+  <g id="layer-04-command-glyphs">
+    <rect x="252" y="280" width="140" height="140" rx="46" fill="url(#vermilion-key)" filter="url(#key-shadow)" />
+    <path d="M 304 317
+             A 15 15 0 1 0 289 332
+             L 355 332
+             A 15 15 0 1 0 340 317
+             L 340 383
+             A 15 15 0 1 0 355 368
+             L 289 368
+             A 15 15 0 1 0 304 383
+             Z" fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+    <rect x="432" y="328" width="236" height="44" rx="22" fill="#FFFFFF" opacity="0.92" />
+    <circle cx="724" cy="350" r="22" fill="#FFFFFF" opacity="0.22" />
+    <rect x="252" y="532" width="96" height="204" rx="34" fill="#FFFFFF" opacity="0.16" />
+    <rect x="364" y="532" width="92" height="92" rx="28" fill="#FFFFFF" opacity="0.08" />
+    <rect x="364" y="644" width="92" height="92" rx="28" fill="#FFFFFF" opacity="0.08" />
+    <circle cx="670" cy="634" r="56" fill="none" stroke="#FFFFFF" stroke-width="28" opacity="0.92" />
+  </g>
+</svg>

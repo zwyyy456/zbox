@@ -2,18 +2,19 @@ import AppKit
 import SwiftUI
 
 struct MenuBarView: View {
+    @Environment(\.openSettings) private var openSettings
     let environment: AppEnvironment
 
     var body: some View {
-        Button("Open zbox") {
+        Button {
             environment.toggleRootSearch()
+        } label: {
+            Text("\(String(localized: "Open zbox"))  \(HotkeyFormatter.displayName(for: environment.rootSearchHotkey))")
         }
 
-        Text("Root Search: \(HotkeyFormatter.displayName(for: environment.rootSearchHotkey))")
-            .foregroundStyle(.secondary)
-
-        SettingsLink {
-            Text("Settings…")
+        Button("Settings…") {
+            openSettings()
+            NSApplication.shared.activate()
         }
 
         Divider()
