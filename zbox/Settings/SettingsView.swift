@@ -25,7 +25,7 @@ struct SettingsView: View {
         }
         .frame(minWidth: 860, idealWidth: 940, maxWidth: .infinity,
                minHeight: 580, idealHeight: 660, maxHeight: .infinity)
-        .background(SettingsWindowConfiguration())
+        .background(SettingsWindowConfiguration(opener: environment.settingsWindowOpener))
     }
 
     private func settingsSection(_ title: LocalizedStringKey, tabs: [SettingsTab]) -> some View {
@@ -274,14 +274,23 @@ extension View {
 
 // Settings finalizes its window style after attaching the content view.
 private struct SettingsWindowConfiguration: NSViewRepresentable {
-    func makeNSView(context: Context) -> WindowView { WindowView() }
+    let opener: SettingsWindowOpener
+
+    func makeNSView(context: Context) -> WindowView {
+        let view = WindowView()
+        view.opener = opener
+        return view
+    }
     func updateNSView(_ nsView: WindowView, context: Context) {}
 
     final class WindowView: NSView {
+        weak var opener: SettingsWindowOpener?
+
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard let window else { return }
             window.toolbarStyle = .unifiedCompact
+            opener?.attach(window)
             DispatchQueue.main.async { [weak window] in
                 window?.styleMask.insert(.resizable)
             }

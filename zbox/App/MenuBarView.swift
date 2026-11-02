@@ -2,7 +2,6 @@ import AppKit
 import SwiftUI
 
 struct MenuBarView: View {
-    @Environment(\.openSettings) private var openSettings
     let environment: AppEnvironment
 
     var body: some View {
@@ -13,8 +12,11 @@ struct MenuBarView: View {
         }
 
         Button("Settings…") {
-            openSettings()
-            NSApplication.shared.activate()
+            do {
+                try environment.settingsWindowOpener.open(source: "menu")
+            } catch {
+                NSAlert(error: error).runModal()
+            }
         }
 
         Divider()

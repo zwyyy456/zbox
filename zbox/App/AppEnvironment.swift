@@ -27,7 +27,7 @@ final class AppEnvironment {
     private let searchEngine = SearchEngine()
     private let hotkeyRegistrar: any HotkeyRegistering
     private let accessibilityAuthorization: AccessibilityAuthorization
-    private let settingsWindowOpener = SettingsWindowOpener()
+    let settingsWindowOpener = SettingsWindowOpener()
     private let launchAtLoginController = LaunchAtLoginController()
     private let hotkeyStore: HotkeyConfigurationStore
     private let defaults: UserDefaults

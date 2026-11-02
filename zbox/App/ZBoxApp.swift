@@ -15,14 +15,28 @@ struct ZBoxApp: App {
         MenuBarExtra {
             MenuBarView(environment: appDelegate.environment)
         } label: {
-            Image(nsImage: Self.menuBarIcon)
-                .renderingMode(.template)
-                .accessibilityLabel("zbox")
+            SettingsMenuBarLabel(image: Self.menuBarIcon, opener: appDelegate.environment.settingsWindowOpener)
         }
 
         Settings {
             SettingsView(environment: appDelegate.environment)
         }
         .windowResizability(.contentMinSize)
+    }
+}
+
+/// The status item exists before its menu is opened, so commands can open Settings too.
+private struct SettingsMenuBarLabel: View {
+    @Environment(\.openSettings) private var openSettings
+    let image: NSImage
+    let opener: SettingsWindowOpener
+
+    var body: some View {
+        Image(nsImage: image)
+            .renderingMode(.template)
+            .accessibilityLabel("zbox")
+            .onAppear {
+                opener.bindOpenAction { [openSettings] in openSettings() }
+            }
     }
 }
