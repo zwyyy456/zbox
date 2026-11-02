@@ -106,7 +106,6 @@
 - Command Registry、SearchEngine、WindowGeometry、Hotkey 配置、Calculator 运算语义以及 Text Lookup 的纯文本、会话和生命周期规则使用 Swift Testing 保护。
 - Carbon 快捷键、NSPanel 焦点/Space、Accessibility、登录项、外接显示器、真实应用启动和 Text Lookup 应用兼容性以构建、运行和人工矩阵验证。
 - Text Lookup 的系统兼容、翻译模型、FlashDict 跨进程与真实建卡按需使用 `docs/release-readiness.md`。
-- 文档专属改动只做引用、重复、冲突和 diff 检查，不要求构建。
 
 ## Script Commands 边界
 

@@ -43,4 +43,4 @@
 ## 验证
 
 - 代码改动按需运行 macOS build、`zboxTests` 或 `script/build_and_run.sh --verify`。
-- 不运行 `zboxUITests`，除非用户明确要求。全局快捷键、NSPanel/Space、Accessibility、登录项、多显示器和跨 App 行为使用人工系统验证。
+- 全局快捷键、NSPanel/Space、Accessibility、登录项、多显示器和跨 App 行为使用人工系统验证。
