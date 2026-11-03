@@ -10,7 +10,7 @@
 - Command 是 Root Search 和直接快捷键共享的稳定业务接口；从这两个入口暴露的 App Launch、Window Command 或其它 Command 能力不得绕过 Registry 建立旁路。Text Lookup 的鼠标/取词快捷键属于扩展私有触发流，不强行接入 Command Registry。
 - 保持 `App`、`Commands`、`Builtins`、`Hotkeys`、`Platform`、`Search`、`Settings`、`Plugins/WindowManagement`、`Plugins/TextLookup`、`Plugins/ClipboardHistory`、`Plugins/Screenshot`、`Plugins/Display`、`Plugins/Workspace`、`Plugins/FileSearch`、`Plugins/Quicklinks`、`Plugins/Snippets`、`Plugins/DeveloperTools`、`Plugins/ScriptCommands` 与 `Plugins/Calculator` 的当前语义边界，不增加固定的 Features/Core 层或宽泛 Runtime/Services 目录。`Plugins` 下的目录是内置独立扩展实现，不代表动态插件系统。
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
-- Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
+- SwiftUI Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
 ## 并发与恢复
 
@@ -139,3 +139,5 @@
 - 取词浮窗保持来源应用焦点，并监听外部点击收起；截图选区、滚动截图控制、贴图和短时反馈窗口按自身交互生命周期管理。
 
 - Root Search 与 Clipboard History 统一使用系统 `NSColor.windowBackgroundColor` 实色背景，不叠加材质，共用 `Platform/CommandPanelAppearance` 的 24 pt 连续圆角，并保留系统窗口阴影，不叠加固定颜色描边。内容区域不透出背后的窗口，透明底层仅用于保留圆角外区域；背景遵循系统深浅模式。搜索结果使用系统非强调选择色，剪贴板保持原生 List 选择语义。
+
+- 设置窗口由 SwiftUI `Settings` Scene 创建和复用。`SettingsSceneCommands` 从场景环境绑定 `openSettings`，不依赖菜单栏标签出现；`SettingsWindowOpener` 仅桥接命令与现有窗口的置前、Dock 生命周期，不创建或替换设置窗口。菜单栏与搜索左下角通过 `ApplicationMenuItems` 共用应用操作。

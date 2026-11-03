@@ -311,8 +311,17 @@ final class AppEnvironment {
             return
         }
 
+        showRootSearch()
+    }
+
+    func showRootSearch() {
+        if searchPanelController.isVisible {
+            searchPanelController.show()
+            return
+        }
         rootSearchSessionID = UUID()
-        targetApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        targetApplicationPID = frontmostPID == ProcessInfo.processInfo.processIdentifier ? nil : frontmostPID
         searchQuery = ""
         selectedCommandID = nil
         isShowingRootSearchActions = false

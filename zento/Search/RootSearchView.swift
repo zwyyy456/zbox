@@ -110,6 +110,19 @@ struct RootSearchView: View {
     @ViewBuilder
     private func footer(selected: SearchMatch?, hasActions: Bool) -> some View {
         HStack(spacing: 14) {
+            Menu {
+                ApplicationMenuItems(environment: environment)
+            } label: {
+                Image("MenuBarIcon")
+                    .renderingMode(.template)
+                    .resizable().scaledToFit().frame(width: 18, height: 18)
+                    .frame(width: 24, height: 24)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Zento Menu")
+            .accessibilityLabel("Zento Menu")
             if let feedback = environment.commandFeedback {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(feedback.message, systemImage: "exclamationmark.triangle.fill")

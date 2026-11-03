@@ -9,6 +9,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         environment.start()
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        environment.showRootSearch()
+        return false
+    }
+
     func applicationDidBecomeActive(_ notification: Notification) {
         environment.reconcileAccessibilityDependentFeatures()
     }

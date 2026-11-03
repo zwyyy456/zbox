@@ -4,39 +4,36 @@ import SwiftUI
 @main
 struct ZentoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @AppStorage("appearance.show-menu-bar-icon") private var showsMenuBarIcon = true
+
     private static let menuBarIcon: NSImage = {
-        // MenuBarExtra uses the NSImage's point size for its native status item.
         let image = NSImage(named: "MenuBarIcon")!.copy() as! NSImage
         image.size = NSSize(width: 18, height: 18)
         return image
     }()
 
     var body: some Scene {
-        MenuBarExtra {
+        MenuBarExtra(isInserted: Binding(
+            get: { showsMenuBarIcon },
+            set: { visible in
+                // AppKit reports insertion state even when unchanged. Writing that
+                // back to AppStorage repeatedly invalidates SwiftUI's main menu.
+                if showsMenuBarIcon != visible { showsMenuBarIcon = visible }
+            }
+        )) {
             MenuBarView(environment: appDelegate.environment)
         } label: {
-            SettingsMenuBarLabel(image: Self.menuBarIcon, opener: appDelegate.environment.settingsWindowOpener)
+            Image(nsImage: Self.menuBarIcon)
+                .renderingMode(.template)
+                .accessibilityLabel("Zento")
         }
 
         Settings {
             SettingsView(environment: appDelegate.environment)
         }
         .windowResizability(.contentMinSize)
-    }
-}
-
-/// The status item exists before its menu is opened, so commands can open Settings too.
-private struct SettingsMenuBarLabel: View {
-    @Environment(\.openSettings) private var openSettings
-    let image: NSImage
-    let opener: SettingsWindowOpener
-
-    var body: some View {
-        Image(nsImage: image)
-            .renderingMode(.template)
-            .accessibilityLabel("Zento")
-            .onAppear {
-                opener.bindOpenAction { [openSettings] in openSettings() }
-            }
+        .commands {
+            SettingsSceneCommands(opener: appDelegate.environment.settingsWindowOpener)
+        }
     }
 }

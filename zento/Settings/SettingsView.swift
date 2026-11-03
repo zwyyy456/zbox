@@ -22,7 +22,6 @@ struct SettingsView: View {
         } detail: {
             settingsDetail
                 .frame(minWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle(environment.selectedSettingsTab.title)
         }
         .frame(minWidth: 860, idealWidth: 940, maxWidth: .infinity,
                minHeight: 580, idealHeight: 660, maxHeight: .infinity)
@@ -93,12 +92,16 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
     let environment: AppEnvironment
+    @AppStorage("appearance.show-menu-bar-icon") private var showsMenuBarIcon = true
 
     var body: some View {
         @Bindable var environment = environment
 
         Form {
             Section("General") {
+                Toggle("Show Menu Bar Icon", isOn: $showsMenuBarIcon)
+                Text("You can always open Zento with its shortcut or by reopening the app.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle(
                     "Launch at Login",
                     isOn: Binding(
@@ -285,7 +288,6 @@ extension View {
     }
 }
 
-// Settings finalizes its window style after attaching the content view.
 private struct SettingsWindowConfiguration: NSViewRepresentable {
     let opener: SettingsWindowOpener
 
@@ -298,15 +300,9 @@ private struct SettingsWindowConfiguration: NSViewRepresentable {
 
     final class WindowView: NSView {
         weak var opener: SettingsWindowOpener?
-
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            guard let window else { return }
-            window.toolbarStyle = .unifiedCompact
-            opener?.attach(window)
-            DispatchQueue.main.async { [weak window] in
-                window?.styleMask.insert(.resizable)
-            }
+            if let window { opener?.attach(window) }
         }
     }
 }

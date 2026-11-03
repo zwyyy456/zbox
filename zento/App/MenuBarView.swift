@@ -6,12 +6,21 @@ struct MenuBarView: View {
 
     var body: some View {
         Button("Open Zento") {
-            environment.toggleRootSearch()
+            environment.showRootSearch()
         }
         .keyboardShortcut(HotkeyFormatter.keyboardShortcut(for: environment.rootSearchHotkey))
 
+        ApplicationMenuItems(environment: environment)
+    }
+}
+
+struct ApplicationMenuItems: View {
+    let environment: AppEnvironment
+
+    var body: some View {
         Button("Settings…") {
             do {
+                environment.hideRootSearch()
                 try environment.settingsWindowOpener.open()
             } catch {
                 NSAlert(error: error).runModal()
