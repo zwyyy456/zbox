@@ -1,19 +1,20 @@
 import AppKit
 import ScreenCaptureKit
+import OSLog
 
 @MainActor
 final class ScreenshotSelection {
+    private let logger = Logger(subsystem: "tech.hyperseek.zento", category: "ScreenshotSelection")
     private var panels: [NSPanel] = []
 
     func show(mode: ScreenshotMode, windows: [SCWindow],
               selected: @escaping (NSScreen, CGRect?, SCWindow?) -> Void, cancelled: @escaping () -> Void) {
         close()
         let primaryHeight = NSScreen.screens.first?.frame.maxY ?? 0
-        let orderedIDs = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+        let orderedIDs = (CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
             as? [[String: Any]] ?? []).compactMap { $0[kCGWindowNumber as String] as? CGWindowID }
-        let candidates = orderedIDs.compactMap { id in windows.first { $0.windowID == id } }.filter {
-            $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier && $0.windowLayer == 0
-        }
+        let candidates = orderedIDs.compactMap { id in windows.first { $0.windowID == id } }
+        logger.info("selection-start mode=\(mode.rawValue, privacy: .public) shareable=\(windows.count) onscreen=\(orderedIDs.count) candidates=\(candidates.count) screens=\(NSScreen.screens.count)")
         for screen in NSScreen.screens {
             let panel = ScreenshotSelectionPanel(contentRect: screen.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
             panel.isOpaque = false
@@ -33,6 +34,7 @@ final class ScreenshotSelection {
                 selected(screen, rect?.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), window)
             }
             panel.contentView = view
+            view.updateHoveredWindow(at: view.convert(panel.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil))
             panels.append(panel)
             panel.orderFrontRegardless()
             if screen.frame.contains(NSEvent.mouseLocation) { panel.makeKey(); panel.makeFirstResponder(view) }
@@ -40,7 +42,10 @@ final class ScreenshotSelection {
     }
 
     func finishChoosing() {
-        for panel in panels { (panel.contentView as? ScreenshotSelectionView)?.selected = nil }
+        for panel in panels {
+            (panel.contentView as? ScreenshotSelectionView)?.selected = nil
+            panel.ignoresMouseEvents = true
+        }
     }
 
     func close() {
@@ -54,6 +59,23 @@ private final class ScreenshotSelectionPanel: NSPanel {
 }
 
 private final class ScreenshotSelectionView: NSView {
+    private static let logger = Logger(subsystem: "tech.hyperseek.zento", category: "ScreenshotSelection")
+    private static let cameraCursor: NSCursor = {
+        let symbol = NSImage(systemSymbolName: "camera.fill", accessibilityDescription: nil)!
+            .withSymbolConfiguration(.init(paletteColors: [.black]))!
+        let image = NSImage(size: NSSize(width: 28, height: 24), flipped: false) { rect in
+            let outline = symbol.withSymbolConfiguration(.init(paletteColors: [.white]))!
+            let glyphRect = rect.insetBy(dx: 3, dy: 3)
+            for x in [-1.0, 0, 1.0] {
+                for y in [-1.0, 0, 1.0] {
+                    outline.draw(in: glyphRect.offsetBy(dx: x, dy: y))
+                }
+            }
+            symbol.draw(in: glyphRect)
+            return true
+        }
+        return NSCursor(image: image, hotSpot: NSPoint(x: 14, y: 12))
+    }()
     var mode = ScreenshotMode.area
     var windowFrames: [(SCWindow, CGRect)] = []
     var selected: ((CGRect?, SCWindow?) -> Void)?
@@ -68,26 +90,42 @@ private final class ScreenshotSelectionView: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let mouseTracking { removeTrackingArea(mouseTracking) }
-        let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect], owner: self)
+        let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .cursorUpdate, .activeAlways, .inVisibleRect], owner: self)
         addTrackingArea(area)
         mouseTracking = area
     }
 
-    override func resetCursorRects() { addCursorRect(bounds, cursor: .crosshair) }
+    private var selectionCursor: NSCursor { mode == .window ? Self.cameraCursor : .crosshair }
+    override func resetCursorRects() { addCursorRect(bounds, cursor: selectionCursor) }
+    override func cursorUpdate(with event: NSEvent) { selectionCursor.set() }
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { cancel?() } else { super.keyDown(with: event) }
     }
     override func rightMouseDown(with event: NSEvent) { cancel?() }
     override func mouseMoved(with event: NSEvent) {
+        selectionCursor.set()
+        updateHoveredWindow(at: convert(event.locationInWindow, from: nil))
+    }
+    override func mouseEntered(with event: NSEvent) { mouseMoved(with: event) }
+    override func mouseExited(with event: NSEvent) {
         guard mode == .window else { return }
-        let point = convert(event.locationInWindow, from: nil)
-        let match = windowFrames.first { $0.1.contains(point) }
+        hoveredWindow = nil
+        selection = nil
+        needsDisplay = true
+    }
+    func updateHoveredWindow(at point: CGPoint) {
+        guard mode == .window else { return }
+        let match = bounds.contains(point) ? windowFrames.first { $0.1.contains(point) } : nil
         hoveredWindow = match?.0
         selection = match?.1.intersection(bounds)
         needsDisplay = true
     }
     override func mouseDown(with event: NSEvent) {
-        if mode == .window { mouseMoved(with: event); return }
+        if mode == .window {
+            mouseMoved(with: event)
+            Self.logger.info("window-mouse-down matched=\(self.hoveredWindow != nil) accepting=\(self.selected != nil)")
+            return
+        }
         anchor = convert(event.locationInWindow, from: nil)
     }
     override func mouseDragged(with event: NSEvent) {
@@ -99,6 +137,8 @@ private final class ScreenshotSelectionView: NSView {
     }
     override func mouseUp(with event: NSEvent) {
         if mode == .window {
+            updateHoveredWindow(at: convert(event.locationInWindow, from: nil))
+            Self.logger.info("window-click matched=\(self.hoveredWindow != nil) candidates=\(self.windowFrames.count) accepting=\(self.selected != nil)")
             if let hoveredWindow { selected?(nil, hoveredWindow) }
         } else {
             mouseDragged(with: event)
@@ -112,6 +152,10 @@ private final class ScreenshotSelectionView: NSView {
         NSColor.black.withAlphaComponent(0.3).setFill()
         shade.fill()
         if let selection {
+            if mode == .window {
+                NSColor.controlAccentColor.withAlphaComponent(0.22).setFill()
+                NSBezierPath(rect: selection).fill()
+            }
             NSColor.white.setStroke()
             let border = NSBezierPath(rect: selection)
             border.lineWidth = 2

@@ -47,7 +47,7 @@ enum ScreenshotCapture {
         guard CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess() else {
             throw ScreenshotError.permission
         }
-        return try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+        return try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
     }
 
     static func image(content: SCShareableContent, screen: NSScreen,
@@ -65,9 +65,7 @@ enum ScreenshotCapture {
             guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
                 throw ScreenshotError.unavailable
             }
-            let ownApps = content.applications.filter { $0.processID == ProcessInfo.processInfo.processIdentifier }
-            guard area == nil || !ownApps.isEmpty else { throw ScreenshotError.captureFailed }
-            filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+            filter = SCContentFilter(display: display, excludingWindows: [])
             let rect = ScreenshotGeometry.sourceRect(area ?? screen.frame, in: screen.frame)
             config.sourceRect = rect
             config.width = Int((rect.width * CGFloat(filter.pointPixelScale)).rounded())

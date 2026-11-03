@@ -5,35 +5,12 @@ struct ScreenshotEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let document = plugin.document {
-                HStack {
-                    Picker("View", selection: Bindable(document).showsText) {
-                        Text("Image").tag(false)
-                        Text("Recognized Text").tag(true)
-                    }.pickerStyle(.segmented).labelsHidden().frame(width: 240)
-                    Spacer()
-                    Button("Pin Image", action: plugin.pinImage).disabled(plugin.isExporting || plugin.isUploading)
-                    Button("Recognize Text") {
-                        document.showsText = true
-                        document.ocr.run(image: document.image, edit: document.edit)
-                    }
-                }.padding(.horizontal).padding(.top, 8)
                 if document.showsText {
                     ScreenshotOCRView(document: document, copy: plugin.copyText)
                 } else {
-                    ScreenshotDocumentView(document: document).disabled(plugin.isExporting || plugin.isUploading)
+                    ScreenshotDocumentView(document: document, status: plugin.statusMessage, exporting: plugin.isExporting).disabled(plugin.isExporting || plugin.isUploading)
                 }
-                Divider()
-                HStack {
-                    Picker("Format", selection: $plugin.format) {
-                        ForEach(ScreenshotFormat.allCases) { Text($0.title).tag($0) }
-                    }.frame(width: 130)
-                    Spacer()
-                    Button("Copy Image", action: plugin.copyImage).keyboardShortcut("c", modifiers: .command)
-                    Button("Save…", action: plugin.saveImage).keyboardShortcut("s", modifiers: .command)
-                    Button("Upload", action: plugin.uploadImage)
-                    Button(plugin.completionTitle, action: plugin.finishEditing).keyboardShortcut(.return, modifiers: .command)
-                    .buttonStyle(.borderedProminent)
-                }.padding().disabled(plugin.isExporting || plugin.isUploading)
+
             }
             if plugin.isUploading {
                 HStack {
@@ -49,12 +26,11 @@ struct ScreenshotEditorView: View {
                 }.padding(8)
             }
             if plugin.uploadedURL != nil { Button("Copy Link", action: plugin.copyUploadedLink).padding(8) }
-            if plugin.isExporting { ProgressView().controlSize(.small).padding(8) }
             if plugin.needsScreenRecordingPermission {
                 Button("Open Screen Recording Settings", action: plugin.openScreenRecordingSettings).padding(8)
             }
-            if let message = plugin.statusMessage {
-                Text(message).font(.callout).foregroundStyle(.secondary).padding()
+            if plugin.document == nil || plugin.document?.showsText == true, let status = plugin.statusMessage {
+                Text(status).font(.caption).foregroundStyle(.secondary).padding(8)
             }
         }
     }
@@ -62,20 +38,10 @@ struct ScreenshotEditorView: View {
 
 private struct ScreenshotDocumentView: View {
     @Bindable var document: ScreenshotDocument
+    let status: String?
+    let exporting: Bool
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker("Tool", selection: $document.tool) {
-                    ForEach(ScreenshotTool.allCases) { Text($0.title).tag($0) }
-                }.pickerStyle(.segmented).labelsHidden()
-                Button(action: document.undo) { Image(systemName: "arrow.uturn.backward") }
-                    .help("Undo").accessibilityLabel("Undo").keyboardShortcut("z", modifiers: .command).disabled(!document.canUndo)
-                Button(action: document.redo) { Image(systemName: "arrow.uturn.forward") }
-                    .help("Redo").accessibilityLabel("Redo").keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!document.canRedo)
-            }.padding()
-            if document.tool == .text {
-                TextField("Enter text, then click the image", text: $document.text).textFieldStyle(.roundedBorder).padding(.horizontal).padding(.bottom, 8)
-            }
             GeometryReader { proxy in
                 ScrollView([.horizontal, .vertical]) {
                     ScreenshotCanvas(document: document)
@@ -84,14 +50,20 @@ private struct ScreenshotDocumentView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.black.opacity(0.08))
             HStack {
-                Text("\(Int(document.edit.crop.width)) × \(Int(document.edit.crop.height)) px").monospacedDigit()
+                if exporting { ProgressView().controlSize(.mini) }
+                if let status {
+                    Text(status).lineLimit(1).help(status)
+                } else {
+                    Text("\(Int(document.edit.crop.width)) × \(Int(document.edit.crop.height)) px").monospacedDigit()
+                }
                 Spacer()
                 Button { document.zoom = max(0.05, document.zoom / 1.25) } label: { Image(systemName: "minus.magnifyingglass") }
                     .accessibilityLabel("Zoom Out")
                 Text(document.zoom, format: .percent.precision(.fractionLength(0))).monospacedDigit().frame(width: 55)
                 Button { document.zoom = min(4, document.zoom * 1.25) } label: { Image(systemName: "plus.magnifyingglass") }
                     .accessibilityLabel("Zoom In")
-            }.font(.caption).padding(8)
+            }.font(.caption).buttonStyle(.borderless).controlSize(.small)
+                .padding(.horizontal, 8).frame(height: 28).background(.bar)
         }
     }
 }

@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Mosaic" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "马赛克"
+          }
+        }
+      }
+    },
     "%@ · %@" : {
       "localizations" : {
         "en" : {
@@ -610,6 +620,16 @@
         }
       }
     },
+    "After Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图后"
+          }
+        }
+      }
+    },
     "Alignment lost. Scroll back to the last preview, then retry; or finish with the captured content." : {
       "localizations" : {
         "zh-Hans" : {
@@ -958,6 +978,56 @@
         }
       }
     },
+    "Automatic copying and saving use the original capture. Export later edits explicitly." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动复制和保存的是刚截取的原图。编辑后的图片需要手动导出。"
+          }
+        }
+      }
+    },
+    "Automatic copying failed. Try Copy Image again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动复制失败，请手动复制图片重试。"
+          }
+        }
+      }
+    },
+    "Automatic saving failed. Choose a writable folder in Screenshot settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动保存失败，请在截图设置中选择可写入的文件夹。"
+          }
+        }
+      }
+    },
+    "Automatically copy image" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动复制图片"
+          }
+        }
+      }
+    },
+    "Automatically save image" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动保存图片"
+          }
+        }
+      }
+    },
     "Automation" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1259,6 +1329,16 @@
         }
       }
     },
+    "Choose a folder first" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先选择文件夹"
+          }
+        }
+      }
+    },
     "Choose a folder on a local disk." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1357,6 +1437,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择文件或文件夹"
+          }
+        }
+      }
+    },
+    "Choose Folder…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择文件夹…"
           }
         }
       }
@@ -2765,6 +2855,7 @@
       }
     },
     "Enter text, then click the image" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3447,6 +3538,16 @@
         }
       }
     },
+    "Image Editor" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片编辑器"
+          }
+        }
+      }
+    },
     "Image host credentials could not be read or saved in Keychain." : {
       "localizations" : {
         "zh-Hans" : {
@@ -3773,6 +3874,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "字符串转义无效。"
+          }
+        }
+      }
+    },
+    "JPEG quality" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG 质量"
           }
         }
       }
@@ -4872,6 +4983,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开显示器设置"
+          }
+        }
+      }
+    },
+    "Open Editor" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开编辑器"
           }
         }
       }
@@ -6219,6 +6340,16 @@
     "Save Extension Data" : {
 
     },
+    "Save folder" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存文件夹"
+          }
+        }
+      }
+    },
     "Save or cancel the existing snippet draft before importing selected text." : {
       "localizations" : {
         "zh-Hans" : {
@@ -6300,6 +6431,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "截图"
+          }
+        }
+      }
+    },
+    "Screenshot Preview" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图预览"
           }
         }
       }
@@ -6813,6 +6954,16 @@
         }
       }
     },
+    "Show after capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图后显示"
+          }
+        }
+      }
+    },
     "Show Application Paths in Search Results" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6927,6 +7078,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "SM.MS 上传已迁移至 S.EE。请填写 S.EE API Key；不再使用旧 SM.MS 上传接口。"
+          }
+        }
+      }
+    },
+    "Small Preview" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小预览"
           }
         }
       }
@@ -8819,6 +8980,7 @@
       }
     },
     "View" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -9071,6 +9233,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可以随时使用快捷键或重新打开应用来唤起 Zento。"
+          }
+        }
+      }
+    },
+    "Your clipboard changed. Use Copy Image when ready." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剪贴板内容已变化。需要时请手动复制图片。"
           }
         }
       }

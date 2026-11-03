@@ -3,7 +3,7 @@ import Foundation
 import Observation
 
 nonisolated enum ScreenshotTool: String, CaseIterable, Identifiable {
-    case crop, arrow, rectangle, text, redact
+    case crop, arrow, rectangle, text, mosaic, redact
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -11,6 +11,7 @@ nonisolated enum ScreenshotTool: String, CaseIterable, Identifiable {
         case .arrow: String(localized: "Arrow")
         case .rectangle: String(localized: "Rectangle")
         case .text: String(localized: "Text")
+        case .mosaic: String(localized: "Mosaic")
         case .redact: String(localized: "Cover")
         }
     }
@@ -21,6 +22,7 @@ nonisolated struct ScreenshotMark: Sendable {
     let start: CGPoint
     let end: CGPoint
     let text: String
+    var textSize: CGFloat = 28
     var rect: CGRect {
         CGRect(x: min(start.x, end.x), y: min(start.y, end.y),
                width: abs(end.x - start.x), height: abs(end.y - start.y))
@@ -42,7 +44,6 @@ final class ScreenshotDocument {
     private var undoStack: [ScreenshotEdit] = []
     private var redoStack: [ScreenshotEdit] = []
     var tool = ScreenshotTool.arrow
-    var text = ""
     var zoom = 0.5
     var canUndo: Bool { !undoStack.isEmpty }
     var canRedo: Bool { !redoStack.isEmpty }
@@ -65,6 +66,16 @@ final class ScreenshotDocument {
             guard rect.width >= 1, rect.height >= 1 else { return }
             next.crop = rect
         } else { next.marks.append(mark) }
+        undoStack.append(edit)
+        redoStack.removeAll()
+        edit = next
+    }
+
+    func replaceText(at index: Int, with mark: ScreenshotMark) {
+        var next = edit
+        if mark.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            next.marks.remove(at: index)
+        } else { next.marks[index] = mark }
         undoStack.append(edit)
         redoStack.removeAll()
         edit = next

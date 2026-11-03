@@ -36,6 +36,7 @@ final class ScreenshotPlugin {
     private let defaults: UserDefaults
     let clipboardCoordinator: ClipboardAccessCoordinator
     private let selection = ScreenshotSelection()
+    private let preview = ScreenshotPreviewController()
     private var captureTask: Task<Void, Never>?
     private var captureID: UUID?
     @ObservationIgnored private var window: ScreenshotWindow?
@@ -44,16 +45,35 @@ final class ScreenshotPlugin {
     private(set) var needsScreenRecordingPermission = false
     private(set) var isScreenRecordingAuthorized = false
     private(set) var document: ScreenshotDocument?
-    private(set) var isExporting = false
+    private(set) var isExporting = false {
+        didSet { window?.toolbar?.validateVisibleItems() }
+    }
     var format: ScreenshotFormat {
         didSet { defaults.set(format.rawValue, forKey: "plugin.screenshot.format") }
     }
+    var opensEditorAfterCapture: Bool {
+        didSet { defaults.set(opensEditorAfterCapture, forKey: "plugin.screenshot.opens-editor") }
+    }
+    var automaticallyCopy: Bool {
+        didSet { defaults.set(automaticallyCopy, forKey: "plugin.screenshot.auto-copy") }
+    }
+    var automaticallySave: Bool {
+        didSet { defaults.set(automaticallySave, forKey: "plugin.screenshot.auto-save") }
+    }
+    private(set) var saveDirectory: URL?
+    var jpegQuality: Double {
+        didSet { defaults.set(jpegQuality, forKey: "plugin.screenshot.jpeg-quality") }
+    }
     private var exportTask: Task<Void, Never>?
+    private var feedbackTask: Task<Void, Never>?
     private var uploadTask: Task<Void, Never>?
     private var uploadID: UUID?
+    private var closesAfterUpload = false
     private var pendingUpload: ScreenshotUploadSnapshot?
     var canRetryUpload: Bool { pendingUpload != nil && !isUploading && !isExporting }
-    private(set) var isUploading = false
+    private(set) var isUploading = false {
+        didSet { window?.toolbar?.validateVisibleItems() }
+    }
     private(set) var uploadProgress = 0.0
     private(set) var uploadedURL: URL?
     private(set) var uploadHostName = ""
@@ -62,6 +82,11 @@ final class ScreenshotPlugin {
         self.defaults = defaults
         hosting = ScreenshotHostingSettings(defaults: defaults)
         format = ScreenshotFormat(rawValue: defaults.string(forKey: "plugin.screenshot.format") ?? "") ?? .png
+        opensEditorAfterCapture = defaults.bool(forKey: "plugin.screenshot.opens-editor")
+        automaticallyCopy = defaults.bool(forKey: "plugin.screenshot.auto-copy")
+        automaticallySave = defaults.bool(forKey: "plugin.screenshot.auto-save")
+        saveDirectory = defaults.url(forKey: "plugin.screenshot.save-directory")
+        jpegQuality = defaults.object(forKey: "plugin.screenshot.jpeg-quality") as? Double ?? 0.9
         self.clipboardCoordinator = clipboardCoordinator
         isEnabled = defaults.bool(forKey: "plugin.screenshot.enabled")
     }
@@ -115,6 +140,9 @@ final class ScreenshotPlugin {
     }
 
     private func closeEditor() {
+        preview.close()
+        feedbackTask?.cancel()
+        feedbackTask = nil
         cancelCapture()
         document?.ocr.invalidate()
         discardUpload()
@@ -127,6 +155,7 @@ final class ScreenshotPlugin {
 
     private func discardUpload() {
         cancelUpload()
+        closesAfterUpload = false
         uploadedURL = nil
         pendingUpload = nil
     }
@@ -198,13 +227,14 @@ final class ScreenshotPlugin {
         statusMessage = copied ? String(localized: "Text copied.") : String(localized: "Could not copy the result.")
     }
 
-    func copyImage() {
+    func copyImage(closesEditor: Bool = false) {
         export(format: .png) { [weak self] data in
             let board = NSPasteboard.general
             board.prepareForNewContents(with: .currentHostOnly)
             defer { self?.clipboardCoordinator.didWrite(changeCount: board.changeCount) }
             guard board.setData(data, forType: .png) else { throw ScreenshotError.exportFailed }
-            self?.statusMessage = String(localized: "Image copied.")
+            if closesEditor { self?.window?.close() }
+            else { self?.showExportFeedback(String(localized: "Image copied.")) }
         }
     }
 
@@ -212,12 +242,25 @@ final class ScreenshotPlugin {
         guard let document, !isExporting, !isUploading else { return }
         let selectedFormat = format
         let panel = NSSavePanel()
+        panel.directoryURL = saveDirectory
         panel.allowedContentTypes = [selectedFormat.type]
         panel.nameFieldStringValue = "Screenshot-\(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(UUID().uuidString.prefix(8)).\(format.rawValue)"
         guard panel.runModal() == .OK, let url = panel.url, self.document === document else { return }
         export(format: selectedFormat) { [weak self] data in
             try data.write(to: url, options: .atomic)
-            self?.statusMessage = String(localized: "Image saved.")
+            self?.showExportFeedback(String(localized: "Image saved."))
+        }
+    }
+
+    private func showExportFeedback(_ message: String) {
+        feedbackTask?.cancel()
+        statusMessage = message
+        let document = document
+        feedbackTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(1.5)) } catch { return }
+            guard let self, self.document === document, self.statusMessage == message else { return }
+            self.statusMessage = nil
+            self.feedbackTask = nil
         }
     }
 
@@ -226,9 +269,10 @@ final class ScreenshotPlugin {
         isExporting = true
         statusMessage = nil
         let edit = document.edit
+        let quality = jpegQuality
         exportTask = Task { [weak self] in
             do {
-                let data = try await ScreenshotRenderer.export(image: document.image, edit: edit, format: format)
+                let data = try await ScreenshotRenderer.export(image: document.image, edit: edit, format: format, quality: quality)
                 try Task.checkCancellation()
                 guard let self, self.document === document else { return }
                 try completed(data)
@@ -248,7 +292,10 @@ final class ScreenshotPlugin {
     }
 
     func finishEditing() {
-        if hosting.automaticallyUpload { uploadImage() } else { copyImage() }
+        if hosting.automaticallyUpload {
+            guard let document, !isUploading, !isExporting else { return }
+            beginUpload(image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: true)
+        } else { copyImage(closesEditor: true) }
     }
 
     func uploadImage() {
@@ -300,7 +347,7 @@ final class ScreenshotPlugin {
         } catch { statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.keychain.localizedDescription }
     }
 
-    private func beginUpload(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat, copiesLink: Bool) {
+    private func beginUpload(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat, copiesLink: Bool, closesEditor: Bool = false) {
         guard let profile = hosting.selected else {
             statusMessage = String(localized: "Choose an image host in Screenshot settings first.")
             return
@@ -315,12 +362,14 @@ final class ScreenshotPlugin {
             return
         }
         let id = startUploadState(hostName: profile.name)
+        closesAfterUpload = closesEditor
         pendingUpload = nil
         let clipboardCount = copiesLink ? NSPasteboard.general.changeCount : nil
+        let quality = jpegQuality
         let filename = "Screenshot-" + id.uuidString.lowercased() + "." + format.rawValue
         uploadTask = Task { [weak self] in
             do {
-                let data = try await ScreenshotRenderer.export(image: image, edit: edit, format: format)
+                let data = try await ScreenshotRenderer.export(image: image, edit: edit, format: format, quality: quality)
                 try Task.checkCancellation()
                 guard let self, uploadID == id else { return }
                 let snapshot = ScreenshotUploadSnapshot(profile: profile, image: data, format: format,
@@ -363,6 +412,7 @@ final class ScreenshotPlugin {
             if ScreenshotClipboard.copyLink(url, format: linkFormat, to: .general,
                     coordinator: clipboardCoordinator, ifUnchangedSince: clipboardCount) {
                 statusMessage = String(localized: "Upload complete. Link copied.")
+                if closesAfterUpload { window?.close() }
             } else {
                 statusMessage = String(localized: "Upload complete. Your clipboard changed, so the link was not copied. Use Copy Link when ready.")
             }
@@ -394,12 +444,9 @@ final class ScreenshotPlugin {
     }
 
     private func capture(_ mode: ScreenshotMode, purpose: CapturePurpose = .edit) {
-        textWindow.close()
         cancelCapture()
-        document?.ocr.invalidate()
         discardUpload()
         cancelExport()
-        window?.orderOut(nil)
         statusMessage = nil
         needsScreenRecordingPermission = false
         let id = UUID()
@@ -419,7 +466,6 @@ final class ScreenshotPlugin {
                         self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: mode == .scrolling ? .scroll : purpose, pinGeneration: generation)
                     } cancelled: { [weak self] in
                         self?.cancelCapture()
-                        if self?.document != nil { self?.show(on: screen) }
                     }
                 }
             } catch {
@@ -433,40 +479,33 @@ final class ScreenshotPlugin {
         selection.finishChoosing()
         captureTask = Task { [weak self] in
             do {
-                // Enumerate while the selection panels still exist so the filter can exclude this app.
-                let captureContent = area != nil || selectedWindow != nil
-                    ? try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) : content
                 try Task.checkCancellation()
                 guard let self, captureID == id else { return }
-                selection.close()
                 if purpose == .scroll, let area {
-                    let session = ScreenshotScrollSession(content: captureContent, screen: screen, area: area) { [weak self] image in
+                    let session = ScreenshotScrollSession(content: content, screen: screen, area: area) { [weak self] image in
                         guard let self, captureID == id, isEnabled else { return }
+                        selection.close()
                         scrollSession = nil
                         captureID = nil
-                        document = ScreenshotDocument(image: image)
-                        show(on: screen)
+                        acceptCapture(image, on: screen)
                     } cancelled: { [weak self] in
                         guard let self, captureID == id else { return }
                         cancelCapture()
-                        if document != nil { show(on: screen) }
                     }
                     scrollSession = session
                     session.start()
                     return
                 }
-                let image = try await ScreenshotCapture.image(content: captureContent, screen: screen, area: area, window: selectedWindow)
+                let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area, window: selectedWindow)
                 try Task.checkCancellation()
                 guard captureID == id, isEnabled else { return }
+                selection.close()
                 switch purpose {
                 case .edit, .scroll:
-                    self.document = ScreenshotDocument(image: image)
-                    show(on: screen)
+                    acceptCapture(image, on: screen)
                 case .pin:
-                    if document != nil { show(on: screen) }
                     if pinGeneration == generation { try addPin(image) }
                 case .text:
-                    if document != nil { show(on: screen) }
                     textWindow.show(image: image) { [weak self] in self?.copyText($0) }
                 }
             } catch {
@@ -477,6 +516,81 @@ final class ScreenshotPlugin {
         }
     }
 
+    func chooseSaveDirectory() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.directoryURL = saveDirectory
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        saveDirectory = url
+        defaults.set(url, forKey: "plugin.screenshot.save-directory")
+    }
+
+    func editPreview() { show(on: preview.screen) }
+    func recognizePreview() {
+        guard let document else { return }
+        textWindow.show(image: document.image) { [weak self] in self?.copyText($0) }
+    }
+    func dismissPreview() { closeEditor() }
+
+    private func acceptCapture(_ image: CGImage, on screen: NSScreen) {
+        let document = ScreenshotDocument(image: image)
+        self.document = document
+        statusMessage = nil
+        if opensEditorAfterCapture { show(on: screen) }
+        else { preview.show(plugin: self, image: image, on: screen) }
+        let edit = document.edit
+        let copy = automaticallyCopy
+        let save = automaticallySave
+        guard copy || save else { return }
+        let directory = saveDirectory
+        let format = format
+        let quality = jpegQuality
+        let clipboardCount = NSPasteboard.general.changeCount
+        isExporting = true
+        exportTask = Task { [weak self] in
+            guard let self else { return }
+            var failures: [String] = []
+            if copy {
+                do {
+                    let data = try await ScreenshotRenderer.encode(image, format: .png)
+                    try Task.checkCancellation()
+                    guard self.document === document else { return }
+                    let board = NSPasteboard.general
+                    if board.changeCount == clipboardCount {
+                        board.prepareForNewContents(with: .currentHostOnly)
+                        let copied = board.setData(data, forType: .png)
+                        clipboardCoordinator.didWrite(changeCount: board.changeCount)
+                        if !copied { throw ScreenshotError.exportFailed }
+                    } else {
+                        failures.append(String(localized: "Your clipboard changed. Use Copy Image when ready."))
+                    }
+                } catch {
+                    guard !Task.isCancelled, self.document === document else { return }
+                    failures.append(String(localized: "Automatic copying failed. Try Copy Image again."))
+                }
+            }
+            if save {
+                do {
+                    guard let directory else { throw ScreenshotError.exportFailed }
+                    let data = try await ScreenshotRenderer.export(image: image, edit: edit, format: format, quality: quality)
+                    try Task.checkCancellation()
+                    guard self.document === document else { return }
+                    _ = try await ScreenshotAutomaticSave.write(data, format: format, directory: directory)
+                } catch {
+                    guard !Task.isCancelled, self.document === document else { return }
+                    failures.append(String(localized: "Automatic saving failed. Choose a writable folder in Screenshot settings."))
+                }
+            }
+            guard !Task.isCancelled, self.document === document else { return }
+            isExporting = false
+            exportTask = nil
+            if !failures.isEmpty { statusMessage = failures.joined(separator: "\n") }
+        }
+    }
+
     private func report(_ error: Error) {
         if case ScreenshotError.permission = error { needsScreenRecordingPermission = true }
         statusMessage = (error as? ScreenshotError)?.localizedDescription ?? ScreenshotError.captureFailed.localizedDescription
@@ -484,31 +598,51 @@ final class ScreenshotPlugin {
     }
 
     private func show(on screen: NSScreen?) {
+        preview.close()
         if window == nil {
-            let panel = ScreenshotWindow(contentRect: CGRect(x: 0, y: 0, width: 900, height: 650),
+            let panel = ScreenshotWindow(contentRect: CGRect(x: 0, y: 0, width: 640, height: 240),
                 styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
             panel.title = String(localized: "Screenshot")
-            panel.minSize = CGSize(width: 640, height: 400)
+            panel.minSize = CGSize(width: 480, height: 220)
             panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
+            let editorToolbar = ScreenshotEditorToolbar(plugin: self)
+            panel.editorToolbar = editorToolbar
+            panel.toolbar = editorToolbar.makeToolbar()
+            panel.toolbarStyle = .unifiedCompact
             panel.didClose = { [weak self] in self?.closeEditor() }
             panel.contentView = NSHostingView(rootView: ScreenshotEditorView(plugin: self))
             window = panel
         }
-        if let screen {
+        if let screen = screen ?? NSScreen.main, let window {
             let frame = screen.visibleFrame
-            if let window {
-                let size = CGSize(width: min(window.frame.width, frame.width), height: min(window.frame.height, frame.height))
-                window.setFrame(CGRect(origin: window.frame.origin, size: size), display: false)
+            if let document, window.fittedDocument !== document {
+                let chrome = window.frame.height - window.contentLayoutRect.height
+                let available = CGSize(width: frame.width * 0.85, height: frame.height * 0.85)
+                let zoom = min(1 / screen.backingScaleFactor,
+                               (available.width - 24) / document.edit.crop.width,
+                               (available.height - chrome - 52) / document.edit.crop.height)
+                document.zoom = zoom
+                let content = CGSize(width: max(480, document.edit.crop.width * zoom + 24),
+                                     height: max(180, document.edit.crop.height * zoom + 52))
+                window.setFrame(CGRect(origin: window.frame.origin,
+                                       size: CGSize(width: content.width, height: content.height + chrome)), display: false)
+                window.fittedDocument = document
             }
-            window?.setFrameOrigin(CGPoint(x: frame.midX - (window?.frame.width ?? 0) / 2,
-                                           y: frame.midY - (window?.frame.height ?? 0) / 2))
+            window.setFrameOrigin(CGPoint(x: frame.midX - window.frame.width / 2,
+                                          y: frame.midY - window.frame.height / 2))
         }
         if let window { WindowPresentation.present(window) }
     }
 }
 
 final class ScreenshotWindow: NSWindow {
+    weak var fittedDocument: ScreenshotDocument?
+    var editorToolbar: ScreenshotEditorToolbar?
     var didClose: (() -> Void)?
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if !(firstResponder is NSTextView), editorToolbar?.handleKeyEquivalent(event) == true { return true }
+        return super.performKeyEquivalent(with: event)
+    }
     override func close() { super.close(); didClose?() }
 }

@@ -59,7 +59,6 @@ private final class ScreenshotPin: NSObject, NSWindowDelegate, Identifiable {
         window.isReleasedWhenClosed = false
         window.level = .floating
         window.hidesOnDeactivate = false
-        window.isMovableByWindowBackground = true
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentAspectRatio = CGSize(width: image.width, height: image.height)
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
@@ -130,27 +129,27 @@ private final class ScreenshotPinPanel: NSPanel {
 
 private struct ScreenshotPinView: View {
     @Bindable var pin: ScreenshotPin
-    @State private var hovering = false
 
     var body: some View {
-        Image(decorative: pin.image, scale: 1).resizable().scaledToFit()
+        ScreenshotPinImage(image: pin.image).accessibilityLabel("Pinned Image")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black)
-            .overlay(alignment: .topTrailing) {
-                if hovering {
-                    HStack(spacing: 6) {
-                        Button("Copy", systemImage: "doc.on.doc", action: pin.copy)
-                        Menu("Image Actions", systemImage: "ellipsis") { actions }
-                        Button("Close", systemImage: "xmark") { pin.window.close() }
-                    }.labelStyle(.iconOnly).padding(6).background(.regularMaterial)
-                }
+            .overlay(alignment: .topLeading) {
+                HStack(spacing: 4) {
+                    Button("Close", systemImage: "xmark") { pin.window.close() }.help("Close")
+                    Menu("Image Actions", systemImage: "ellipsis") { actions }
+                        .menuIndicator(.hidden).help("Image Actions")
+                }.labelStyle(.iconOnly).buttonStyle(.borderless).controlSize(.small)
+                    .padding(8).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)).padding(6)
             }
             .overlay(alignment: .bottom) {
                 if let error = pin.error { Text(error).font(.caption).padding(6).background(.regularMaterial) }
             }
-            .onHover { hovering = $0 }
-            .contextMenu { actions }
-            .accessibilityLabel("Pinned Image")
+            .contextMenu {
+                actions
+                Divider()
+                Button("Close") { pin.window.close() }
+            }
     }
 
     @ViewBuilder private var actions: some View {
@@ -166,7 +165,38 @@ private struct ScreenshotPinView: View {
                 Button(opacity.formatted(.percent)) { pin.opacity = opacity }
             }
         }
-        Divider()
-        Button("Close") { pin.window.close() }
+    }
+}
+
+private struct ScreenshotPinImage: NSViewRepresentable {
+    let image: CGImage
+    func makeNSView(context: Context) -> ScreenshotDraggableImageView {
+        let view = ScreenshotDraggableImageView()
+        view.imageScaling = .scaleProportionallyUpOrDown
+        view.setAccessibilityLabel(String(localized: "Pinned Image"))
+        return view
+    }
+    func updateNSView(_ view: ScreenshotDraggableImageView, context: Context) {
+        view.image = NSImage(cgImage: image, size: .zero)
+    }
+}
+
+private final class ScreenshotDraggableImageView: NSImageView {
+    override var intrinsicContentSize: NSSize { .zero }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    private var dragOffset: CGPoint?
+    override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
+    override func mouseDown(with event: NSEvent) {
+        dragOffset = event.locationInWindow
+        NSCursor.closedHand.set()
+    }
+    override func mouseDragged(with event: NSEvent) {
+        guard let window, let dragOffset else { return }
+        let point = window.convertPoint(toScreen: event.locationInWindow)
+        window.setFrameOrigin(CGPoint(x: point.x - dragOffset.x, y: point.y - dragOffset.y))
+    }
+    override func mouseUp(with event: NSEvent) {
+        dragOffset = nil
+        NSCursor.openHand.set()
     }
 }
