@@ -21,7 +21,7 @@ zento 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 - MVP 以 Developer ID 签名并在 Mac App Store 之外分发；
 - App Sandbox 关闭，Hardened Runtime 保持开启；
 - 采用类似 Raycast 的后台常驻体验：启动时不显示普通主窗口，也不出现在 Dock；
-- 菜单栏提供打开 Root Search、Settings 和退出入口；
+- 菜单栏提供打开 Root Search、Settings 和退出入口；Root Search 左下角图标提供设置、重新加载应用和退出菜单，两处复用同一组应用操作；
 - 全局快捷键在用户当前工作的 Space 上显示 Root Search；主搜索通过非激活浮动面板获取搜索框焦点，不激活整个应用或连带置前设置等其它窗口；
 - Settings 使用独立窗口，可通过 Root Search、菜单栏或 `Command-,` 打开。当且仅当设置窗口打开期间，应用显示在 Dock 和 Command-Tab 中；最小化仍视为打开，关闭设置后恢复菜单栏模式。其它普通窗口和临时面板不改变此策略。
 
@@ -117,7 +117,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-02 | P0 | 键盘完成查询、选择、执行和退出 | 输入焦点默认在搜索框；方向键、`Control-N` / `Control-P`、Return、Escape 行为明确 |
 | FR-03 | P0 | 枚举、搜索并启动本机应用 | 支持应用名、中文应用名的全拼/首字母和简单模糊匹配；已运行应用可被激活 |
 | FR-04 | P0 | 搜索并执行内置 Command | App Launch 与内置命令使用同一个 Registry 和结果模型 |
-| FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zento 前的目标窗口，并按当前显示器可用区域计算 |
+| FR-05 | P0 | 窗口布局、居中、恢复和跨显示器移动（见 Window Management 产品约定） | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zento 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
 | FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zento 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
 | FR-08 | P1 | 基础设置 | 使用可调整大小的设置窗口，以分组侧栏提供 General、Shortcuts、Extensions 及各内置插件的独立设置页面；快捷键页面支持按命令名称筛选；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md`、`product/display.md`、`product/quicklinks.md`、`product/snippets.md` 和 `product/file-search.md` 定义 |
@@ -142,7 +142,7 @@ Window Management 以内置插件提供窗口命令，其启停、权限、目�
 - 登录或手动启动 zento 后，应用在后台常驻，不自动弹出普通窗口。
 - Root Search 是临时 Panel：全局快捷键显示，再次按快捷键、按 Escape 或完成命令后隐藏。
 - Root Search 默认显示在当前工作的 Space；全屏应用前台时也应可用。
-- 菜单栏图标在 M1 固定显示，提供 Root Search、Settings 和 Quit；是否允许隐藏以后再决定。
+- 通用设置提供“显示菜单栏图标”，默认开启并持久化。隐藏不影响全局快捷键、搜索内的应用菜单或设置命令。重新打开已运行的 App 时显示或聚焦 Root Search，不切换为关闭，也不默认打开设置窗口。
 - Settings 是普通独立窗口，不和 Root Search 共用窗口生命周期。
 - Root Search 外层使用统一连续圆角裁剪；应用路径默认不显示，可在 General 设置中开启且不影响搜索关键词。
 
@@ -155,7 +155,7 @@ Window Management 以内置插件提供窗口命令，其启停、权限、目�
 - Root Search Panel；
 - 应用搜索、启动和激活；
 - Command Registry 与内置命令；
-- Window Management 内置插件的三个窗口命令；
+- Window Management 内置插件的窗口命令（范围见 `product/window-management.md`）；
 - Root Search 全局快捷键；
 - 命令快捷键；
 - 最小 Settings；
@@ -181,7 +181,7 @@ M1 可以被称为“可日用 MVP”，需要满足：
 
 1. FR-01 至 FR-06 可以在真实工作流中稳定完成；
 2. Finder、Safari、Xcode、系统设置和至少一个跨平台 App 可以被搜索、启动和激活；
-3. 三个窗口命令在常见可调整窗口上工作，并验证单显示器和外接显示器；
+3. 窗口命令在常见可调整窗口上工作，并验证单显示器和外接显示器；
 4. Accessibility 首次授权、拒绝、撤销后重新授权均可恢复；
 5. Root Search 在普通桌面、全屏应用和多个 Space 下行为一致；
 6. 没有常规路径崩溃、快捷键失效后无法恢复或窗口严重错位的问题；

@@ -41,6 +41,7 @@ final class WindowManagementPlugin {
 
     func stop() {
         isRunning = false
+        controller.clearHistory()
         for target in WindowCommands.shortcutTargets {
             hotkeyRegistrar.unregister(id: target.id.rawValue)
         }

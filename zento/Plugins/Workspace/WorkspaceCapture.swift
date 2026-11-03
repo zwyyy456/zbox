@@ -25,6 +25,7 @@ nonisolated struct WorkspaceDisplay: Identifiable {
 struct WorkspaceCaptureWindow: Identifiable {
     let id = UUID()
     let title: String
+    let size: CGSize
     let entry: WorkspaceEntry
 }
 
@@ -35,11 +36,18 @@ struct WorkspaceCaptureApplication: Identifiable {
     let windows: [WorkspaceCaptureWindow]
 }
 
+struct WorkspaceCaptureNotice: Identifiable {
+    let id = UUID()
+    let applicationName: String
+    let windowTitle: String?
+    let reason: String
+}
+
 struct WorkspaceCapture: Identifiable {
     let id = UUID()
     let replacing: WorkspaceLayout?
     let applications: [WorkspaceCaptureApplication]
-    let notices: [String]
+    let notices: [WorkspaceCaptureNotice]
 }
 
 @MainActor
@@ -53,7 +61,12 @@ enum WorkspaceWindowAccess {
     }
 
     static func exclusion(of window: AXUIElement, pid: pid_t) -> String? {
-        guard AccessibilityWindows.attribute(kAXSubroleAttribute, of: window) as? String == kAXStandardWindowSubrole else {
+        var subrole: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window, kAXSubroleAttribute as CFString, &subrole) == .success,
+              let role = subrole as? String else {
+            return String(localized: "Could not read this window's type. Try capturing again.")
+        }
+        guard role == kAXStandardWindowSubrole else {
             return String(localized: "Not a standard window")
         }
         if AccessibilityWindows.attribute(kAXMinimizedAttribute, of: window) as? Bool == true {
@@ -62,10 +75,10 @@ enum WorkspaceWindowAccess {
         if AccessibilityWindows.attribute("AXFullScreen", of: window) as? Bool == true {
             return String(localized: "Window is full screen")
         }
-        guard AccessibilityWindows.isSettable(kAXPositionAttribute, of: window),
-              AccessibilityWindows.isSettable(kAXSizeAttribute, of: window) else {
-            return String(localized: "Window cannot be resized")
-        }
+        if let reason = WorkspaceWindowCapability.exclusion(
+            position: .read(kAXPositionAttribute, of: window),
+            size: .read(kAXSizeAttribute, of: window)
+        ) { return reason }
         guard let frame = try? AccessibilityWindows.frame(of: window), frame.width > 0, frame.height > 0 else {
             return String(localized: "Window frame is unavailable")
         }
@@ -87,31 +100,34 @@ enum WorkspaceWindowAccess {
         let displays = WorkspaceDisplay.current()
         guard let primaryMaxY = NSScreen.screens.first?.frame.maxY else { throw AccessibilityWindowError.noScreen }
         var applications: [WorkspaceCaptureApplication] = []
-        var notices: [String] = []
+        var notices: [WorkspaceCaptureNotice] = []
         let running = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
         for app in running {
             guard app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
                   let bundleID = app.bundleIdentifier, let url = app.bundleURL else { continue }
             let name = app.localizedName ?? bundleID
             guard running.filter({ $0.bundleIdentifier == bundleID }).count == 1 else {
-                notices.append("\(name): \(WorkspaceRestoreError.ambiguousApplication.localizedDescription)")
+                notices.append(WorkspaceCaptureNotice(applicationName: name, windowTitle: nil,
+                    reason: WorkspaceRestoreError.ambiguousApplication.localizedDescription))
                 continue
             }
             var candidates: [WorkspaceCaptureWindow] = []
-            for window in windows(for: app.processIdentifier) {
+            for (index, window) in windows(for: app.processIdentifier).enumerated() {
+                let rawTitle = AccessibilityWindows.attribute(kAXTitleAttribute, of: window) as? String ?? ""
+                let title = rawTitle.isEmpty ? String(localized: "Window \(index + 1)") : rawTitle
                 if let reason = exclusion(of: window, pid: app.processIdentifier) {
-                    notices.append("\(name): \(reason)")
+                    notices.append(WorkspaceCaptureNotice(applicationName: name, windowTitle: title, reason: reason))
                     continue
                 }
                 guard let axFrame = try? AccessibilityWindows.frame(of: window) else {
-                    notices.append("\(name): \(String(localized: "Window frame is unavailable"))")
+                    notices.append(WorkspaceCaptureNotice(applicationName: name, windowTitle: title,
+                        reason: String(localized: "Window frame is unavailable")))
                     continue
                 }
                 let frame = WindowGeometry.cocoaRect(fromAXRect: axFrame, primaryScreenMaxY: primaryMaxY)
                 guard let index = WindowGeometry.screenIndex(containing: frame, screenFrames: displays.map(\.frame)) else { continue }
                 let display = displays[index]
-                let title = AccessibilityWindows.attribute(kAXTitleAttribute, of: window) as? String ?? name
-                candidates.append(WorkspaceCaptureWindow(title: title.isEmpty ? name : title,
+                candidates.append(WorkspaceCaptureWindow(title: title, size: frame.size,
                     entry: WorkspaceEntry(bundleID: bundleID, applicationName: name, applicationURL: url,
                         displayID: display.id, displayName: display.name,
                         frame: WorkspaceGeometry.normalized(frame, in: display.visibleFrame))))
@@ -123,6 +139,6 @@ enum WorkspaceWindowAccess {
         guard AXIsProcessTrusted() else { throw AccessibilityWindowError.permissionRequired }
         return WorkspaceCapture(replacing: replacing,
             applications: applications.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending },
-            notices: Array(Set(notices)).sorted())
+            notices: notices.sorted { $0.applicationName.localizedStandardCompare($1.applicationName) == .orderedAscending })
     }
 }

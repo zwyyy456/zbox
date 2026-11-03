@@ -83,13 +83,15 @@ struct WindowManagementPluginTests {
         #expect(plugin.isRunning)
         plugin.stop()
         #expect(defaults.bool(forKey: "window-management.enabled"))
-        #expect(registry.descriptors.count == 3)
-        for source in [CommandSource.rootSearch, .directHotkey] {
-            await #expect(throws: WindowManagementError.disabled) {
-                try await registry.execute(
-                    WindowCommands.leftHalfID,
-                    context: CommandContext(source: source, frontmostApplicationPID: nil)
-                )
+        #expect(registry.descriptors.count == 18)
+        for descriptor in registry.descriptors {
+            for source in [CommandSource.rootSearch, .directHotkey] {
+                await #expect(throws: WindowManagementError.disabled) {
+                    try await registry.execute(
+                        descriptor.id,
+                        context: CommandContext(source: source, frontmostApplicationPID: nil)
+                    )
+                }
             }
         }
         plugin.start()

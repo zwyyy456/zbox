@@ -1,67 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Files and Folders": {"localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "文件与目录"}}}},
-    "Reference Size": {"localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "引用大小"}}}},
-    "References only. File and folder contents are not stored.": {"localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "仅保存引用，不存储文件或目录内容。"}}}},
-    "Some referenced files or folders are unavailable. They may have been moved, deleted, or disconnected. Nothing was copied.": {"localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "部分引用的文件或目录不可访问，可能已移动、删除或所在磁盘已断开。未复制任何项目。"}}}},
-    "%lld items": {"localizations": {"zh-Hans": {"stringUnit": {"state": "translated", "value": "%lld 个项目"}}}},
-    "Unknown Application": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未知应用"
-          }
-        }
-      }
-    },
-    "Information": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "信息"
-          }
-        }
-      }
-    },
-    "Source Application": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "来源应用"
-          }
-        }
-      }
-    },
-    "Dimensions": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图片尺寸"
-          }
-        }
-      }
-    },
-    "Size": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "大小"
-          }
-        }
-      }
-    },
     "%@ · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld × %lld pt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld × %3$lld pt"
           }
         }
       }
@@ -129,6 +84,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已捕获 %lld 行"
+          }
+        }
+      }
+    },
+    "%lld items" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 个项目"
           }
         }
       }
@@ -1234,6 +1199,16 @@
         }
       }
     },
+    "Center Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "居中窗口"
+          }
+        }
+      }
+    },
     "Change Sign" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1644,6 +1619,16 @@
         }
       }
     },
+    "Connect another display to move this window between displays." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接另一台显示器后，才能跨屏移动窗口。"
+          }
+        }
+      }
+    },
     "Connection" : {
       "localizations" : {
         "en" : {
@@ -1830,6 +1815,26 @@
         }
       }
     },
+    "Could not check whether this window can be moved. Try capturing again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时无法确认此窗口是否允许移动，请重新捕获。"
+          }
+        }
+      }
+    },
+    "Could not check whether this window can be resized. Try capturing again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时无法确认此窗口是否允许调整大小，请重新捕获。"
+          }
+        }
+      }
+    },
     "Could not copy the result." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1856,6 +1861,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法加载 Apple 快捷指令，请打开快捷指令 App 后刷新列表。"
+          }
+        }
+      }
+    },
+    "Could not read this window's type. Try capturing again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时无法读取此窗口类型，请重新捕获。"
           }
         }
       }
@@ -2118,6 +2133,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "设备"
+          }
+        }
+      }
+    },
+    "Dimensions" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片尺寸"
           }
         }
       }
@@ -3057,6 +3082,16 @@
         }
       }
     },
+    "Files and Folders" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件与目录"
+          }
+        }
+      }
+    },
     "Fill in every required parameter. Null characters are not supported." : {
       "localizations" : {
         "zh-Hans" : {
@@ -3592,6 +3627,16 @@
         }
       }
     },
+    "Information" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信息"
+          }
+        }
+      }
+    },
     "Input" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3878,6 +3923,7 @@
       }
     },
     "Layout window" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3894,6 +3940,7 @@
       }
     },
     "Left Half" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -4054,11 +4101,22 @@
       }
     },
     "Maximize" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "最大化"
+          }
+        }
+      }
+    },
+    "Maximize Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最大化窗口"
           }
         }
       }
@@ -4100,6 +4158,156 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请将指针移到可读取的单词上。"
+          }
+        }
+      }
+    },
+    "Move to Bottom Half" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到下半屏"
+          }
+        }
+      }
+    },
+    "Move to Bottom Left Quarter" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到左下四分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Bottom Right Quarter" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到右下四分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Center Third" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到中间三分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Left Half" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到左半屏"
+          }
+        }
+      }
+    },
+    "Move to Left Third" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到左侧三分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Left Two Thirds" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到左侧三分之二屏"
+          }
+        }
+      }
+    },
+    "Move to Next Display" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到下一显示器"
+          }
+        }
+      }
+    },
+    "Move to Previous Display" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到上一显示器"
+          }
+        }
+      }
+    },
+    "Move to Right Half" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到右半屏"
+          }
+        }
+      }
+    },
+    "Move to Right Third" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到右侧三分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Right Two Thirds" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到右侧三分之二屏"
+          }
+        }
+      }
+    },
+    "Move to Top Half" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到上半屏"
+          }
+        }
+      }
+    },
+    "Move to Top Left Quarter" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到左上四分之一屏"
+          }
+        }
+      }
+    },
+    "Move to Top Right Quarter" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动到右上四分之一屏"
           }
         }
       }
@@ -5297,6 +5505,26 @@
         }
       }
     },
+    "Reference Size" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "引用大小"
+          }
+        }
+      }
+    },
+    "References only. File and folder contents are not stored." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅保存引用，不存储文件或目录内容。"
+          }
+        }
+      }
+    },
     "Refresh Displays" : {
       "localizations" : {
         "en" : {
@@ -5657,6 +5885,16 @@
         }
       }
     },
+    "Restore Previous Window Frame" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复上次位置和大小"
+          }
+        }
+      }
+    },
     "Restore Workspace: %@" : {
       "localizations" : {
         "en" : {
@@ -5819,6 +6057,7 @@
       }
     },
     "Right Half" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -6594,6 +6833,16 @@
         }
       }
     },
+    "Show Menu Bar Icon" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示菜单栏图标"
+          }
+        }
+      }
+    },
     "Showing the best 200 matches. Narrow your search for more." : {
       "localizations" : {
         "zh-Hans" : {
@@ -6610,6 +6859,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "终止信号：%d"
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大小"
           }
         }
       }
@@ -6712,6 +6971,16 @@
         }
       }
     },
+    "Some referenced files or folders are unavailable. They may have been moved, deleted, or disconnected. Nothing was copied." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分引用的文件或目录不可访问，可能已移动、删除或所在磁盘已断开。未复制任何项目。"
+          }
+        }
+      }
+    },
     "Some saved displays are unavailable. Choose a display or skip their applications for this restoration only." : {
       "localizations" : {
         "en" : {
@@ -6734,6 +7003,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "排序"
+          }
+        }
+      }
+    },
+    "Source Application" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来源应用"
           }
         }
       }
@@ -7201,6 +7480,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "确认期间显示配置发生变化，已尝试恢复原设置。"
+          }
+        }
+      }
+    },
+    "The display used by the previous window position is no longer connected." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上次窗口位置所在的显示器已断开连接。"
           }
         }
       }
@@ -7738,6 +8027,16 @@
         }
       }
     },
+    "There is no previous position to restore for this window." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此窗口没有可恢复的上次位置。"
+          }
+        }
+      }
+    },
     "This Apple shortcut no longer exists. Select another shortcut in Settings." : {
       "localizations" : {
         "zh-Hans" : {
@@ -7843,6 +8142,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这会替换所选工具中的已有草稿。"
+          }
+        }
+      }
+    },
+    "This window cannot be moved" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此窗口不允许移动"
+          }
+        }
+      }
+    },
+    "This window cannot be resized" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此窗口不允许调整大小"
           }
         }
       }
@@ -8122,6 +8441,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请明确选择单位，支持负时间戳。"
+          }
+        }
+      }
+    },
+    "Unknown Application" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知应用"
           }
         }
       }
@@ -8530,7 +8859,18 @@
         }
       }
     },
+    "Window %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口 %lld"
+          }
+        }
+      }
+    },
     "Window cannot be resized" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8630,6 +8970,16 @@
         }
       }
     },
+    "Window to Save" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择要保存布局的窗口"
+          }
+        }
+      }
+    },
     "Working Directory" : {
       "localizations" : {
         "zh-Hans" : {
@@ -8715,12 +9065,32 @@
         }
       }
     },
+    "You can always open Zento with its shortcut or by reopening the app." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可以随时使用快捷键或重新打开应用来唤起 Zento。"
+          }
+        }
+      }
+    },
     "Zento" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zento"
+          }
+        }
+      }
+    },
+    "Zento Menu" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zento 菜单"
           }
         }
       }
