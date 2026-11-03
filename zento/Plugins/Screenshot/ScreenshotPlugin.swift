@@ -192,7 +192,7 @@ final class ScreenshotPlugin {
         }
     }
 
-    func pinImage() {
+    func pinImage(closesEditor: Bool = false) {
         guard let document, !isExporting, !isUploading else { return }
         isExporting = true
         let edit = document.edit
@@ -201,7 +201,10 @@ final class ScreenshotPlugin {
             do {
                 let image = try await ScreenshotRenderer.flattened(image: document.image, edit: edit)
                 guard !Task.isCancelled, let self, self.document === document else { return }
-                if pinGeneration == generation { try addPin(image) }
+                if pinGeneration == generation {
+                    try addPin(image)
+                    if closesEditor { self.closeEditor() }
+                }
                 isExporting = false
                 exportTask = nil
             } catch {
@@ -233,12 +236,12 @@ final class ScreenshotPlugin {
             board.prepareForNewContents(with: .currentHostOnly)
             defer { self?.clipboardCoordinator.didWrite(changeCount: board.changeCount) }
             guard board.setData(data, forType: .png) else { throw ScreenshotError.exportFailed }
-            if closesEditor { self?.window?.close() }
+            if closesEditor { self?.closeEditor() }
             else { self?.showExportFeedback(String(localized: "Image copied.")) }
         }
     }
 
-    func saveImage() {
+    func saveImage(closesEditor: Bool = false) {
         guard let document, !isExporting, !isUploading else { return }
         let selectedFormat = format
         let panel = NSSavePanel()
@@ -248,7 +251,8 @@ final class ScreenshotPlugin {
         guard panel.runModal() == .OK, let url = panel.url, self.document === document else { return }
         export(format: selectedFormat) { [weak self] data in
             try data.write(to: url, options: .atomic)
-            self?.showExportFeedback(String(localized: "Image saved."))
+            if closesEditor { self?.closeEditor() }
+            else { self?.showExportFeedback(String(localized: "Image saved.")) }
         }
     }
 
@@ -298,9 +302,9 @@ final class ScreenshotPlugin {
         } else { copyImage(closesEditor: true) }
     }
 
-    func uploadImage() {
+    func uploadImage(closesEditor: Bool = false) {
         guard let document, !isUploading, !isExporting else { return }
-        beginUpload(image: document.image, edit: document.edit, format: format, copiesLink: true)
+        beginUpload(image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: closesEditor)
     }
 
     func uploadTestImage() {
@@ -326,6 +330,7 @@ final class ScreenshotPlugin {
         guard let uploadedURL else { return }
         if ScreenshotClipboard.copyLink(uploadedURL, format: hosting.linkFormat, to: .general, coordinator: clipboardCoordinator) {
             statusMessage = String(localized: "Link copied.")
+            if closesAfterUpload { closeEditor() }
         }
     }
 
@@ -412,7 +417,7 @@ final class ScreenshotPlugin {
             if ScreenshotClipboard.copyLink(url, format: linkFormat, to: .general,
                     coordinator: clipboardCoordinator, ifUnchangedSince: clipboardCount) {
                 statusMessage = String(localized: "Upload complete. Link copied.")
-                if closesAfterUpload { window?.close() }
+                if closesAfterUpload { closeEditor() }
             } else {
                 statusMessage = String(localized: "Upload complete. Your clipboard changed, so the link was not copied. Use Copy Link when ready.")
             }
@@ -532,6 +537,7 @@ final class ScreenshotPlugin {
     func recognizePreview() {
         guard let document else { return }
         textWindow.show(image: document.image) { [weak self] in self?.copyText($0) }
+        closeEditor()
     }
     func dismissPreview() { closeEditor() }
 

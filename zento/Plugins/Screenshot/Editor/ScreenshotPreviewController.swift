@@ -56,15 +56,15 @@ private struct ScreenshotPreviewView: View {
             HStack(spacing: plugin.hosting.selected == nil && !plugin.isUploading ? 8 : 4) {
                 Group {
                     action("Open Editor", symbol: "pencil", perform: plugin.editPreview)
-                    action("Copy Image", symbol: "doc.on.doc") { plugin.copyImage() }
-                    action("Save…", symbol: "square.and.arrow.down", perform: plugin.saveImage)
-                    action("Pin Image", symbol: "pin", perform: plugin.pinImage)
+                    action("Copy Image", symbol: "doc.on.doc") { plugin.copyImage(closesEditor: true) }
+                    action("Save…", symbol: "square.and.arrow.down") { plugin.saveImage(closesEditor: true) }
+                    action("Pin Image", symbol: "pin") { plugin.pinImage(closesEditor: true) }
                     action("Recognize Text", symbol: "text.viewfinder", perform: plugin.recognizePreview)
                 }.disabled(plugin.isUploading)
                 if plugin.isUploading {
                     action("Cancel Upload", symbol: "xmark.circle", perform: plugin.cancelUpload)
                 } else if plugin.hosting.selected != nil {
-                    action("Upload", symbol: "square.and.arrow.up", perform: plugin.uploadImage)
+                    action("Upload", symbol: "square.and.arrow.up") { plugin.uploadImage(closesEditor: true) }
                 }
             }.frame(maxWidth: .infinity).frame(height: 43)
                 .background(.bar).disabled(plugin.isExporting)
