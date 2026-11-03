@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TextLookupSettingsView: View {
     let environment: AppEnvironment
+    @State private var recordingError: String?
     @State private var excludedBundleIdentifier = ""
 
     private let commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es"]
@@ -18,34 +19,37 @@ struct TextLookupSettingsView: View {
                     set: { environment.setTextLookupEnabled($0) }
                 )
             )
-            if let message = environment.textLookupError ?? plugin.statusMessage {
+            if let message = recordingError ?? environment.textLookupError ?? plugin.statusMessage {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
             }
 
             Group {
-                Picker(
-                "Selection Trigger",
-                selection: Binding(
-                    get: { settings.selectionMode },
-                    set: { settings.setSelectionMode($0) }
-                )
-                ) {
-                    ForEach(TextLookupSelectionMode.allCases) { mode in
-                        Text(mode.label).tag(mode)
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Double-click Lookup", isOn: triggerBinding(\.doubleClickEnabled))
+                    if settings.triggers.doubleClickEnabled {
+                        Picker("Trigger", selection: triggerBinding(\.doubleClickRequiresShortcut)) {
+                            Text("Double-click directly").tag(false)
+                            Text("Hold shortcut, then double-click").tag(true)
+                        }
+                        if settings.triggers.doubleClickRequiresShortcut { shortcutRecorder(\.doubleClickShortcut, title: "Double-click Lookup") }
                     }
-                }
-
-                Picker(
-                "Lookup Shortcut",
-                selection: Binding(
-                    get: { settings.shortcut },
-                    set: { environment.setTextLookupShortcut($0) }
-                )
-                ) {
-                    ForEach(TextLookupShortcutPreset.allCases) { shortcut in
-                        Text(shortcut.label).tag(shortcut)
+                    Divider()
+                    Toggle("Drag Selection Lookup", isOn: triggerBinding(\.dragEnabled))
+                    if settings.triggers.dragEnabled {
+                        Picker("Trigger", selection: triggerBinding(\.dragRequiresShortcut)) {
+                            Text("Look up immediately after selection").tag(false)
+                            Text("Press shortcut after selection").tag(true)
+                        }
+                        if settings.triggers.dragRequiresShortcut { shortcutRecorder(\.dragShortcut, title: "Drag Selection Lookup") }
+                    }
+                    Divider()
+                    Toggle("Pointer Lookup", isOn: triggerBinding(\.pointerEnabled))
+                    if settings.triggers.pointerEnabled {
+                        Text("Point at a word and hold the shortcut for 500 ms to look it up.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        shortcutRecorder(\.pointerShortcut, title: "Pointer Lookup")
                     }
                 }
 
@@ -86,7 +90,7 @@ struct TextLookupSettingsView: View {
                             Text(identifier)
                                 .font(.caption.monospaced())
                             Spacer()
-                            if !TextLookupSettingsStore.defaultExcludedApplications.contains(identifier) {
+                            Group {
                                 Button("Remove") {
                                     settings.removeExcludedApplication(identifier)
                                 }
@@ -106,6 +110,29 @@ struct TextLookupSettingsView: View {
                 }
             }
             .disabled(!settings.isEnabled)
+        }
+    }
+
+    private func triggerBinding<Value>(_ keyPath: WritableKeyPath<TextLookupTriggers, Value>) -> Binding<Value> {
+        Binding(get: { environment.textLookupPlugin.settings.triggers[keyPath: keyPath] }, set: { value in
+            var configuration = environment.textLookupPlugin.settings.triggers
+            configuration[keyPath: keyPath] = value
+            recordingError = nil
+            environment.setTextLookupTriggers(configuration)
+        })
+    }
+
+    private func shortcutRecorder(_ keyPath: WritableKeyPath<TextLookupTriggers, TextLookupShortcut>, title: String) -> some View {
+        let binding = triggerBinding(keyPath)
+        let shortcut = binding.wrappedValue
+        return LabeledContent("Shortcut") {
+            ShortcutRecorder(hotkey: shortcut.hotkey, allowsClearing: false,
+                accessibilityLabel: title,
+                onChange: { if let value = $0 { binding.wrappedValue = TextLookupShortcut(keyCode: value.keyCode, modifiers: value.modifiers) } },
+                onInvalid: { recordingError = $0 },
+                onRecordingChanged: environment.setShortcutRecordingActive,
+                modifierOnly: shortcut.keyCode == nil ? shortcut.modifiers : nil,
+                onModifierOnly: { binding.wrappedValue = TextLookupShortcut(modifiers: $0) })
         }
     }
 

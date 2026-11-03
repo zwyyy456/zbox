@@ -5,8 +5,6 @@ import Observation
 @MainActor
 @Observable
 final class TextLookupPlugin {
-    static let hotkeyRegistrationID = "plugin.text-lookup.lookup"
-
     let settings: TextLookupSettingsStore
     private let hotkeyRegistrar: any HotkeyRegistering
     private let capturer: any TextCapturing
@@ -23,7 +21,6 @@ final class TextLookupPlugin {
         onDismiss: { [weak self] in self?.dismissSession() }
     )
 
-    private var candidate: TextLookupSelectionCandidate?
     private var captureTask: Task<Void, Never>?
     private var captureAttemptID: UUID?
 
@@ -47,24 +44,27 @@ final class TextLookupPlugin {
         )
         triggerMonitor.onMouseDown = { [weak self] in
             self?.panelController.hide()
-            self?.clearCandidate()
+            self?.cancelCapture()
         }
-        triggerMonitor.onMouseUp = { [weak self] point in self?.mouseReleased(at: point) }
-        triggerMonitor.onDoubleOption = { [weak self] in
-            guard self?.settings.shortcut == .doubleOption else { return }
-            self?.lookupShortcutPressed()
+        triggerMonitor.onSelection = { [weak self] point, explicit in
+            self?.lookupSelection(at: point, explicit: explicit)
         }
+        triggerMonitor.onPointer = { [weak self] point in self?.lookupPointer(at: point) }
+        triggerMonitor.ignoresWindow = { [weak self] window in self?.panelController.contains(window) == true }
+
     }
 
     func start() {
         guard !isRunning else { return }
         guard hasAccessibilityPermission else { return }
         isRunning = true
-        triggerMonitor.start()
         do {
+            try triggerMonitor.start()
             try reloadConfiguration()
             statusMessage = nil
         } catch {
+            stop()
+            settings.setEnabled(false)
             statusMessage = error.localizedDescription
         }
     }
@@ -74,97 +74,41 @@ final class TextLookupPlugin {
         captureTask?.cancel()
         captureTask = nil
         captureAttemptID = nil
-        candidate = nil
         panelController.hide()
         triggerMonitor.stop()
-        hotkeyRegistrar.unregister(id: Self.hotkeyRegistrationID)
         isRunning = false
         statusMessage = nil
     }
 
     func reloadConfiguration() throws {
-        guard isRunning else { return }
-        let requests = settings.shortcut.hotkey.map { hotkey in
-            [
-                HotkeyRegistrationRequest(
-                    id: Self.hotkeyRegistrationID,
-                    hotkey: hotkey,
-                    label: settings.shortcut.label
-                ) { [weak self] in
-                    self?.lookupShortcutPressed()
-                },
-            ]
-        } ?? []
-        try hotkeyRegistrar.replace(
-            ids: [Self.hotkeyRegistrationID],
-            with: requests
-        )
+        try settings.triggers.validate()
+        triggerMonitor.configuration = settings.triggers
     }
 
-    func setShortcut(_ shortcut: TextLookupShortcutPreset) throws {
-        let previous = settings.shortcut
-        settings.setShortcut(shortcut)
-        do {
-            try reloadConfiguration()
-        } catch {
-            settings.setShortcut(previous)
-            throw error
-        }
+    func setTriggers(_ value: TextLookupTriggers) throws {
+        try value.validate()
+        settings.setTriggers(value)
+        triggerMonitor.configuration = value
     }
 
-    private func mouseReleased(at point: CGPoint) {
-        clearCandidate()
-        guard hasAccessibilityPermission else { return }
-        guard settings.selectionMode != .off,
-              let request = captureRequest(
-                intent: .currentSelection,
-                fallbackAnchorPoint: point
-              ) else { return }
+    func setShortcutRecordingActive(_ value: Bool) {
+        triggerMonitor.isSuspended = value
+        if value { cancelCapture() }
+    }
 
-        let mode = settings.selectionMode
-        beginCapture(request, delay: .milliseconds(130), reportFailure: false) { [weak self] capture in
+    private func lookupSelection(at point: CGPoint, explicit: Bool) {
+        guard hasAccessibilityPermission,
+              let request = captureRequest(intent: .currentSelection, fallbackAnchorPoint: point) else { return }
+        beginCapture(request, delay: explicit ? nil : .milliseconds(130), reportFailure: explicit) { [weak self] capture in
             guard let self,
-                  NSWorkspace.shared.frontmostApplication?.processIdentifier
-                    == request.targetApplicationPID else { return }
-            if mode == .automatic {
-                publish(capture)
-            } else {
-                candidate = TextLookupSelectionCandidate(
-                    capture: capture,
-                    targetApplicationPID: request.targetApplicationPID,
-                    createdAt: Date()
-                )
-            }
+                  NSWorkspace.shared.frontmostApplication?.processIdentifier == request.targetApplicationPID else { return }
+            publish(capture)
         }
     }
 
-    private func lookupShortcutPressed() {
-        panelController.hide()
-        guard hasAccessibilityPermission else { return }
-        let frontmostApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        if let candidate,
-           candidate.isValid(
-                at: Date(),
-                frontmostApplicationPID: frontmostApplicationPID
-           ) {
-            self.candidate = nil
-            publish(candidate.capture)
-            return
-        }
-
-        candidate = nil
-        let pointerLocation = NSEvent.mouseLocation
-        guard let request = captureRequest(intent: .pointerLocation(pointerLocation)) else {
-            present(.unableToReadText, anchorPoint: pointerLocation)
-            return
-        }
-        session.beginCapture()
-        do {
-            try panelController.show(anchor: request.triggerAnchorRect)
-        } catch {
-            statusMessage = error.localizedDescription
-            return
-        }
+    private func lookupPointer(at point: CGPoint) {
+        guard hasAccessibilityPermission,
+              let request = captureRequest(intent: .pointerLocation(point)) else { return }
         beginCapture(request, reportFailure: true, completion: publish)
     }
 
@@ -263,8 +207,7 @@ final class TextLookupPlugin {
         }
     }
 
-    private func clearCandidate() {
-        candidate = nil
+    private func cancelCapture() {
         captureTask?.cancel()
         captureTask = nil
         captureAttemptID = nil

@@ -35,22 +35,6 @@ nonisolated struct TextCaptureRequest: Sendable {
     }
 }
 
-nonisolated struct TextLookupSelectionCandidate: Sendable {
-    private static let maximumAge: TimeInterval = 3
-
-    let capture: TextLookupCapture
-    let targetApplicationPID: pid_t
-    let createdAt: Date
-
-    func isValid(
-        at date: Date,
-        frontmostApplicationPID: pid_t?
-    ) -> Bool {
-        frontmostApplicationPID == targetApplicationPID
-            && date.timeIntervalSince(createdAt) <= Self.maximumAge
-    }
-}
-
 nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
     case permissionRequired
     case excludedApplication

@@ -1,39 +1,44 @@
 import Foundation
 import Observation
 
-nonisolated enum TextLookupSelectionMode: String, CaseIterable, Identifiable, Sendable {
-    case automatic
-    case shortcutRequired
-    case off
+nonisolated struct TextLookupShortcut: Codable, Equatable, Sendable {
+    var keyCode: UInt32?
+    var modifiers: UInt32
 
-    var id: String { rawValue }
-
+    var hotkey: Hotkey? { keyCode.map { Hotkey(keyCode: $0, modifiers: modifiers) } }
     var label: String {
-        switch self {
-        case .automatic: String(localized: "Automatic")
-        case .shortcutRequired: String(localized: "Shortcut Required")
-        case .off: String(localized: "Off")
-        }
+        if let hotkey { return HotkeyFormatter.displayName(for: hotkey) }
+        return [(HotkeyModifiers.control, "⌃"), (HotkeyModifiers.option, "⌥"),
+                (HotkeyModifiers.shift, "⇧"), (HotkeyModifiers.command, "⌘")]
+            .filter { modifiers & $0.0 != 0 }.map(\.1).joined()
     }
 }
 
-nonisolated enum TextLookupShortcutPreset: String, CaseIterable, Identifiable, Sendable {
-    case optionC
-    case doubleOption
+nonisolated struct TextLookupTriggers: Codable, Equatable, Sendable {
+    var doubleClickEnabled = true
+    var doubleClickRequiresShortcut = false
+    var doubleClickShortcut = TextLookupShortcut(modifiers: HotkeyModifiers.option)
+    var dragEnabled = true
+    var dragRequiresShortcut = true
+    var dragShortcut = TextLookupShortcut(keyCode: 2, modifiers: HotkeyModifiers.option)
+    var pointerEnabled = true
+    var pointerShortcut = TextLookupShortcut(modifiers: HotkeyModifiers.option)
 
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .optionC: "⌥C"
-        case .doubleOption: String(localized: "Double-tap ⌥")
-        }
+    var activeShortcuts: [(String, TextLookupShortcut)] {
+        var result: [(String, TextLookupShortcut)] = []
+        if doubleClickEnabled && doubleClickRequiresShortcut { result.append((String(localized: "Double-click Lookup"), doubleClickShortcut)) }
+        if dragEnabled && dragRequiresShortcut { result.append((String(localized: "Drag Selection Lookup"), dragShortcut)) }
+        if pointerEnabled { result.append((String(localized: "Pointer Lookup"), pointerShortcut)) }
+        return result
     }
 
-    var hotkey: Hotkey? {
-        switch self {
-        case .optionC: Hotkey(keyCode: 8, modifiers: 1 << 11)
-        case .doubleOption: nil
+    func validate() throws {
+        if doubleClickEnabled && doubleClickRequiresShortcut && dragEnabled && dragRequiresShortcut && doubleClickShortcut == dragShortcut {
+            throw HotkeyConfigurationError.conflict(String(localized: "Double-click Lookup"), String(localized: "Drag Selection Lookup"))
+        }
+        // Mouse down cancels a pending pointer lookup when the two share a hold.
+        if dragEnabled && dragRequiresShortcut && pointerEnabled && dragShortcut == pointerShortcut {
+            throw HotkeyConfigurationError.conflict(String(localized: "Drag Selection Lookup"), String(localized: "Pointer Lookup"))
         }
     }
 }
@@ -41,16 +46,9 @@ nonisolated enum TextLookupShortcutPreset: String, CaseIterable, Identifiable, S
 @MainActor
 @Observable
 final class TextLookupSettingsStore {
-    static let defaultExcludedApplications: Set<String> = [
-        "tech.hyperseek.zento",
-        "tech.hyperseek.flashdict",
-        "tech.hyperseek.flashdict.dev",
-    ]
-
     private enum Key {
         static let enabled = "plugin.text-lookup.enabled"
-        static let selectionMode = "plugin.text-lookup.selection-mode"
-        static let shortcut = "plugin.text-lookup.shortcut"
+        static let triggers = "plugin.text-lookup.triggers"
         static let clipboardFallback = "plugin.text-lookup.clipboard-fallback"
         static let targetLanguage = "plugin.text-lookup.target-language"
         static let excludedApplications = "plugin.text-lookup.excluded-applications"
@@ -59,8 +57,7 @@ final class TextLookupSettingsStore {
     private let defaults: UserDefaults
 
     private(set) var isEnabled: Bool
-    private(set) var selectionMode: TextLookupSelectionMode
-    private(set) var shortcut: TextLookupShortcutPreset
+    private(set) var triggers: TextLookupTriggers
     private(set) var isClipboardFallbackEnabled: Bool
     private(set) var targetLanguageIdentifier: String
     private(set) var excludedApplicationBundleIdentifiers: Set<String>
@@ -68,19 +65,31 @@ final class TextLookupSettingsStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         isEnabled = defaults.bool(forKey: Key.enabled)
-        selectionMode = defaults.string(forKey: Key.selectionMode)
-            .flatMap(TextLookupSelectionMode.init(rawValue:)) ?? .automatic
-        shortcut = defaults.string(forKey: Key.shortcut)
-            .flatMap(TextLookupShortcutPreset.init(rawValue:)) ?? .optionC
+        if let data = defaults.data(forKey: Key.triggers),
+           let saved = try? JSONDecoder().decode(TextLookupTriggers.self, from: data) {
+            triggers = saved
+        } else {
+            var migrated = TextLookupTriggers()
+            let legacyMode = defaults.string(forKey: "plugin.text-lookup.selection-mode")
+            migrated.doubleClickEnabled = legacyMode != "off"
+            migrated.dragEnabled = legacyMode != "off"
+            if let legacyMode { migrated.dragRequiresShortcut = legacyMode == "shortcutRequired" }
+            triggers = migrated
+        }
         isClipboardFallbackEnabled = defaults.bool(forKey: Key.clipboardFallback)
         targetLanguageIdentifier = defaults.string(forKey: Key.targetLanguage)
             ?? Locale.preferredLanguages.first
             ?? "en"
 
-        if let stored = defaults.stringArray(forKey: Key.excludedApplications) {
-            excludedApplicationBundleIdentifiers = Set(stored)
+        let stored = Set(defaults.stringArray(forKey: Key.excludedApplications) ?? [])
+        if defaults.bool(forKey: "plugin.text-lookup.removed-default-exclusions") {
+            excludedApplicationBundleIdentifiers = stored
         } else {
-            excludedApplicationBundleIdentifiers = Self.defaultExcludedApplications
+            excludedApplicationBundleIdentifiers = stored.subtracting([
+                "tech.hyperseek.zento", "tech.hyperseek.flashdict", "tech.hyperseek.flashdict.dev",
+            ])
+            defaults.set(excludedApplicationBundleIdentifiers.sorted(), forKey: Key.excludedApplications)
+            defaults.set(true, forKey: "plugin.text-lookup.removed-default-exclusions")
         }
     }
 
@@ -89,14 +98,9 @@ final class TextLookupSettingsStore {
         defaults.set(value, forKey: Key.enabled)
     }
 
-    func setSelectionMode(_ value: TextLookupSelectionMode) {
-        selectionMode = value
-        defaults.set(value.rawValue, forKey: Key.selectionMode)
-    }
-
-    func setShortcut(_ value: TextLookupShortcutPreset) {
-        shortcut = value
-        defaults.set(value.rawValue, forKey: Key.shortcut)
+    func setTriggers(_ value: TextLookupTriggers) {
+        triggers = value
+        defaults.set(try? JSONEncoder().encode(value), forKey: Key.triggers)
     }
 
     func setClipboardFallbackEnabled(_ value: Bool) {
@@ -117,7 +121,6 @@ final class TextLookupSettingsStore {
     }
 
     func removeExcludedApplication(_ bundleIdentifier: String) {
-        guard !Self.defaultExcludedApplications.contains(bundleIdentifier) else { return }
         excludedApplicationBundleIdentifiers.remove(bundleIdentifier)
         persistExcludedApplications()
     }

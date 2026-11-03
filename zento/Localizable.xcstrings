@@ -1,6 +1,116 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Could not monitor lookup shortcuts. Check Accessibility permission and enable Text Lookup again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法监听取词快捷键，请检查辅助功能权限后重新开启文本取词。"
+          }
+        }
+      }
+    },
+    "Release modifiers, or press another key…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "松开修饰键，或继续按其他键…"
+          }
+        }
+      }
+    },
+    "Double-click Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "双击取词"
+          }
+        }
+      }
+    },
+    "Drag Selection Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "划动取词"
+          }
+        }
+      }
+    },
+    "Pointer Lookup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "光标取词"
+          }
+        }
+      }
+    },
+    "Trigger": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触发方式"
+          }
+        }
+      }
+    },
+    "Double-click directly": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接双击"
+          }
+        }
+      }
+    },
+    "Hold shortcut, then double-click": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住快捷键再双击"
+          }
+        }
+      }
+    },
+    "Look up immediately after selection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选中后立即查询"
+          }
+        }
+      }
+    },
+    "Press shortcut after selection": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选中后按快捷键"
+          }
+        }
+      }
+    },
+    "Point at a word and hold the shortcut for 500 ms to look it up.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鼠标指向单词，按住快捷键 500ms 后查询。"
+          }
+        }
+      }
+    },
     "Mosaic" : {
       "localizations" : {
         "zh-Hans" : {

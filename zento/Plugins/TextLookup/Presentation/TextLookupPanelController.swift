@@ -51,6 +51,8 @@ final class TextLookupPanelController {
         panel.hasShadow = true
     }
 
+    func contains(_ window: NSWindow?) -> Bool { window === panel }
+
     func show(anchor: CGRect?) throws {
         let resolvedAnchor = anchor ?? CGRect(
             x: NSEvent.mouseLocation.x,

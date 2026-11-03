@@ -8,6 +8,8 @@ struct ShortcutRecorder: NSViewRepresentable {
     let onChange: (Hotkey?) -> Void
     let onInvalid: (String) -> Void
     let onRecordingChanged: (Bool) -> Void
+    var modifierOnly: UInt32? = nil
+    var onModifierOnly: ((UInt32) -> Void)? = nil
 
     func makeNSView(context: Context) -> ShortcutRecorderButton {
         let button = ShortcutRecorderButton()
@@ -25,6 +27,8 @@ struct ShortcutRecorder: NSViewRepresentable {
 
     private func update(_ button: ShortcutRecorderButton) {
         button.hotkey = hotkey
+        button.modifierOnly = modifierOnly
+        button.onModifierOnly = onModifierOnly
         button.allowsClearing = allowsClearing
         button.onChange = onChange
         button.onInvalid = onInvalid
@@ -38,6 +42,9 @@ struct ShortcutRecorder: NSViewRepresentable {
 final class ShortcutRecorderButton: NSButton {
     var hotkey: Hotkey?
     var allowsClearing = false
+    var modifierOnly: UInt32?
+    var onModifierOnly: ((UInt32) -> Void)?
+    private var recordedModifiers: UInt32 = 0
     var onChange: ((Hotkey?) -> Void)?
     var onInvalid: ((String) -> Void)?
     var onRecordingChanged: ((Bool) -> Void)?
@@ -102,10 +109,17 @@ final class ShortcutRecorderButton: NSButton {
 
         if carbonModifiers(from: event.modifierFlags) != 0 {
             sawModifier = true
-            title = String(localized: "Press another key…")
+            recordedModifiers |= carbonModifiers(from: event.modifierFlags)
+            title = onModifierOnly == nil ? String(localized: "Press another key…")
+                : String(localized: "Release modifiers, or press another key…")
         } else if sawModifier {
             sawModifier = false
-            onInvalid?(HotkeyConfigurationError.modifierOnly.localizedDescription)
+            if let onModifierOnly {
+                onModifierOnly(recordedModifiers)
+                finishRecording()
+            } else {
+                onInvalid?(HotkeyConfigurationError.modifierOnly.localizedDescription)
+            }
         }
     }
 
@@ -124,18 +138,24 @@ final class ShortcutRecorderButton: NSButton {
 
     func refreshTitle() {
         guard !isRecording else { return }
-        let text = hotkey.map(HotkeyFormatter.displayName(for:)) ?? String(localized: "Record Shortcut")
+        let modifierText = modifierOnly.map { value in
+            [(HotkeyModifiers.control, "⌃"), (HotkeyModifiers.option, "⌥"),
+             (HotkeyModifiers.shift, "⇧"), (HotkeyModifiers.command, "⌘")]
+                .filter { value & $0.0 != 0 }.map(\.1).joined()
+        }
+        let text = hotkey.map(HotkeyFormatter.displayName(for:)) ?? modifierText ?? String(localized: "Record Shortcut")
         attributedTitle = NSAttributedString(string: text, attributes: [
-            .foregroundColor: hotkey == nil ? NSColor.tertiaryLabelColor : NSColor.labelColor,
+            .foregroundColor: hotkey == nil && modifierOnly == nil ? NSColor.tertiaryLabelColor : NSColor.labelColor,
             .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
         ])
-        setAccessibilityValue(hotkey == nil ? String(localized: "Not Set") : text)
+        setAccessibilityValue(hotkey == nil && modifierOnly == nil ? String(localized: "Not Set") : text)
     }
 
     private func beginRecording() {
         guard !isRecording, window?.makeFirstResponder(self) == true else { return }
         isRecording = true
         sawModifier = false
+        recordedModifiers = 0
         title = String(localized: "Type Shortcut…")
         onRecordingChanged?(true)
     }

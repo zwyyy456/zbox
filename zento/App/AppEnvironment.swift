@@ -240,7 +240,7 @@ final class AppEnvironment {
             let ids = Set(commandIDs.map(\.rawValue))
             let requests = extensionHotkeyRequests().filter { ids.contains($0.id) }
             if !requests.isEmpty {
-                try validateHotkeyAssignments(textLookupShortcut: textLookupPlugin.settings.shortcut)
+                try validateHotkeyAssignments(textLookupTriggers: textLookupPlugin.settings.triggers)
             }
             try hotkeyRegistrar.replace(ids: ids, with: requests)
             registeredExtensionIDs.subtract(ids)
@@ -615,6 +615,7 @@ final class AppEnvironment {
     func setShortcutRecordingActive(_ isActive: Bool) {
         guard isActive != isRecordingShortcut else { return }
         isRecordingShortcut = isActive
+        textLookupPlugin.setShortcutRecordingActive(isActive)
 
         do {
             try hotkeyRegistrar.setSuspended(isActive)
@@ -865,7 +866,7 @@ final class AppEnvironment {
                     return
                 }
                 try validateHotkeyAssignments(
-                    textLookupShortcut: textLookupPlugin.settings.shortcut,
+                    textLookupTriggers: textLookupPlugin.settings.triggers,
                     textLookupEnabled: true
                 )
             }
@@ -880,11 +881,11 @@ final class AppEnvironment {
         }
     }
 
-    func setTextLookupShortcut(_ shortcut: TextLookupShortcutPreset) {
+    func setTextLookupTriggers(_ triggers: TextLookupTriggers) {
         textLookupError = nil
         do {
-            try validateHotkeyAssignments(textLookupShortcut: shortcut)
-            try textLookupPlugin.setShortcut(shortcut)
+            try validateHotkeyAssignments(textLookupTriggers: triggers)
+            try textLookupPlugin.setTriggers(triggers)
         } catch {
             textLookupError = error.localizedDescription
         }
@@ -946,7 +947,7 @@ final class AppEnvironment {
     }
 
     private func applyHotkeyRegistrations() throws {
-        try validateHotkeyAssignments(textLookupShortcut: textLookupPlugin.settings.shortcut)
+        try validateHotkeyAssignments(textLookupTriggers: textLookupPlugin.settings.triggers)
 
         var requests: [HotkeyRegistrationRequest] = []
         requests.append(
@@ -1020,7 +1021,7 @@ final class AppEnvironment {
     }
 
     private func validateHotkeyAssignments(
-        textLookupShortcut: TextLookupShortcutPreset,
+        textLookupTriggers: TextLookupTriggers,
         textLookupEnabled: Bool? = nil
     ) throws {
         var assignments = [
@@ -1029,12 +1030,13 @@ final class AppEnvironment {
             HotkeyAssignment(owner: target.title, hotkey: commandHotkey(for: target.id))
         }
         if textLookupEnabled ?? textLookupPlugin.settings.isEnabled {
-            assignments.append(
-                HotkeyAssignment(
-                    owner: String(localized: "Text Lookup"),
-                    hotkey: textLookupShortcut.hotkey
-                )
-            )
+            try textLookupTriggers.validate()
+            var lookupHotkeys: Set<Hotkey> = []
+            for (owner, shortcut) in textLookupTriggers.activeShortcuts {
+                if let hotkey = shortcut.hotkey, lookupHotkeys.insert(hotkey).inserted {
+                    assignments.append(HotkeyAssignment(owner: owner, hotkey: hotkey))
+                }
+            }
         }
         try HotkeyValidator.validate(assignments)
     }
