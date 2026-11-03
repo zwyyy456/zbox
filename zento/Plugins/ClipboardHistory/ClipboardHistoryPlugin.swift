@@ -17,12 +17,19 @@ final class ClipboardHistoryPlugin {
     private var targetApplication: NSRunningApplication?
     private(set) var isEnabled: Bool
     private(set) var isRecording = false
+    private(set) var needsClipboardAccess = false
     private(set) var statusMessage: String?
     private(set) var entries: [ClipboardEntry] = []
-    var query = ""
+    var showingPastePermission = false
+    private(set) var hasMoreEntries = false
+    private(set) var storedBytes = 0
+    private(set) var storageLimitMiB: Int
+    var query = "" { didSet { reloadSearch() } }
     var selectedID: UUID? { didSet { updatePreview() } }
-    var filter = ClipboardHistoryFilter.all
+    var filter = ClipboardHistoryFilter.all { didSet { reloadSearch() } }
+    private(set) var isPresented = false
     private(set) var previewImage: NSImage?
+    private(set) var previewDimensions: String?
     private var previewTask: Task<Void, Never>?
     var retentionDays: Int {
         didSet {
@@ -31,7 +38,7 @@ final class ClipboardHistoryPlugin {
         }
     }
     private(set) var excludedApplications: Set<String>
-    @ObservationIgnored private var panel: NSPanel?
+    @ObservationIgnored private var panel: ClipboardHistoryPanel?
 
     init(defaults: UserDefaults = .standard, coordinator: ClipboardAccessCoordinator,
          authorization: AccessibilityAuthorization) {
@@ -40,17 +47,44 @@ final class ClipboardHistoryPlugin {
         self.authorization = authorization
         isEnabled = defaults.bool(forKey: "plugin.clipboard-history.enabled")
         let days = defaults.integer(forKey: "plugin.clipboard-history.retention-days")
-        retentionDays = [1, 7, 30].contains(days) ? days : 7
+        retentionDays = defaults.object(forKey: "plugin.clipboard-history.retention-days") == nil ? 7 : ([0, 1, 7, 30].contains(days) ? days : 7)
+        storageLimitMiB = defaults.integer(forKey: "plugin.clipboard-history.storage-limit-mib")
         excludedApplications = Set(defaults.stringArray(forKey: "plugin.clipboard-history.excluded-apps") ?? [
             "com.apple.Passwords", "com.apple.keychainaccess", "com.1password.1password",
             "com.agilebits.onepassword7", "com.bitwarden.desktop",
         ])
     }
 
-    var filteredEntries: [ClipboardEntry] {
-        entries.filter { entry in
-            (query.isEmpty || entry.text.localizedStandardContains(query)) && filter.includes(entry)
+    func refreshStorageUsage() {
+        do { try prepareStore() }
+        catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+    }
+
+    func setStorageLimitMiB(_ value: Int) {
+        do {
+            try prepareStore()
+            try store?.applyByteLimit(value * 1_024 * 1_024)
+            storageLimitMiB = value
+            defaults.set(value, forKey: "plugin.clipboard-history.storage-limit-mib")
+            try refresh()
+            statusMessage = nil
+        } catch {
+            statusMessage = (error as? ClipboardHistoryError)?.localizedDescription
+                ?? String(localized: "Clipboard history could not be opened or saved.")
         }
+    }
+
+    private func reloadSearch() {
+        do { try refresh(limit: 100) }
+        catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+    }
+
+    func loadMore() {
+        do {
+            let page = try store?.entries(query: query, filter: filter, offset: entries.count, limit: 101) ?? []
+            hasMoreEntries = page.count > 100
+            entries.append(contentsOf: page.prefix(100))
+        } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
     func register(in registry: CommandRegistry, openSettings: @escaping @MainActor () throws -> Void) throws {
@@ -75,10 +109,12 @@ final class ClipboardHistoryPlugin {
             try prepareStore()
             try ClipboardReader.checkAccess(.general)
         } catch {
+            needsClipboardAccess = (error as? ClipboardHistoryError) == .accessRequired
             statusMessage = (error as? ClipboardHistoryError)?.localizedDescription
                 ?? String(localized: "Clipboard history could not be opened or saved.")
             return
         }
+        needsClipboardAccess = false
         isRecording = true
         statusMessage = nil
         let id = UUID()
@@ -111,10 +147,11 @@ final class ClipboardHistoryPlugin {
                     guard source == NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
                           let payload, !Task.isCancelled else { continue }
                     try store?.prune(days: retentionDays)
-                    try store?.add(payload)
+                    try store?.add(payload, byteLimit: storageLimitMiB * 1_024 * 1_024)
                     try refresh()
                     statusMessage = nil
                 } catch ClipboardHistoryError.accessRequired {
+                    needsClipboardAccess = true
                     statusMessage = ClipboardHistoryError.accessRequired.localizedDescription
                     break
                 } catch ClipboardHistoryError.changed {
@@ -136,6 +173,7 @@ final class ClipboardHistoryPlugin {
         recordingTask?.cancel()
         recordingTask = nil
         isRecording = false
+        needsClipboardAccess = false
         dismiss()
         entries = []
         selectedID = nil
@@ -169,13 +207,25 @@ final class ClipboardHistoryPlugin {
         addExcludedApplication(id)
     }
 
+    func rowThumbnail(for id: UUID) async -> NSImage? {
+        do {
+            guard let payload = try store?.payload(for: id) else { return nil }
+            let data = try await ClipboardImage.thumbnail(payload.data, maxPixelSize: 64)
+            try Task.checkCancellation()
+            return NSImage(data: data)
+        } catch { return nil }
+    }
+
     private func updatePreview() {
         previewTask?.cancel()
         previewImage = nil
+        previewDimensions = nil
         guard let id = selectedID, let entry = entries.first(where: { $0.id == id }),
               ["png", "tiff"].contains(entry.kind) else { return }
         do {
             guard let payload = try store?.payload(for: id) else { return }
+            let (width, height) = try ClipboardImage.dimensions(of: payload.data)
+            previewDimensions = "\(width) × \(height)"
             previewTask = Task { [weak self] in
                 do {
                     let thumbnail = try await ClipboardImage.thumbnail(payload.data)
@@ -208,11 +258,15 @@ final class ClipboardHistoryPlugin {
         try refresh()
     }
 
-    private func refresh() throws {
+    private func refresh(limit: Int? = nil) throws {
         try store?.prune(days: retentionDays)
-        entries = try store?.entries() ?? []
-        if !filteredEntries.contains(where: { $0.id == selectedID }) {
-            selectedID = filteredEntries.first?.id
+        let count = limit ?? max(100, entries.count)
+        let page = try store?.entries(query: query, filter: filter, limit: count + 1) ?? []
+        hasMoreEntries = page.count > count
+        entries = Array(page.prefix(count))
+        storedBytes = store?.totalBytes ?? 0
+        if !entries.contains(where: { $0.id == selectedID }) {
+            selectedID = entries.first?.id
         }
     }
 
@@ -221,8 +275,11 @@ final class ClipboardHistoryPlugin {
         do {
             guard let payload = try store?.payload(for: selectedID) else { return }
             try write(payload)
-            panel?.orderOut(nil)
-        } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+            dismiss()
+        } catch {
+            statusMessage = (error as? ClipboardHistoryError)?.localizedDescription
+                ?? String(localized: "Clipboard history could not be opened or saved.")
+        }
     }
 
     func deleteSelection() {
@@ -239,31 +296,27 @@ final class ClipboardHistoryPlugin {
     }
 
     func moveSelection(by offset: Int) {
-        let entries = filteredEntries
         guard !entries.isEmpty else { return }
         let index = entries.firstIndex(where: { $0.id == selectedID }) ?? 0
+        if index + offset >= entries.count, hasMoreEntries { loadMore() }
         selectedID = entries[min(max(index + offset, 0), entries.count - 1)].id
     }
 
     private func write(_ payload: ClipboardPayload) throws {
-        let board = NSPasteboard.general
-        board.prepareForNewContents(with: .currentHostOnly)
-        defer { coordinator.didWrite(changeCount: board.changeCount) }
-        let copied: Bool
-        if ["png", "tiff"].contains(payload.kind) {
-            copied = board.setData(payload.data, forType: payload.kind == "png" ? .png : .tiff)
-        } else {
-            copied = board.setString(payload.text, forType: .string)
-        }
-        guard copied else {
-            throw ClipboardHistoryError.unsupported
-        }
+        try ClipboardWriter.write(payload, to: .general, coordinator: coordinator)
+    }
+
+    func pasteItem(at index: Int) {
+        guard entries.indices.contains(index) else { return }
+        selectedID = entries[index].id
+        pasteSelection()
     }
 
     func pasteSelection() {
         guard let selectedID else { return }
         guard authorization.isTrusted else {
             statusMessage = ClipboardPasteError.permissionRequired.localizedDescription
+            showingPastePermission = true
             return
         }
         guard let targetApplication else {
@@ -273,6 +326,7 @@ final class ClipboardHistoryPlugin {
         do {
             guard let payload = try store?.payload(for: selectedID) else { return }
             pasteTask?.cancel()
+            isPresented = false
             panel?.orderOut(nil)
             pasteTask = Task { [weak self] in
                 do {
@@ -289,7 +343,8 @@ final class ClipboardHistoryPlugin {
                     self?.statusMessage = (error as? ClipboardPasteError)?.localizedDescription
                         ?? (error as? ClipboardHistoryError)?.localizedDescription
                         ?? String(localized: "The item could not be pasted. Copy it and paste manually.")
-                    self?.panel?.makeKeyAndOrderFront(nil)
+                    self?.isPresented = true
+                    self?.panel?.present()
                 }
             }
         } catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
@@ -299,13 +354,23 @@ final class ClipboardHistoryPlugin {
     func requestPastePermission() { authorization.request() }
     func openAccessibilitySettings() { authorization.openSystemSettings() }
 
-    func dismiss() {
+    func dismiss() { dismiss(restoringTarget: true) }
+
+    private func dismiss(restoringTarget: Bool) {
+        isPresented = false
         pasteTask?.cancel()
         pasteTask = nil
         previewTask?.cancel()
         previewImage = nil
+        previewDimensions = nil
+        let target = targetApplication
         targetApplication = nil
+        showingPastePermission = false
         panel?.orderOut(nil)
+        if restoringTarget, NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier,
+           let target, !target.isTerminated {
+            target.activate()
+        }
     }
 
     private func show(targetPID: pid_t?) {
@@ -318,20 +383,37 @@ final class ClipboardHistoryPlugin {
         selectedID = entries.first?.id
         if panel == nil {
             let panel = ClipboardHistoryPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480),
-                                styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
+                                styleMask: [.borderless, .resizable, .nonactivatingPanel],
                                 backing: .buffered, defer: false)
             panel.navigate = { [weak self] in self?.moveSelection(by: $0) }
             panel.paste = { [weak self] in self?.pasteSelection() }
+            panel.pasteItem = { [weak self] in self?.pasteItem(at: $0) }
             panel.copy = { [weak self] in self?.copySelection() }
             panel.dismiss = { [weak self] in self?.dismiss() }
+            panel.dismissAfterFocusLoss = { [weak self] in self?.dismiss(restoringTarget: false) }
             panel.title = String(localized: "Clipboard History")
-            panel.contentView = NSHostingView(rootView: ClipboardHistoryView(plugin: self))
+            let hostingView = NSHostingView(rootView: ClipboardHistoryView(plugin: self))
+            hostingView.wantsLayer = true
+            hostingView.layer?.cornerRadius = CommandPanelAppearance.cornerRadius
+            hostingView.layer?.cornerCurve = .continuous
+            hostingView.layer?.masksToBounds = true
+            panel.contentView = hostingView
+            // The content fills with windowBackgroundColor; keep only the rounded corners transparent.
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = true
+            panel.isMovableByWindowBackground = true
+            panel.isFloatingPanel = true
+            panel.becomesKeyOnlyIfNeeded = false
+            panel.hidesOnDeactivate = false
+            panel.level = .floating
             panel.minSize = NSSize(width: 440, height: 320)
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             panel.center()
             self.panel = panel
         }
-        panel?.makeKeyAndOrderFront(nil)
+        isPresented = true
+        panel?.present()
     }
 }

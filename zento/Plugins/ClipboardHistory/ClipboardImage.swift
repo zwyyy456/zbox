@@ -19,13 +19,13 @@ nonisolated enum ClipboardImage {
     }
 
     @concurrent
-    static func thumbnail(_ data: Data) async throws -> Data {
+    static func thumbnail(_ data: Data, maxPixelSize: Int = 640) async throws -> Data {
         _ = try dimensions(of: data)
         try Task.checkCancellation()
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceThumbnailMaxPixelSize: 640,
+                kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
                 kCGImageSourceCreateThumbnailWithTransform: true,
               ] as CFDictionary) else { throw ClipboardHistoryError.unsupported }
         let output = NSMutableData()

@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum ClipboardHistoryFilter: String, CaseIterable, Identifiable {
-    case all, text, links, images, pinned
+    case all, text, links, images, files, pinned
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -9,6 +9,7 @@ nonisolated enum ClipboardHistoryFilter: String, CaseIterable, Identifiable {
         case .text: String(localized: "Text")
         case .links: String(localized: "Links")
         case .images: String(localized: "Images")
+        case .files: String(localized: "Files and Folders")
         case .pinned: String(localized: "Pinned")
         }
     }
@@ -18,6 +19,7 @@ nonisolated enum ClipboardHistoryFilter: String, CaseIterable, Identifiable {
         case .text: entry.kind == "text"
         case .links: entry.kind == "link"
         case .images: ["png", "tiff"].contains(entry.kind)
+        case .files: entry.kind == "files"
         case .pinned: entry.pinned
         }
     }

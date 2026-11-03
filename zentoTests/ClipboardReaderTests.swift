@@ -61,4 +61,18 @@ struct ClipboardReaderTests {
         }
     }
 
+    @Test
+    func rowThumbnailPreservesAspectRatioAndOriginalDimensions() async throws {
+        let representation = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 320, pixelsHigh: 160,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 1280, bitsPerPixel: 32))
+        representation.bitmapData?.initialize(repeating: 0, count: representation.bytesPerRow * representation.pixelsHigh)
+        let data = try #require(representation.representation(using: .png, properties: [:]))
+        let thumbnail = try await ClipboardImage.thumbnail(data, maxPixelSize: 64)
+        let original = try ClipboardImage.dimensions(of: data)
+        let reduced = try ClipboardImage.dimensions(of: thumbnail)
+        #expect(original.0 == 320 && original.1 == 160)
+        #expect(reduced.0 == 64 && reduced.1 == 32)
+    }
+
 }
