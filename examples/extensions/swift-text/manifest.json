@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "org.zbox.examples.swift-text",
+  "id": "org.zento.examples.swift-text",
   "name": "Text Case · Swift",
   "version": "1.0.0",
   "capabilities": ["selection.read", "clipboard.write"],

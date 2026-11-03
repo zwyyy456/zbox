@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "org.zbox.examples.python-text",
+  "id": "org.zento.examples.python-text",
   "name": "Text Case · Python",
   "version": "1.0.0",
   "capabilities": ["selection.read", "clipboard.write"],

@@ -1,5 +1,5 @@
 import asyncio
-from zbox_sdk import run
+from zento_sdk import run
 
 preview = "Read selected text to preview the converted result."
 

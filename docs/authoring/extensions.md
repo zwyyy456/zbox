@@ -1,6 +1,6 @@
 # 编写和分享扩展
 
-安装行为见 `../product/extensions.md`，字段、能力、消息和版本以 `../contracts/extensions.md` 为准。普通脚本无需 SDK，参见 `automation.md`。不要依赖 zbox 内部 Swift 类型。
+安装行为见 `../product/extensions.md`，字段、能力、消息和版本以 `../contracts/extensions.md` 为准。普通脚本无需 SDK，参见 `automation.md`。不要依赖 zento 内部 Swift 类型。
 
 ## 创建项目
 
@@ -9,19 +9,19 @@
 ```sh
 python3 script/extension.py init --language shell --id org.example.hello /tmp/my-hello
 python3 script/extension.py validate /tmp/my-hello
-python3 script/extension.py pack /tmp/my-hello /tmp/my-hello.zbox-extension
+python3 script/extension.py pack /tmp/my-hello /tmp/my-hello.zento-extension
 ```
 
 输出目录和包文件必须尚不存在。`--language` 也支持 python、swift。Python 模板复制当前 SDK；Swift 模板包含当前 SDK 源码的本地开发依赖，编译后包内只需要可执行文件和资源。扩展 ID 应由作者稳定维护，命令 ID 不随名称或版本改变。
 
-在 zbox 设置 → 扩展 → 导入中选择生成的包，检查来源、命令和能力后安装。也可导入开发目录；宿主会复制目录，后续源文件修改需要再次导入才生效。重新导入同一 ID 就是手动更新，不扫描目录或自动执行。
+在 zento 设置 → 扩展 → 导入中选择生成的包，检查来源、命令和能力后安装。也可导入开发目录；宿主会复制目录，后续源文件修改需要再次导入才生效。重新导入同一 ID 就是手动更新，不扫描目录或自动执行。
 
 ## Python 示例
 
-`examples/extensions/python-text/main.py` 使用 `SDK/python/zbox_sdk.py`，只有标准库依赖。打包时将 SDK 放到 main.py 同目录：
+`examples/extensions/python-text/main.py` 使用 `SDK/python/zento_sdk.py`，只有标准库依赖。打包时将 SDK 放到 main.py 同目录：
 
 ```sh
-python3 script/extension.py pack examples/extensions/python-text /tmp/python-text.zbox-extension --python-sdk
+python3 script/extension.py pack examples/extensions/python-text /tmp/python-text.zento-extension --python-sdk
 ```
 
 SDK 的入口是 `await run(handler)`，handler 接收消息对象和事件上下文 api。`api.show(view)` 提交快照；`await api.call("selection.read")` 读取选区，`await api.call("clipboard.write", text=result)` 复制结果。SDK 自动添加事件身份、匹配响应，并在取消或新事件到达时取消旧 handler。
@@ -30,14 +30,14 @@ stdout 只用于协议。不要 print 业务内容、选区、凭据或完整消
 
 ## Swift 示例
 
-Swift 作者需要 Swift 6.2+；用户运行编译后的扩展不需要 SDK 或编译器。包产品 `ZboxExtensionSDK` 提供 ExtensionClient、ExtensionEvent 和 ExtensionContext，`ZboxExtensionProtocol` 提供消息值及界面描述。
+Swift 作者需要 Swift 6.2+；用户运行编译后的扩展不需要 SDK 或编译器。包产品 `ZentoExtensionSDK` 提供 ExtensionClient、ExtensionEvent 和 ExtensionContext，`ZentoExtensionProtocol` 提供消息值及界面描述。
 
 ```sh
-xcrun swift build --package-path examples/extensions/swift-text --scratch-path /tmp/zbox-text-build -c release
-python3 script/extension.py pack examples/extensions/swift-text /tmp/swift-text.zbox-extension --binary /tmp/zbox-text-build/release/TextCaseExtension
+xcrun swift build --package-path examples/extensions/swift-text --scratch-path /tmp/zento-text-build -c release
+python3 script/extension.py pack examples/extensions/swift-text /tmp/swift-text.zento-extension --binary /tmp/zento-text-build/release/TextCaseExtension
 ```
 
-程序调用 `try await ExtensionClient.run { event, api in ... }`。使用 `try await api.show(ExtensionViewSnapshot(...))` 和 `try await api.call(...)`。宿主与 SDK 使用同一份协议类型，作者程序不导入 zbox 模块。
+程序调用 `try await ExtensionClient.run { event, api in ... }`。使用 `try await api.show(ExtensionViewSnapshot(...))` 和 `try await api.call(...)`。宿主与 SDK 使用同一份协议类型，作者程序不导入 zento 模块。
 
 一个事件被取消后，SDK 不再发送其界面结果或新的 API 请求。作者自己的异步工作仍应支持取消；跨 await 写入自己的共享状态前检查取消。已发生的外部副作用不会自动撤销。
 
@@ -68,5 +68,5 @@ python3 script/extension.py pack examples/extensions/swift-text /tmp/swift-text.
 仓库的双语言示例打包后，可运行协议检查；检查只使用合成文本：
 
 ```sh
-python3 script/test_extension_sdks.py --python-package /tmp/python-text.zbox-extension --swift-package /tmp/swift-text.zbox-extension
+python3 script/test_extension_sdks.py --python-package /tmp/python-text.zento-extension --swift-package /tmp/swift-text.zento-extension
 ```

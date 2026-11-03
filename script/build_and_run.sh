@@ -2,17 +2,17 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="zbox"
+APP_NAME="zento"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DERIVED_DATA="${TMPDIR:-/tmp}/zbox-derived-data"
-APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/zbox.app"
-APP_BINARY="$APP_BUNDLE/Contents/MacOS/zbox"
+DERIVED_DATA="${TMPDIR:-/tmp}/zento-derived-data"
+APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/zento.app"
+APP_BINARY="$APP_BUNDLE/Contents/MacOS/zento"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 
 xcodebuild \
-  -project "$ROOT_DIR/zbox.xcodeproj" \
-  -scheme zbox \
+  -project "$ROOT_DIR/zento.xcodeproj" \
+  -scheme zento \
   -destination 'platform=macOS' \
   -derivedDataPath "$DERIVED_DATA" \
   build
@@ -30,11 +30,11 @@ case "$MODE" in
     ;;
   --logs|logs)
     open_app
-    /usr/bin/log stream --info --style compact --predicate 'process == "zbox"'
+    /usr/bin/log stream --info --style compact --predicate 'process == "zento"'
     ;;
   --telemetry|telemetry)
     open_app
-    /usr/bin/log stream --info --style compact --predicate 'subsystem == "tech.hyperseek.zbox"'
+    /usr/bin/log stream --info --style compact --predicate 'subsystem == "tech.hyperseek.zento"'
     ;;
   --verify|verify)
     open_app

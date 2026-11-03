@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "org.zbox.examples.hello",
+  "id": "org.zento.examples.hello",
   "name": "Hello",
   "version": "1.0.0",
-  "author": "zbox examples",
+  "author": "zento examples",
   "commands": [
     {
       "id": "hello",

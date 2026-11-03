@@ -13,7 +13,7 @@ Window Management 是随主 App 静态编译的内置插件，负责 Left Half�
 
 ## 启停与窗口行为
 
-- 操作用户唤起 zbox 前的前台应用窗口，而不是 Root Search Panel。
+- 操作用户唤起 zento 前的前台应用窗口，而不是 Root Search Panel。
 - Left/Right Half 和 Maximize 使用窗口所在显示器的可用区域，避开菜单栏和 Dock。
 - MVP 支持标准、可调整大小的应用窗口。
 - 特殊窗口和跨显示器恢复不在范围内，但外接显示器上的基本定位应正确。

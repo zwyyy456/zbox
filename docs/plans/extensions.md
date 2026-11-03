@@ -15,4 +15,4 @@ P5 本机验证覆盖握手、界面更新、宿主调用、权限拒绝、取�
 
 当前机器没有 Developer ID Application 签名身份，因此未完成真实 Developer ID 签名、公证及第二台 Mac 下载安装。跨 App、Space、系统权限与 Keychain 的人工步骤记录在 `../release-readiness.md`，这些结果不计入已通过的本机验证。
 
-真实签名、公证、第二台 Mac、Space、Accessibility 和跨 App 焦点由真实环境验收，不以单元测试代替；不运行 zboxUITests。
+真实签名、公证、第二台 Mac、Space、Accessibility 和跨 App 焦点由真实环境验收，不以单元测试代替；不运行 zentoUITests。

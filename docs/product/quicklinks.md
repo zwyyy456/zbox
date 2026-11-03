@@ -20,7 +20,7 @@
 
 ## 存储与范围
 
-使用 Application Support/zbox/quicklinks.json 本地原子保存；保存失败不更新内存列表，读取失败保留文件并禁止覆盖。UserDefaults 只保存启用偏好。地址及用户输入不进入日志；输入仅在用户执行时交给目标浏览器或应用，zbox 不上传或建立搜索历史。
+使用 Application Support/zento/quicklinks.json 本地原子保存；保存失败不更新内存列表，读取失败保留文件并禁止覆盖。UserDefaults 只保存启用偏好。地址及用户输入不进入日志；输入仅在用户执行时交给目标浏览器或应用，zento 不上传或建立搜索历史。
 
 首版不含根搜索单行参数语法、多参数表单、脚本、书签同步或导入导出。
 

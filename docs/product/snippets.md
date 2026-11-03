@@ -6,7 +6,7 @@
 
 ## 入口与管理
 
-默认关闭。设置页管理名称、关键词、可选分组和纯文本正文；保留正文空白及换行。片段存储在 Application Support/zbox/snippets.json，本地原子保存，不上传、不使用 CloudKit、不宣称加密。写入成功后更新列表；损坏文件保留并禁止覆盖。内容不进入日志或 UserDefaults。
+默认关闭。设置页管理名称、关键词、可选分组和纯文本正文；保留正文空白及换行。片段存储在 Application Support/zento/snippets.json，本地原子保存，不上传、不使用 CloudKit、不宣称加密。写入成功后更新列表；损坏文件保留并禁止覆盖。内容不进入日志或 UserDefaults。
 
 `snippets.open` 始终可搜索；未启用时打开设置，启用后打开临时面板。面板支持名称、关键词、正文搜索及分组筛选，使用固定存储顺序；列表与预览左右排列。上下键、Control-N/P 选择，Return 粘贴、Command-Return 复制、Escape 关闭；输入法组字期间不截获这些导航／执行按键。
 

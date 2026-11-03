@@ -1,6 +1,6 @@
 import Foundation
-import ZboxExtensionSDK
-import ZboxExtensionProtocol
+import ZentoExtensionSDK
+import ZentoExtensionProtocol
 
 actor TextPreview {
     var value = "Read selected text to preview the converted result."

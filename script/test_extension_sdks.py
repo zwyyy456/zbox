@@ -60,7 +60,7 @@ class Peer:
 
 
 def exercise(package, language):
-    with tempfile.TemporaryDirectory(prefix="zbox-sdk-test-") as directory:
+    with tempfile.TemporaryDirectory(prefix="zento-sdk-test-") as directory:
         # Only locally generated test packages are accepted by this test driver.
         with zipfile.ZipFile(package) as archive:
             archive.extractall(directory)

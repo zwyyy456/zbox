@@ -8,14 +8,14 @@
 
 ## 1. 产品定位
 
-Calculator 是随 zbox 静态编译的本地整数计算器。它通过核心 Command Registry 暴露入口，以独立原生窗口提供接近 macOS 计算器的按键体验，并让十进制与十六进制结果始终同时可见。
+Calculator 是随 zento 静态编译的本地整数计算器。它通过核心 Command Registry 暴露入口，以独立原生窗口提供接近 macOS 计算器的按键体验，并让十进制与十六进制结果始终同时可见。
 
 它不建立动态插件 Runtime、扩展 SDK、独立进程或网络依赖。Calculator 不需要权限、不在后台监听，也不需要启停设置。
 
 ## 2. 入口与窗口
 
 - Root Search 中始终提供 `Calculator` Command；点击结果或按 Return 后隐藏 Root Search，并打开或聚焦 Calculator 窗口。
-- Calculator 使用可关闭、最小化和调整大小的普通 macOS 窗口。关闭窗口不退出 zbox，再次执行 Command 可重新打开。
+- Calculator 使用可关闭、最小化和调整大小的普通 macOS 窗口。关闭窗口不退出 zento，再次执行 Command 可重新打开。
 - 窗口同时显示 `DEC` 和 `HEX` 两行结果，并以分段控件明确当前输入进制。
 
 ## 3. 数值与运算语义

@@ -1,0 +1,107 @@
+import SwiftUI
+
+struct QuicklinksSettingsView: View {
+    let environment: AppEnvironment
+    @State private var query = ""
+    @State private var editing: Quicklink?
+    private var plugin: QuicklinksPlugin { environment.quicklinksPlugin }
+
+    var body: some View {
+        let items = plugin.store.items.filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.keywords.localizedStandardContains(query) }
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("Enable Quicklinks", isOn: Binding(get: { plugin.isEnabled }, set: environment.setQuicklinksEnabled))
+            TextField("Search Quicklinks", text: $query)
+            List {
+                ForEach(items) { item in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(item.name)
+                            Text(item.target).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                        Button("Edit") { editing = item }
+                        Button("Delete", role: .destructive) { environment.deleteQuicklink(item) }
+                    }
+                }
+            }
+            .overlay {
+                if plugin.store.loadError == nil && items.isEmpty {
+                    if query.isEmpty {
+                        ContentUnavailableView("No Quicklinks Yet", systemImage: "link",
+                                               description: Text("Add a website, file, or parameterized URL to open from Zento."))
+                    } else {
+                        ContentUnavailableView.search(text: query)
+                    }
+                }
+            }
+            Button("Add Quicklink") { editing = Quicklink() }
+                .buttonStyle(.borderedProminent)
+            if let error = plugin.store.loadError ?? plugin.statusMessage { SettingsErrorView(message: error) }
+        }
+        .padding(20)
+        .sheet(item: $editing) { item in
+            QuicklinkEditor(item: item) { environment.saveQuicklink($0) }
+        }
+    }
+}
+
+private struct QuicklinkEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    @State var item: Quicklink
+    let save: (Quicklink) -> Bool
+    @State private var error: String?
+
+    var body: some View {
+        Form {
+            TextField("Name", text: $item.name, prompt: Text("Required Field"))
+            Picker("Type", selection: $item.kind) {
+                Text("Parameterized URL").tag(Quicklink.Kind.template)
+                Text("URL").tag(Quicklink.Kind.url)
+                Text("File or Folder").tag(Quicklink.Kind.file)
+            }
+            TextField("Target", text: $item.target, prompt: Text(targetPrompt))
+            if item.kind == .template {
+                TextField("Parameter Prompt", text: Binding(get: { item.parameterPrompt ?? "" }, set: { item.parameterPrompt = $0 }))
+                Text("Insert {query} where the search value belongs.").font(.caption).foregroundStyle(.secondary)
+                if let url = try? item.destination() {
+                    Text(url.absoluteString).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            }
+            if item.kind == .file {
+                Button("Choose File or Folder") {
+                    let panel = NSOpenPanel()
+                    panel.canChooseDirectories = true
+                    panel.canChooseFiles = true
+                    panel.allowsMultipleSelection = false
+                    if panel.runModal() == .OK, let url = panel.url { item.target = url.path }
+                }
+            }
+            TextField("Keywords", text: $item.keywords, prompt: Text("docs search"))
+            Text("Separate keywords with spaces. Root Search matches them in addition to the name.")
+                .font(.caption).foregroundStyle(.secondary)
+            if let error { SettingsErrorView(message: error) }
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    do {
+                        _ = try item.destination()
+                        if save(item) { dismiss() }
+                        else { error = String(localized: "The changes could not be saved. Check the storage location and try again.") }
+                    } catch { self.error = error.localizedDescription }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(24).frame(width: 540)
+    }
+
+    private var targetPrompt: String {
+        switch item.kind {
+        case .template: "https://www.google.com/search?q={query}"
+        case .url: "https://developer.apple.com"
+        case .file: "~/Documents"
+        }
+    }
+}

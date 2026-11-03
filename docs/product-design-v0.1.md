@@ -1,4 +1,4 @@
-# zbox 产品设计文档 v0.1
+# zento 产品设计文档 v0.1
 
 > 权威性：Normative Product Baseline
 > 加载方式：涉及核心产品范围、命令中心行为或 M1 验收边界时读取
@@ -10,7 +10,7 @@
 
 ## 1. 产品定义
 
-zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗口和系统操作都可以通过搜索和键盘快速完成。
+zento 是一个面向 macOS power users 的本地命令中心，让应用、窗口和系统操作都可以通过搜索和键盘快速完成。
 
 长期愿景是成为“macOS 原生能力平台 + 命令入口 + 扩展生态”。MVP 不以插件生态为卖点，也不复刻 Raycast 的完整功能集。
 
@@ -22,8 +22,8 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 - App Sandbox 关闭，Hardened Runtime 保持开启；
 - 采用类似 Raycast 的后台常驻体验：启动时不显示普通主窗口，也不出现在 Dock；
 - 菜单栏提供打开 Root Search、Settings 和退出入口；
-- 全局快捷键在用户当前工作的 Space 上显示 Root Search；
-- Settings 使用独立窗口，可通过 Root Search、菜单栏或 `Command-,` 打开。
+- 全局快捷键在用户当前工作的 Space 上显示 Root Search；主搜索通过非激活浮动面板获取搜索框焦点，不激活整个应用或连带置前设置等其它窗口；
+- Settings 使用独立窗口，可通过 Root Search、菜单栏或 `Command-,` 打开。当且仅当设置窗口打开期间，应用显示在 Dock 和 Command-Tab 中；最小化仍视为打开，关闭设置后恢复菜单栏模式。其它普通窗口和临时面板不改变此策略。
 
 ### 1.2 核心与内置插件
 
@@ -33,7 +33,7 @@ zbox 是一个面向 macOS power users 的本地命令中心，让应用、窗�
 
 1. 用户能够比 Dock、Spotlight 或菜单操作更快地完成应用启动和窗口整理。
 2. `Command` 可以成为搜索和直接快捷键共同使用的产品抽象。
-3. 当搜索反馈足够快、行为足够稳定时，目标用户愿意让 zbox 常驻并形成使用习惯。
+3. 当搜索反馈足够快、行为足够稳定时，目标用户愿意让 zento 常驻并形成使用习惯。
 
 ## 2. 目标用户
 
@@ -91,11 +91,11 @@ Root Search 如果抢焦点、跨 Space 行为混乱、操作了错误窗口或�
 
 ### S-01：启动应用
 
-用户按全局快捷键，输入应用名的部分字符，选中结果并回车。zbox 启动应用；如果应用已经运行，则将其激活。
+用户按全局快捷键，输入应用名的部分字符，选中结果并回车。zento 启动应用；如果应用已经运行，则将其激活。
 
 ### S-02：通过搜索整理当前窗口
 
-用户唤起 zbox，搜索 `Left Half`、`Right Half` 或 `Maximize` 并执行。zbox 操作唤起前的前台应用窗口，然后给出成功或失败反馈。
+用户唤起 zento，搜索 `Left Half`、`Right Half` 或 `Maximize` 并执行。zento 操作唤起前的前台应用窗口，然后给出成功或失败反馈。
 
 Window Management 默认关闭，但窗口命令始终保留在 Root Search 中供用户发现。功能尚未启用时，执行窗口命令只提供进入对应设置的恢复操作，不直接请求 Accessibility 权限或操作窗口。
 
@@ -105,7 +105,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 
 ### S-04：处理权限缺失或不可操作窗口
 
-用户显式启用 Window Management 时，zbox 先解释 Accessibility 用途，再由用户请求权限。普通命令失败不得自动触发系统授权提示。权限被撤销后，窗口管理自动关闭并停止相关快捷键，但保留其它配置；用户重新授权后再次启用功能即可恢复。目标应用没有窗口、窗口不可调整或操作失败时，Root Search 与 Direct Hotkey 显示相同、具体而简短的错误语义。
+用户显式启用 Window Management 时，zento 先解释 Accessibility 用途，再由用户请求权限。普通命令失败不得自动触发系统授权提示。权限被撤销后，窗口管理自动关闭并停止相关快捷键，但保留其它配置；用户重新授权后再次启用功能即可恢复。目标应用没有窗口、窗口不可调整或操作失败时，Root Search 与 Direct Hotkey 显示相同、具体而简短的错误语义。
 
 ## 7. MVP 功能需求
 
@@ -117,9 +117,9 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-02 | P0 | 键盘完成查询、选择、执行和退出 | 输入焦点默认在搜索框；方向键、`Control-N` / `Control-P`、Return、Escape 行为明确 |
 | FR-03 | P0 | 枚举、搜索并启动本机应用 | 支持应用名、中文应用名的全拼/首字母和简单模糊匹配；已运行应用可被激活 |
 | FR-04 | P0 | 搜索并执行内置 Command | App Launch 与内置命令使用同一个 Registry 和结果模型 |
-| FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zbox 前的目标窗口，并按当前显示器可用区域计算 |
+| FR-05 | P0 | Left Half、Right Half、Maximize | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zento 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
-| FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zbox 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
+| FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zento 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
 | FR-08 | P1 | 基础设置 | 使用可调整大小的设置窗口，以分组侧栏提供 General、Shortcuts、Extensions 及各内置插件的独立设置页面；快捷键页面支持按命令名称筛选；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md`、`product/display.md`、`product/quicklinks.md`、`product/snippets.md` 和 `product/file-search.md` 定义 |
 | FR-09 | P1 | 英文与简体中文界面 | Settings、菜单栏、Root Search、Command、错误与权限说明使用同一 String Catalog 真源，不混用未本地化硬编码文案 |
 
@@ -139,7 +139,7 @@ Window Management 以内置插件提供窗口命令，其启停、权限、目�
 
 ### 7.3 App 生命周期
 
-- 登录或手动启动 zbox 后，应用在后台常驻，不自动弹出普通窗口。
+- 登录或手动启动 zento 后，应用在后台常驻，不自动弹出普通窗口。
 - Root Search 是临时 Panel：全局快捷键显示，再次按快捷键、按 Escape 或完成命令后隐藏。
 - Root Search 默认显示在当前工作的 Space；全屏应用前台时也应可用。
 - 菜单栏图标在 M1 固定显示，提供 Root Search、Settings 和 Quit；是否允许隐藏以后再决定。
@@ -213,9 +213,9 @@ Screenshot 作为默认关闭的内置插件独立实施和验收，包含用户
 | OQ-04 | 优先按窗口中心点选择显示器；中心点不在任何显示器时，以最大交叠面积回退；完全离屏时明确失败。 |
 | OQ-05 | Window Management 默认关闭；窗口 Command 始终留在 Root Search 中，功能关闭时执行只引导用户进入对应设置。 |
 | OQ-06 | 权限撤销后自动关闭依赖功能并保留其它配置；重新授权后不自动恢复，由用户再次启用。 |
-| OQ-07 | Direct Hotkey 成功静默；失败使用不激活 zbox 的轻量反馈 Panel。 |
+| OQ-07 | Direct Hotkey 成功静默；失败使用不激活 zento 的轻量反馈 Panel。 |
 | OQ-08 | 用户快捷键使用真实录制，不保留旧预设枚举兼容；Root Search 无有效持久化值时回落默认快捷键，Command 回落未分配。 |
-| OQ-09 | 用户可见产品名暂统一为小写 `zbox`；后续名称调整通过 String Catalog 统一完成。 |
+| OQ-09 | 用户可见产品名暂统一为小写 `zento`；后续名称调整通过 String Catalog 统一完成。 |
 
 Workspace 作为默认关闭的内置插件，保存并恢复每个应用一个普通主窗口的布局；产品约定见 `product/workspace.md`，不改变 M1 完成定义。
 

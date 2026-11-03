@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create, check and package zbox extensions without executing extension code."""
+"""Create, check and package zento extensions without executing extension code."""
 import argparse
 import json
 import os
@@ -75,19 +75,19 @@ def initialize(args):
     manifest["name"] = args.name or args.id
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if args.language == "python":
-        shutil.copy2(REPO / "SDK/python/zbox_sdk.py", args.output / "zbox_sdk.py")
+        shutil.copy2(REPO / "SDK/python/zento_sdk.py", args.output / "zento_sdk.py")
     if args.language == "swift":
-        sdk = args.output / ".sdk/ZboxExtensionKit"
-        shutil.copytree(REPO / "Packages/ZboxExtensionKit", sdk, ignore=shutil.ignore_patterns(*IGNORED))
+        sdk = args.output / ".sdk/ZentoExtensionKit"
+        shutil.copytree(REPO / "Packages/ZentoExtensionKit", sdk, ignore=shutil.ignore_patterns(*IGNORED))
         package = args.output / "Package.swift"
-        package.write_text(package.read_text().replace("../../../Packages/ZboxExtensionKit", ".sdk/ZboxExtensionKit"))
+        package.write_text(package.read_text().replace("../../../Packages/ZentoExtensionKit", ".sdk/ZentoExtensionKit"))
     print("Created extension project. Edit its manifest and commands before sharing.")
 
 
 def pack(args):
     if args.output.exists():
         raise ValueError("The output file already exists")
-    with tempfile.TemporaryDirectory(prefix="zbox-extension-") as directory:
+    with tempfile.TemporaryDirectory(prefix="zento-extension-") as directory:
         root = Path(directory)
         for path in files(args.source):
             relative = path.relative_to(args.source)
@@ -98,7 +98,7 @@ def pack(args):
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)
         if args.python_sdk:
-            shutil.copy2(REPO / "SDK/python/zbox_sdk.py", root / "zbox_sdk.py")
+            shutil.copy2(REPO / "SDK/python/zento_sdk.py", root / "zento_sdk.py")
         if args.binary:
             manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
             native = {c["entry"] for c in manifest["commands"] if not c.get("interpreter")}
