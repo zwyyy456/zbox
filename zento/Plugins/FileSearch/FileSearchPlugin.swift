@@ -229,6 +229,26 @@ final class FileSearchPlugin {
         } catch { statusMessage = error.localizedDescription }
     }
 
+    func openFullDiskAccessSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func prepareDefaultSearchFolders() -> Bool {
+        guard settings.error == nil else { return false }
+        guard settings.roots.isEmpty else { return true }
+        do {
+            var root = try FileSearchRoot.selected(.homeDirectory)
+            root.exclusions = ["Library"]
+            try settings.save(root)
+            statusMessage = nil
+            return true
+        } catch {
+            statusMessage = error.localizedDescription
+            return false
+        }
+    }
+
     func chooseFolder() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -307,7 +327,7 @@ final class FileSearchPlugin {
     func perform(_ action: FileSearchActions.Action) {
         if let url = finderSelection {
             do {
-                try actions.perform(action, url: url)
+                try actions.perform(action, url: url, parent: panel)
                 searchError = nil
                 if action == .open || action == .reveal { dismiss() }
             } catch { searchError = error.localizedDescription }
@@ -316,7 +336,7 @@ final class FileSearchPlugin {
         guard let file = selectedFile, let root = settings.roots.first(where: { $0.id == file.rootID }) else { return }
         do {
             guard root.isAvailable() else { throw FileSearchError.missingFile }
-            try actions.perform(action, url: root.url.appending(path: file.path))
+            try actions.perform(action, url: root.url.appending(path: file.path), parent: panel)
             searchError = nil
             if action == .open || action == .reveal { dismiss() }
         } catch {
@@ -349,6 +369,8 @@ final class FileSearchPlugin {
             panel.title = String(localized: "File Search")
             panel.navigate = { [weak self] in self?.moveSelection($0) }
             panel.dismiss = { [weak self] in self?.escape() }
+            actions.dismissSession = { [weak self] in self?.dismiss() }
+            panel.dismissAfterFocusLoss = { [weak self] in self?.dismiss() }
             panel.performAction = { [weak self] in self?.perform($0) }
             panel.canPreview = { [weak self] in self?.finderSelection != nil || self?.resultsFocused == true }
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -362,7 +384,7 @@ final class FileSearchPlugin {
         } else {
             panel?.contentView = NSHostingView(rootView: FileSearchView(plugin: self))
         }
-        panel?.makeKeyAndOrderFront(nil)
+        panel?.presentTransient()
         search()
     }
 

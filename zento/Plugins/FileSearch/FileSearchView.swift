@@ -165,13 +165,11 @@ struct FileSearchView: View {
     }
 }
 
-@MainActor final class FileSearchPanel: NSPanel {
+@MainActor final class FileSearchPanel: TransientPanel {
     var navigate: ((Int) -> Void)?
     var dismiss: (() -> Void)?
     var performAction: ((FileSearchActions.Action) -> Void)?
     var canPreview: (() -> Bool)?
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
     override func close() { dismiss?(); super.close() }
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, (firstResponder as? NSTextView)?.hasMarkedText() != true {

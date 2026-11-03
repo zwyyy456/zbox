@@ -6,10 +6,11 @@ import QuickLookUI
     private let coordinator: ClipboardAccessCoordinator
     private var previewPanel: FileSearchPreviewPanel?
     private var previewView: QLPreviewView?
+    var dismissSession: (() -> Void)?
 
     init(coordinator: ClipboardAccessCoordinator) { self.coordinator = coordinator }
 
-    func perform(_ action: Action, url: URL) throws {
+    func perform(_ action: Action, url: URL, parent: NSWindow?) throws {
         guard (try? url.checkResourceIsReachable()) == true else { throw FileSearchError.missingFile }
         switch action {
         case .open:
@@ -29,6 +30,7 @@ import QuickLookUI
             guard let view = QLPreviewView(frame: panel.contentView?.bounds ?? .zero, style: .normal) else {
                 throw FileSearchError.actionFailed
             }
+            panel.dismissAfterFocusLoss = { [weak self] in self?.dismissSession?() }
             panel.onDismiss = { [weak self] in self?.closePreview() }
             panel.title = url.lastPathComponent
             panel.contentView = view
@@ -38,25 +40,28 @@ import QuickLookUI
             previewPanel = panel
             previewView = view
             view.previewItem = url as NSURL
-            panel.makeKeyAndOrderFront(nil)
+            parent?.addChildWindow(panel, ordered: .above)
+            panel.presentTransient()
         }
     }
 
     @discardableResult func closePreview() -> Bool {
         guard let previewPanel else { return false }
+        let parent = previewPanel.parent
+        let restoreFocus = previewPanel.isKeyWindow
+        parent?.removeChildWindow(previewPanel)
         previewView?.previewItem = nil
         previewView?.close()
         previewPanel.orderOut(nil)
+        if restoreFocus { parent?.makeKey() }
         self.previewPanel = nil
         previewView = nil
         return true
     }
 }
 
-@MainActor private final class FileSearchPreviewPanel: NSPanel {
+@MainActor private final class FileSearchPreviewPanel: TransientPanel {
     var onDismiss: (() -> Void)?
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
     override func close() { onDismiss?(); super.close() }
     override func cancelOperation(_ sender: Any?) { onDismiss?() }
 }

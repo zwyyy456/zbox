@@ -5,7 +5,7 @@ nonisolated enum FinderSelectionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .target: String(localized: "Select one file in Finder before invoking this command.")
-        case .permission: String(localized: "Allow zento to control Finder in System Settings > Privacy & Security > Automation, then try again.")
+        case .permission: String(localized: "Allow Zento to control Finder in System Settings > Privacy & Security > Automation, then try again.")
         case .singleFile: String(localized: "Select exactly one file or folder in Finder.")
         case .unreadable: String(localized: "The Finder selection could not be read.")
         case .localOnly: String(localized: "Only local files and folders are supported.")
