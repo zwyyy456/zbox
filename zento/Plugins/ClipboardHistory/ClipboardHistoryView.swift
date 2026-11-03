@@ -16,7 +16,7 @@ struct ClipboardHistoryView: View {
                     ForEach(ClipboardHistoryFilter.allCases) { Text($0.title).tag($0) }
                 }
                 .labelsHidden()
-                .fixedSize()
+                .controlSize(.regular)
             }
             GeometryReader { geometry in
                 HStack(spacing: 0) {
