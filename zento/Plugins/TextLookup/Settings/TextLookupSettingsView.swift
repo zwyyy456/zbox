@@ -1,9 +1,11 @@
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TextLookupSettingsView: View {
     let environment: AppEnvironment
     @State private var recordingError: String?
-    @State private var excludedBundleIdentifier = ""
+    @State private var applicationSelectionError: String?
 
     private let commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es"]
 
@@ -87,8 +89,15 @@ struct TextLookupSettingsView: View {
                     Text("Excluded Applications")
                     ForEach(settings.excludedApplicationBundleIdentifiers.sorted(), id: \.self) { identifier in
                         HStack {
-                            Text(identifier)
-                                .font(.caption.monospaced())
+                            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .accessibilityHidden(true)
+                                Text(FileManager.default.displayName(atPath: url.path))
+                            } else {
+                                Text(identifier)
+                            }
                             Spacer()
                             Group {
                                 Button("Remove") {
@@ -99,18 +108,31 @@ struct TextLookupSettingsView: View {
                         }
                     }
 
-                    HStack {
-                        TextField("Application bundle identifier", text: $excludedBundleIdentifier)
-                        Button("Add") {
-                            settings.addExcludedApplication(excludedBundleIdentifier)
-                            excludedBundleIdentifier = ""
-                        }
-                        .disabled(excludedBundleIdentifier.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Add Application…", action: chooseExcludedApplication)
+                    if let applicationSelectionError {
+                        Text(applicationSelectionError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
                 }
             }
             .disabled(!settings.isEnabled)
         }
+    }
+
+    private func chooseExcludedApplication() {
+        let picker = NSOpenPanel()
+        picker.allowedContentTypes = [.application]
+        picker.directoryURL = URL(fileURLWithPath: "/Applications")
+        picker.allowsMultipleSelection = false
+        picker.canChooseDirectories = false
+        guard picker.runModal() == .OK, let url = picker.url else { return }
+        guard let identifier = Bundle(url: url)?.bundleIdentifier, !identifier.isEmpty else {
+            applicationSelectionError = String(localized: "The selected application has no bundle identifier.")
+            return
+        }
+        applicationSelectionError = nil
+        environment.textLookupPlugin.settings.addExcludedApplication(identifier)
     }
 
     private func triggerBinding<Value>(_ keyPath: WritableKeyPath<TextLookupTriggers, Value>) -> Binding<Value> {
@@ -133,6 +155,7 @@ struct TextLookupSettingsView: View {
                 onRecordingChanged: environment.setShortcutRecordingActive,
                 modifierOnly: shortcut.keyCode == nil ? shortcut.modifiers : nil,
                 onModifierOnly: { binding.wrappedValue = TextLookupShortcut(modifiers: $0) })
+                .frame(width: 140)
         }
     }
 
