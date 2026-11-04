@@ -11,11 +11,12 @@ nonisolated struct SearchEngine {
     func search(
         query: String,
         in commands: [CommandDescriptor],
-        limit: Int
+        limit: Int,
+        aliases: [CommandID: String] = [:]
     ) -> [SearchMatch] {
         guard limit > 0 else { return [] }
 
-        let normalizedQuery = normalize(query)
+        let normalizedQuery = Self.normalize(query)
         guard !normalizedQuery.isEmpty else {
             return commands.prefix(limit).map {
                 SearchMatch(descriptor: $0, score: 0)
@@ -24,7 +25,8 @@ nonisolated struct SearchEngine {
 
         return commands
             .compactMap { descriptor -> SearchMatch? in
-                guard let score = score(descriptor, for: normalizedQuery) else {
+                let aliasMatches = aliases[descriptor.id].map { Self.normalize($0) == normalizedQuery } ?? false
+                guard let score = aliasMatches ? 2_000 : score(descriptor, for: normalizedQuery) else {
                     return nil
                 }
                 return SearchMatch(descriptor: descriptor, score: score)
@@ -34,8 +36,8 @@ nonisolated struct SearchEngine {
                     return lhs.score > rhs.score
                 }
 
-                let lhsTitle = normalize(lhs.descriptor.title)
-                let rhsTitle = normalize(rhs.descriptor.title)
+                let lhsTitle = Self.normalize(lhs.descriptor.title)
+                let rhsTitle = Self.normalize(rhs.descriptor.title)
                 if lhsTitle != rhsTitle {
                     return lhsTitle < rhsTitle
                 }
@@ -46,7 +48,7 @@ nonisolated struct SearchEngine {
     }
 
     private func score(_ descriptor: CommandDescriptor, for query: String) -> Int? {
-        let title = normalize(descriptor.title)
+        let title = Self.normalize(descriptor.title)
 
         if title == query { return 1_000 }
         if title.hasPrefix(query) { return 900 }
@@ -57,7 +59,7 @@ nonisolated struct SearchEngine {
         }.max()
 
         var bestKeywordScore: Int?
-        for keyword in descriptor.keywords.map(normalize) {
+        for keyword in descriptor.keywords.map(Self.normalize) {
             let keywordScore: Int?
             if keyword == query {
                 keywordScore = 650
@@ -79,7 +81,7 @@ nonisolated struct SearchEngine {
     }
 
     private func aliasScore(_ alias: CommandSearchAlias, for query: String) -> Int? {
-        let value = normalize(alias.value)
+        let value = Self.normalize(alias.value)
         let scores = switch alias.kind {
         case .transliteration: (exact: 680, prefix: 640, contains: 610)
         case .initials: (exact: 570, prefix: 560, contains: 540)
@@ -115,7 +117,7 @@ nonisolated struct SearchEngine {
         return nil
     }
 
-    private func normalize(_ value: String) -> String {
+    static func normalize(_ value: String) -> String {
         value
             .folding(
                 options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],

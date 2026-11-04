@@ -149,6 +149,70 @@ struct HotkeyConfigurationTests {
         #expect(registrar.active["root-search"] == replacement)
         #expect(registrar.active["other"] == other)
     }
+    @Test
+    func applicationHotkeysRestoreReconcileAndClear() throws {
+        let suiteName = "HotkeyConfigurationTests.applications.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let application = ApplicationInfo(id: "com.example.alias-test", name: "Test Application",
+            bundleIdentifier: "com.example.alias-test", url: URL(filePath: "/Applications/AliasTest.app"))
+        let id = ApplicationCommands.id(for: application)
+        let hotkey = Hotkey(keyCode: 35, modifiers: HotkeyModifiers.control | HotkeyModifiers.option)
+        let registrar = RecordingHotkeyRegistrar()
+        let environment = AppEnvironment(defaults: defaults, hotkeyRegistrar: registrar)
+        environment.updateApplications([application])
+        try environment.setApplicationConfiguration(alias: "", hotkey: hotkey, for: id)
+        #expect(registrar.active[id.rawValue] == hotkey)
+        #expect(environment.aliasStore.aliases[id] == nil)
+
+        let restoredRegistrar = RecordingHotkeyRegistrar()
+        let restored = AppEnvironment(defaults: defaults, hotkeyRegistrar: restoredRegistrar)
+        restored.updateApplications([application])
+        #expect(restored.commandHotkey(for: id) == hotkey)
+        #expect(restoredRegistrar.active[id.rawValue] == hotkey)
+        restored.updateApplications([])
+        #expect(restoredRegistrar.active[id.rawValue] == nil)
+        #expect(restored.commandHotkey(for: id) == hotkey)
+        #expect(restored.commandShortcutTargets.contains { $0.id == id })
+        restored.updateApplications([application])
+        #expect(restoredRegistrar.active[id.rawValue] == hotkey)
+        try restored.setApplicationConfiguration(alias: "", hotkey: nil, for: id)
+        #expect(restoredRegistrar.active[id.rawValue] == nil)
+        #expect(HotkeyConfigurationStore(defaults: defaults).applicationHotkeys().isEmpty)
+    }
+
+    @Test
+    func applicationConfigurationFailuresPreserveBothSettings() throws {
+        let suiteName = "HotkeyConfigurationTests.applicationRollback.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let application = ApplicationInfo(id: "com.example.alias-test", name: "Test Application",
+            bundleIdentifier: "com.example.alias-test", url: URL(filePath: "/Applications/AliasTest.app"))
+        let id = ApplicationCommands.id(for: application)
+        let registrar = RecordingHotkeyRegistrar()
+        let environment = AppEnvironment(defaults: defaults, hotkeyRegistrar: registrar)
+        environment.updateApplications([application])
+        let old = Hotkey(keyCode: 35, modifiers: HotkeyModifiers.control | HotkeyModifiers.option)
+        let replacement = Hotkey(keyCode: 36, modifiers: HotkeyModifiers.control | HotkeyModifiers.option)
+        try environment.setApplicationConfiguration(alias: "old", hotkey: old, for: id)
+        registrar.rejectedHotkey = replacement
+        #expect(throws: TestRegistrationError.self) {
+            try environment.setApplicationConfiguration(alias: "new", hotkey: replacement, for: id)
+        }
+        #expect(throws: HotkeyConfigurationError.self) {
+            try environment.setApplicationConfiguration(alias: "new", hotkey: environment.rootSearchHotkey, for: id)
+        }
+        try environment.aliasStore.set("taken", for: CommandID("other"))
+        #expect(throws: CommandAliasStore.AliasError.self) {
+            try environment.setApplicationConfiguration(alias: "taken", hotkey: nil, for: id)
+        }
+        #expect(environment.commandHotkey(for: id) == old)
+        #expect(registrar.active[id.rawValue] == old)
+        #expect(environment.aliasStore.aliases[id] == "old")
+        #expect(HotkeyConfigurationStore(defaults: defaults).applicationHotkeys()[id] == old)
+        #expect(CommandAliasStore(defaults: defaults).aliases[id] == "old")
+    }
+
 }
 
 @MainActor

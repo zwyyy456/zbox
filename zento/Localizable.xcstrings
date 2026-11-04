@@ -1,125 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Could not monitor lookup shortcuts. Check Accessibility permission and enable Text Lookup again.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法监听取词快捷键，请检查辅助功能权限后重新开启文本取词。"
-          }
-        }
-      }
-    },
-    "Release modifiers, or press another key…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "松开修饰键，或继续按其他键…"
-          }
-        }
-      }
-    },
-    "Double-click Lookup": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "双击取词"
-          }
-        }
-      }
-    },
-    "Drag Selection Lookup": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "划动取词"
-          }
-        }
-      }
-    },
-    "Pointer Lookup": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "光标取词"
-          }
-        }
-      }
-    },
-    "Trigger": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "触发方式"
-          }
-        }
-      }
-    },
-    "Double-click directly": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "直接双击"
-          }
-        }
-      }
-    },
-    "Hold shortcut, then double-click": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按住快捷键再双击"
-          }
-        }
-      }
-    },
-    "Look up immediately after selection": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选中后立即查询"
-          }
-        }
-      }
-    },
-    "Press shortcut after selection": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选中后按快捷键"
-          }
-        }
-      }
-    },
-    "Point at a word and hold the shortcut for 500 ms to look it up.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "鼠标指向单词，按住快捷键 500ms 后查询。"
-          }
-        }
-      }
-    },
-    "Mosaic" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "马赛克"
-          }
-        }
-      }
+    "—" : {
+
     },
     "%@ · %@" : {
       "localizations" : {
@@ -543,6 +426,7 @@
       }
     },
     "Add" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -578,6 +462,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加网站、文件或带参数的网址，即可从 Zento 打开。"
+          }
+        }
+      }
+    },
+    "Add an application and give it an alias to launch it from Root Search." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加应用并设置别名，即可在主搜索中输入别名启动应用。"
           }
         }
       }
@@ -682,6 +577,16 @@
         }
       }
     },
+    "Add…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加…"
+          }
+        }
+      }
+    },
     "Additional available HiDPI modes since installation: %lld" : {
       "localizations" : {
         "en" : {
@@ -736,6 +641,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "截图后"
+          }
+        }
+      }
+    },
+    "Alias" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "别名"
+          }
+        }
+      }
+    },
+    "Alias is already assigned to: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "别名已分配给：%@"
+          }
+        }
+      }
+    },
+    "Aliases cannot contain spaces or control characters." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "别名不能包含空白或控制字符。"
           }
         }
       }
@@ -941,6 +876,7 @@
       }
     },
     "Application bundle identifier" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1667,6 +1603,16 @@
         }
       }
     },
+    "Click an alias to edit it. Type the alias in Root Search, then press Return." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击别名即可编辑。在主搜索中输入别名，按回车执行命令。"
+          }
+        }
+      }
+    },
     "Clipboard Compatibility Mode" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1768,11 +1714,22 @@
       }
     },
     "Command Shortcuts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "命令快捷键"
+          }
+        }
+      }
+    },
+    "Commands" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令"
           }
         }
       }
@@ -1783,6 +1740,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "压缩"
+          }
+        }
+      }
+    },
+    "Configuration Category" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置类别"
           }
         }
       }
@@ -1819,6 +1787,26 @@
         }
       }
     },
+    "Configure Application" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置应用"
+          }
+        }
+      }
+    },
+    "Configure Application…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置应用…"
+          }
+        }
+      }
+    },
     "Connect another display to move this window between displays." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1841,6 +1829,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "连接类型"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
           }
         }
       }
@@ -2065,6 +2063,16 @@
         }
       }
     },
+    "Could not monitor lookup shortcuts. Check Accessibility permission and enable Text Lookup again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法监听取词快捷键，请检查辅助功能权限后重新开启文本取词。"
+          }
+        }
+      }
+    },
     "Could not read this window's type. Try capturing again." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2147,6 +2155,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前时间"
+          }
+        }
+      }
+    },
+    "Currently Unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前不可用"
           }
         }
       }
@@ -2531,7 +2549,28 @@
         }
       }
     },
+    "Double-click directly" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直接双击"
+          }
+        }
+      }
+    },
+    "Double-click Lookup" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "双击取词"
+          }
+        }
+      }
+    },
     "Double-tap ⌥" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2547,6 +2586,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下载"
+          }
+        }
+      }
+    },
+    "Drag Selection Lookup" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "划动取词"
           }
         }
       }
@@ -2589,6 +2638,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑"
+          }
+        }
+      }
+    },
+    "Edit Alias" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑别名"
+          }
+        }
+      }
+    },
+    "Edit Alias…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑别名…"
           }
         }
       }
@@ -3484,6 +3553,7 @@
       }
     },
     "Global Hotkey" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3595,6 +3665,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法读取 HiDPI 安装记录，原始数据已保留。"
+          }
+        }
+      }
+    },
+    "Hold shortcut, then double-click" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住快捷键再双击"
           }
         }
       }
@@ -4237,6 +4317,16 @@
         }
       }
     },
+    "Look up immediately after selection" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选中后立即查询"
+          }
+        }
+      }
+    },
     "Looking up in FlashDict…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4264,6 +4354,7 @@
       }
     },
     "Lookup Shortcut" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -4369,6 +4460,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更多"
+          }
+        }
+      }
+    },
+    "Mosaic" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "马赛克"
           }
         }
       }
@@ -4650,7 +4751,19 @@
         }
       }
     },
+    "No Application Aliases" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未设置应用别名"
+          }
+        }
+      }
+    },
     "No Assigned Shortcuts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -4686,6 +4799,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未找到命令"
+          }
+        }
+      }
+    },
+    "No Configured Commands" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有已配置的命令"
           }
         }
       }
@@ -4911,6 +5034,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未授权"
+          }
+        }
+      }
+    },
+    "Not Available" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不适用"
           }
         }
       }
@@ -5440,6 +5573,26 @@
         }
       }
     },
+    "Point at a word and hold the shortcut for 500 ms to look it up." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鼠标指向单词，按住快捷键 500ms 后查询。"
+          }
+        }
+      }
+    },
+    "Pointer Lookup" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标取词"
+          }
+        }
+      }
+    },
     "Preparing Apple Translation…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5466,6 +5619,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请再按一个按键…"
+          }
+        }
+      }
+    },
+    "Press shortcut after selection" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选中后按快捷键"
           }
         }
       }
@@ -5696,6 +5859,16 @@
         }
       }
     },
+    "Record…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制…"
+          }
+        }
+      }
+    },
     "Recording Clipboard Changes" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5804,6 +5977,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "区域"
+          }
+        }
+      }
+    },
+    "Release modifiers, or press another key…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "松开修饰键，或继续按其他键…"
           }
         }
       }
@@ -6668,6 +6851,16 @@
         }
       }
     },
+    "Search Applications" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索应用"
+          }
+        }
+      }
+    },
     "Search apps and commands" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6699,11 +6892,22 @@
       }
     },
     "Search Command Shortcuts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "搜索命令快捷键"
+          }
+        }
+      }
+    },
+    "Search Commands" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索命令"
           }
         }
       }
@@ -6915,6 +7119,7 @@
       }
     },
     "Selection Trigger" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -6960,6 +7165,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "临时凭证 Token（可选）"
+          }
+        }
+      }
+    },
+    "Set an alias, a shortcut, or both. Press Delete while recording to clear the shortcut." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "别名和快捷键可任选一项或同时设置。录制时按 Delete 可清除快捷键。"
           }
         }
       }
@@ -7014,6 +7229,16 @@
         }
       }
     },
+    "Shortcut" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷键"
+          }
+        }
+      }
+    },
     "Shortcut Input" : {
       "localizations" : {
         "zh-Hans" : {
@@ -7035,6 +7260,7 @@
       }
     },
     "Shortcut Required" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -7045,6 +7271,7 @@
       }
     },
     "Shortcuts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -7274,6 +7501,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "排序"
+          }
+        }
+      }
+    },
+    "Source" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来源"
           }
         }
       }
@@ -8090,6 +8327,16 @@
         }
       }
     },
+    "The selected application has no bundle identifier." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选应用缺少应用标识符，无法添加。"
+          }
+        }
+      }
+    },
     "The selected screen or window is no longer available." : {
       "localizations" : {
         "zh-Hans" : {
@@ -8577,6 +8824,16 @@
         }
       }
     },
+    "Trigger" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "触发方式"
+          }
+        }
+      }
+    },
     "Trust and Install" : {
 
     },
@@ -8601,11 +8858,22 @@
       }
     },
     "Turn off the filter to assign a shortcut." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭筛选后即可设置快捷键。"
+          }
+        }
+      }
+    },
+    "Turn off the filter to configure an alias or shortcut." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭筛选即可配置别名或快捷键。"
           }
         }
       }
@@ -8985,6 +9253,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请将 {query} 放在 HTTP(S) 网址的路径或参数值中，不可放在域名、参数名或片段标识中。"
+          }
+        }
+      }
+    },
+    "Use a short name without spaces. Leave empty to remove the alias." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用不含空格的简短名称，留空即可移除别名。"
           }
         }
       }

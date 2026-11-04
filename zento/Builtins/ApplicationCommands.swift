@@ -1,6 +1,11 @@
 import Foundation
 
 enum ApplicationCommands {
+    /// Includes saved aliases for applications that are temporarily absent from the catalog.
+    static func owns(_ id: CommandID) -> Bool {
+        id.rawValue.hasPrefix("application.")
+    }
+
     static func id(for application: ApplicationInfo) -> CommandID {
         if let bundleIdentifier = application.bundleIdentifier {
             return CommandID("application.\(bundleIdentifier.lowercased())")

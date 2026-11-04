@@ -29,6 +29,8 @@ final class AppEnvironment {
     private let accessibilityAuthorization: AccessibilityAuthorization
     let settingsWindowOpener = SettingsWindowOpener()
     private let launchAtLoginController = LaunchAtLoginController()
+    let aliasStore: CommandAliasStore
+    var aliasSettingsTarget: CommandID?
     private let hotkeyStore: HotkeyConfigurationStore
     private let defaults: UserDefaults
 
@@ -51,6 +53,7 @@ final class AppEnvironment {
     let audioPlugin: AudioPlugin
     let extensionManager: ExtensionManager
     private var registeredExtensionIDs = Set<String>()
+    private var registeredApplicationIDs = Set<String>()
     let scriptCommandsPlugin: ScriptCommandsPlugin
     let developerToolsPlugin: DeveloperToolsPlugin
     let fileSearchPlugin: FileSearchPlugin
@@ -84,7 +87,19 @@ final class AppEnvironment {
         commandShortcutSections.flatMap(\.targets)
     }
 
-    /// Shortcut targets grouped by owning plugin.
+    private var applicationShortcutTargets: [CommandShortcutTarget] {
+        let available = applications.map {
+            CommandShortcutTarget(id: ApplicationCommands.id(for: $0), title: $0.name)
+        }
+        let known = Set(available.map(\.id))
+        let unavailable = commandHotkeys.keys
+            .filter { ApplicationCommands.owns($0) && !known.contains($0) }
+            .sorted { $0.rawValue < $1.rawValue }
+            .map { CommandShortcutTarget(id: $0, title: $0.rawValue) }
+        return available + unavailable
+    }
+
+    /// Shortcut targets grouped by owning plugin or application.
     var commandShortcutSections: [(title: String, targets: [CommandShortcutTarget])] {
         [
             (String(localized: "Extensions"), extensionManager.shortcutTargets),
@@ -101,7 +116,29 @@ final class AppEnvironment {
             (String(localized: "Window Management"), WindowCommands.shortcutTargets),
             (String(localized: "Clipboard History"),
              [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID, title: String(localized: "Clipboard History"))]),
+            (String(localized: "Applications"), applicationShortcutTargets),
         ].filter { !$0.1.isEmpty }
+    }
+
+    var commandConfigurationSections: [(title: String, targets: [CommandShortcutTarget])] {
+        var sections = commandShortcutSections
+        var known = Set(sections.flatMap { $0.targets.map(\.id) })
+        for descriptor in commandRegistry.descriptors where known.insert(descriptor.id).inserted {
+            let title = accessoryTitle(for: descriptor)
+            let target = CommandShortcutTarget(id: descriptor.id, title: descriptor.title)
+            if let index = sections.firstIndex(where: { $0.title == title }) {
+                sections[index].targets.append(target)
+            } else {
+                sections.append((title, [target]))
+            }
+        }
+        let missing = aliasStore.aliases.keys.filter { !known.contains($0) }
+            .sorted { $0.rawValue < $1.rawValue }
+        if !missing.isEmpty {
+            sections.append((String(localized: "Currently Unavailable"),
+                missing.map { CommandShortcutTarget(id: $0, title: $0.rawValue) }))
+        }
+        return sections
     }
 
     /// Whether the plugin behind a settings tab is turned on; nil for tabs without an on/off switch.
@@ -134,7 +171,7 @@ final class AppEnvironment {
     var searchResultSections: [SearchResultSection] {
         let descriptors = commandRegistry.descriptors
         guard searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            let matches = searchEngine.search(query: searchQuery, in: descriptors, limit: RootSearchLimit.results)
+            let matches = searchEngine.search(query: searchQuery, in: descriptors, limit: RootSearchLimit.results, aliases: aliasStore.aliases)
             return matches.isEmpty ? [] : [SearchResultSection(title: nil, matches: matches)]
         }
 
@@ -219,12 +256,14 @@ final class AppEnvironment {
         )
         self.hotkeyStore = hotkeyStore
         self.defaults = defaults
+        aliasStore = CommandAliasStore(defaults: defaults)
         self.textLookupPlugin = textLookupPlugin
         rootSearchHotkey = hotkeyStore.rootSearchHotkey()
         isAccessibilityTrusted = accessibilityAuthorization.isTrusted
         showsApplicationPathsInSearchResults = defaults.bool(forKey: Key.showApplicationPaths)
         recentCommandIDs = (defaults.stringArray(forKey: Key.recentCommands) ?? []).map(CommandID.init)
         commandHotkeys = hotkeyStore.commandHotkeys(for: commandShortcutTargets.map(\.id))
+        commandHotkeys.merge(hotkeyStore.applicationHotkeys()) { current, _ in current }
     }
 
     func start() {
@@ -249,6 +288,7 @@ final class AppEnvironment {
         extensionManager.didCommit = { [weak self] removed in
             guard let self else { return }
             for id in removed {
+                aliasStore.remove(id)
                 commandHotkeys[id] = nil
                 commandHotkeyErrors[id] = nil
                 hotkeyStore.setCommandHotkey(nil, for: id)
@@ -336,9 +376,21 @@ final class AppEnvironment {
     }
 
     func reloadApplications() {
-        applications = applicationCatalog.loadApplications()
-        do { try rebuildCommandRegistry() }
-        catch { applicationReloadError = error.localizedDescription }
+        updateApplications(applicationCatalog.loadApplications())
+    }
+
+    func updateApplications(_ applications: [ApplicationInfo]) {
+        self.applications = applications
+        do {
+            try rebuildCommandRegistry()
+            let availableIDs = Set(applications.map { ApplicationCommands.id(for: $0).rawValue })
+            let removedIDs = registeredApplicationIDs.subtracting(availableIDs)
+            for id in removedIDs { hotkeyRegistrar.unregister(id: id) }
+            registeredApplicationIDs.subtract(removedIDs)
+            try applyHotkeyRegistrations()
+        } catch {
+            applicationReloadError = error.localizedDescription
+        }
     }
 
     private func rebuildCommandRegistry() throws {
@@ -508,9 +560,9 @@ final class AppEnvironment {
     }
 
     func rootSearchActions(for commandID: CommandID) -> [RootSearchAction] {
-        guard let url = applicationURLsByCommandID[commandID] else { return [] }
+        guard let url = applicationURLsByCommandID[commandID] else { return [.editAlias] }
         let isRunning = NSWorkspace.shared.runningApplications.contains { $0.bundleURL == url }
-        return [.open, .showInFinder, .copyPath] + (isRunning ? [.quit] : [])
+        return [.open, .showInFinder, .copyPath] + (isRunning ? [.quit] : []) + [.editAlias]
     }
 
     func performSelectedRootSearchAction() {
@@ -523,12 +575,19 @@ final class AppEnvironment {
     func performRootSearchAction(_ action: RootSearchAction) {
         isShowingRootSearchActions = false
         guard let match = selectedSearchMatch else { return }
+        if action == .editAlias {
+            aliasSettingsTarget = match.id
+            hideRootSearch()
+            do { try openSettings(tab: .shortcuts) }
+            catch { applicationReloadError = error.localizedDescription }
+            return
+        }
         guard action != .open, let url = applicationURLsByCommandID[match.id] else {
             executeSelectedCommand()
             return
         }
         switch action {
-        case .open:
+        case .open, .editAlias:
             return
         case .showInFinder:
             NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -606,6 +665,24 @@ final class AppEnvironment {
             commandHotkeys[commandID] = previous
             commandHotkeyErrors[commandID] = error.localizedDescription
         }
+    }
+
+    func setApplicationConfiguration(alias: String, hotkey: Hotkey?, for id: CommandID) throws {
+        try aliasStore.validate(alias, for: id)
+        if let hotkey { try HotkeyValidator.validateUserShortcut(hotkey) }
+        let previous = commandHotkeys[id]
+        commandHotkeys[id] = hotkey
+        do {
+            try applyHotkeyRegistrations()
+        } catch {
+            commandHotkeys[id] = previous
+            throw error
+        }
+        // No suspension point between validation and commit.
+        try aliasStore.set(alias, for: id)
+        hotkeyStore.setCommandHotkey(hotkey, for: id)
+        commandHotkeyErrors[id] = nil
+        shortcutRegistrationError = nil
     }
 
     func reportInvalidCommandHotkey(_ message: String, for commandID: CommandID) {
@@ -940,6 +1017,7 @@ final class AppEnvironment {
     }
 
     private func removeCommandHotkey(_ id: CommandID) {
+        aliasStore.remove(id)
         hotkeyRegistrar.unregister(id: id.rawValue)
         commandHotkeys[id] = nil
         commandHotkeyErrors[id] = nil
@@ -1001,9 +1079,12 @@ final class AppEnvironment {
             requests += commandHotkeyRequests(for: ScreenshotPlugin.shortcutTargets)
         }
         requests += extensionHotkeyRequests()
-        let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue)).union(registeredExtensionIDs)
+        let availableApplications = applicationShortcutTargets.filter { applicationURLsByCommandID[$0.id] != nil }
+        requests += commandHotkeyRequests(for: availableApplications)
+        let commandRegistrationIDs = Set(["root-search"] + commandShortcutTargets.map(\.id.rawValue)).union(registeredExtensionIDs).union(registeredApplicationIDs)
         try hotkeyRegistrar.replace(ids: commandRegistrationIDs, with: requests)
         registeredExtensionIDs = Set(extensionManager.shortcutTargets.map(\.id.rawValue))
+        registeredApplicationIDs = Set(availableApplications.filter { commandHotkeys[$0.id] != nil }.map(\.id.rawValue))
     }
 
     private func commandHotkeyRequests(for targets: [CommandShortcutTarget]) -> [HotkeyRegistrationRequest] {

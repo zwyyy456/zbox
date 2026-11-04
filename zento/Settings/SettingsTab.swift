@@ -29,7 +29,7 @@ nonisolated enum SettingsTab: Hashable {
         case .display: String(localized: "Display")
         case .workspace: String(localized: "Workspace")
         case .general: String(localized: "General")
-        case .shortcuts: String(localized: "Shortcuts")
+        case .shortcuts: String(localized: "Commands")
         case .windowManagement: String(localized: "Window Management")
         case .textLookup: String(localized: "Text Lookup")
         case .screenshot: String(localized: "Screenshot")

@@ -97,6 +97,7 @@ struct RootSearchView: View {
                 icon: environment.applicationIcon(for: match.id),
                 subtitle: environment.subtitle(for: match.descriptor),
                 accessory: environment.accessoryTitle(for: match.descriptor),
+                alias: environment.aliasStore.aliases[match.id],
                 hotkey: environment.commandHotkey(for: match.id).map(HotkeyFormatter.displayName(for:)),
                 isSelected: isSelected
             )
@@ -213,6 +214,7 @@ private struct CommandResultRow: View {
     let icon: NSImage?
     let subtitle: String?
     let accessory: String
+    let alias: String?
     let hotkey: String?
     let isSelected: Bool
 
@@ -245,6 +247,7 @@ private struct CommandResultRow: View {
 
             Spacer(minLength: 12)
 
+            if let alias { Text(alias).font(.caption.monospaced()).foregroundStyle(.secondary) }
             if let hotkey {
                 Text(hotkey)
                     .font(.caption.monospaced())

@@ -2,6 +2,12 @@ import AppKit
 import SwiftUI
 
 struct ShortcutRecorder: NSViewRepresentable {
+    enum Presentation {
+        case button
+        case table
+    }
+
+    @Environment(\.controlActiveState) private var controlActiveState
     let hotkey: Hotkey?
     let allowsClearing: Bool
     let accessibilityLabel: String
@@ -10,6 +16,8 @@ struct ShortcutRecorder: NSViewRepresentable {
     let onRecordingChanged: (Bool) -> Void
     var modifierOnly: UInt32? = nil
     var onModifierOnly: ((UInt32) -> Void)? = nil
+    var presentation: Presentation = .button
+    var isSelected = false
 
     func makeNSView(context: Context) -> ShortcutRecorderButton {
         let button = ShortcutRecorderButton()
@@ -26,6 +34,10 @@ struct ShortcutRecorder: NSViewRepresentable {
     }
 
     private func update(_ button: ShortcutRecorderButton) {
+        button.presentation = presentation
+        button.isEmphasized = isSelected && controlActiveState != .inactive
+        button.isBordered = presentation == .button
+        button.focusRingType = presentation == .button ? .default : .none
         button.hotkey = hotkey
         button.modifierOnly = modifierOnly
         button.onModifierOnly = onModifierOnly
@@ -40,6 +52,8 @@ struct ShortcutRecorder: NSViewRepresentable {
 
 @MainActor
 final class ShortcutRecorderButton: NSButton {
+    var presentation: ShortcutRecorder.Presentation = .button
+    var isEmphasized = false
     var hotkey: Hotkey?
     var allowsClearing = false
     var modifierOnly: UInt32?
@@ -63,6 +77,16 @@ final class ShortcutRecorderButton: NSButton {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         nil
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        if presentation == .table, isRecording {
+            let outline = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 5, yRadius: 5)
+            (isEmphasized ? NSColor.alternateSelectedControlTextColor : NSColor.controlAccentColor).setStroke()
+            outline.lineWidth = 1.5
+            outline.stroke()
+        }
     }
 
     override var acceptsFirstResponder: Bool { true }
@@ -112,6 +136,7 @@ final class ShortcutRecorderButton: NSButton {
             recordedModifiers |= carbonModifiers(from: event.modifierFlags)
             title = onModifierOnly == nil ? String(localized: "Press another key…")
                 : String(localized: "Release modifiers, or press another key…")
+            refreshTitle()
         } else if sawModifier {
             sawModifier = false
             if let onModifierOnly {
@@ -137,18 +162,33 @@ final class ShortcutRecorderButton: NSButton {
     }
 
     func refreshTitle() {
-        guard !isRecording else { return }
+        needsDisplay = true
+        if isRecording {
+            applyTitle(title)
+            return
+        }
         let modifierText = modifierOnly.map { value in
             [(HotkeyModifiers.control, "⌃"), (HotkeyModifiers.option, "⌥"),
              (HotkeyModifiers.shift, "⇧"), (HotkeyModifiers.command, "⌘")]
                 .filter { value & $0.0 != 0 }.map(\.1).joined()
         }
-        let text = hotkey.map(HotkeyFormatter.displayName(for:)) ?? modifierText ?? String(localized: "Record Shortcut")
+        let text = hotkey.map(HotkeyFormatter.displayName(for:)) ?? modifierText ?? (presentation == .table ? String(localized: "Record…") : String(localized: "Record Shortcut"))
+        applyTitle(text)
+        setAccessibilityValue(hotkey == nil && modifierOnly == nil ? String(localized: "Not Set") : text)
+    }
+
+    private func applyTitle(_ text: String) {
+        let color: NSColor
+        if presentation == .table {
+            color = isEmphasized ? .alternateSelectedControlTextColor
+                : (hotkey == nil && modifierOnly == nil && !isRecording ? .linkColor : .labelColor)
+        } else {
+            color = hotkey == nil && modifierOnly == nil && !isRecording ? .tertiaryLabelColor : .labelColor
+        }
         attributedTitle = NSAttributedString(string: text, attributes: [
-            .foregroundColor: hotkey == nil && modifierOnly == nil ? NSColor.tertiaryLabelColor : NSColor.labelColor,
+            .foregroundColor: color,
             .font: NSFont.systemFont(ofSize: NSFont.systemFontSize),
         ])
-        setAccessibilityValue(hotkey == nil && modifierOnly == nil ? String(localized: "Not Set") : text)
     }
 
     private func beginRecording() {
@@ -157,6 +197,7 @@ final class ShortcutRecorderButton: NSButton {
         sawModifier = false
         recordedModifiers = 0
         title = String(localized: "Type Shortcut…")
+        refreshTitle()
         onRecordingChanged?(true)
     }
 

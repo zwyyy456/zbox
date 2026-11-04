@@ -31,6 +31,14 @@ struct HotkeyConfigurationStore {
         )
     }
 
+    func applicationHotkeys() -> [CommandID: Hotkey] {
+        let prefix = "hotkey.command."
+        let ids = defaults.dictionaryRepresentation().keys
+            .filter { $0.hasPrefix(prefix + "application.") }
+            .map { CommandID(String($0.dropFirst(prefix.count))) }
+        return commandHotkeys(for: ids)
+    }
+
     func setCommandHotkey(_ hotkey: Hotkey?, for commandID: CommandID) {
         let key = Key.command(commandID)
         guard let hotkey else {

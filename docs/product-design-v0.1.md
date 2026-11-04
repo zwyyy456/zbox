@@ -120,7 +120,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | FR-05 | P0 | 窗口布局、居中、恢复和跨显示器移动（见 Window Management 产品约定） | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zento 前的目标窗口，并按当前显示器可用区域计算 |
 | FR-06 | P0 | 成功、失败和权限反馈 | 权限缺失、无目标窗口、不支持调整和执行失败均不静默；Direct Hotkey 成功静默、失败显示非激活反馈 |
 | FR-07 | P1 | 为内置 Command 录制全局快捷键 | 可添加、修改、移除；检测无效组合、zento 内部冲突和系统注册失败；失败不覆盖上一可用配置 |
-| FR-08 | P1 | 基础设置 | 使用可调整大小的设置窗口，以分组侧栏提供 General、Shortcuts、Extensions 及各内置插件的独立设置页面；快捷键页面支持按命令名称筛选；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md`、`product/display.md`、`product/quicklinks.md`、`product/snippets.md` 和 `product/file-search.md` 定义 |
+| FR-08 | P1 | 基础设置 | 使用可调整大小的设置窗口，以分组侧栏提供 General、Commands、Extensions 及各内置插件的独立设置页面；命令页面支持按命令名称及别名筛选，并统一配置别名与已有快捷键；核心设置负责快捷键、开机启动和应用路径显示，插件设置分别由 `product/window-management.md`、`product/text-lookup.md`、`product/clipboard-history.md`、`product/screenshot.md`、`product/workspace.md`、`product/display.md`、`product/quicklinks.md`、`product/snippets.md` 和 `product/file-search.md` 定义 |
 | FR-09 | P1 | 英文与简体中文界面 | Settings、菜单栏、Root Search、Command、错误与权限说明使用同一 String Catalog 真源，不混用未本地化硬编码文案 |
 
 ### 7.1 搜索行为
@@ -131,7 +131,9 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 - 中文应用名在 Command 创建时预生成带空格全拼、无空格全拼和拼音首字母别名；SearchEngine 仍保持与应用枚举和拼音转写无关的同步纯匹配器。
 - 排名保持字面标题高于全拼别名、全拼别名高于首字母别名、首字母别名高于模糊匹配；同分结果保持固定顺序。
 - 非空查询的排名不受最近使用影响；暂不加入 frecency、别名学习或搜索历史排序。
-- 结果行右侧显示类型（应用、插件名或命令）及已设置的快捷键。应用结果可用 `Command-K` 打开操作列表（打开、在 Finder 中显示、拷贝路径，运行中时可退出）；操作列表中方向键选择、Return 执行、Escape 先关闭列表。其它结果没有操作列表，执行仍经同一 Command Registry。
+- 用户可在“命令”设置中为应用及命令配置一个别名，完整匹配优先于标题匹配，按回车执行；别名不做模糊匹配，不解析参数。别名去除首尾空白、不含内部空白或控制字符，冲突检查与搜索使用相同的大小写、宽度及变音归一化。重复别名拒绝保存，保留原值。
+- 别名按 CommandID 本地保存；停用或暂时不可用时保留，明确删除命令时清理。设置列表保留不可用的别名供用户清除。Root Search 的操作列表为所有命令提供编辑别名入口，打开命令设置中的对应编辑表单。命令设置使用一张表展示命令、来源、别名及快捷键；应用仅在已设置别名或快捷键时显示。通过“配置应用…”搜索已索引应用并设置别名、快捷键或两者；保存统一校验，冲突或系统注册失败保留原配置，取消不留下配置。两项都清空后移出配置表，不影响主搜索发现和启动应用。应用快捷键经过同一 Command Registry 启动或激活应用，重启恢复，重新扫描后更新注册；暂时不可用的应用保留配置并停止快捷键注册，再次可用时恢复。点击别名或双击行编辑，保存提交、取消丢弃草稿。
+- 结果行右侧显示别名、类型（应用、插件名或命令）及已设置的快捷键。应用结果可用 `Command-K` 打开操作列表（打开、在 Finder 中显示、拷贝路径，运行中时可退出）；操作列表中方向键选择、Return 执行、Escape 先关闭列表。所有结果都提供编辑别名操作，执行仍经同一 Command Registry。
 
 ### 7.2 窗口管理插件
 
