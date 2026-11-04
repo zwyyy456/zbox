@@ -71,13 +71,13 @@ struct ClipboardHistoryView: View {
                                             Text("Image preview unavailable").foregroundStyle(.secondary)
                                         }
                                     } else if entry.kind == "files" {
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text("\(entry.fileURLs.count) items").font(.headline)
+                                        LazyVStack(alignment: .leading, spacing: 16) {
+                                            if entry.fileURLs.count > 1 {
+                                                Text("\(entry.fileURLs.count) items").font(.headline)
+                                            }
                                             ForEach(Array(entry.fileURLs.enumerated()), id: \.offset) { _, url in
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(url.lastPathComponent).fontWeight(.medium)
-                                                    Text(url.path).font(.caption).foregroundStyle(.secondary)
-                                                }.textSelection(.enabled)
+                                                ClipboardFileReferencePreview(url: url, isPresented: plugin.isPresented,
+                                                    maximumHeight: geometry.size.height * 0.58)
                                             }
                                             Text("References only. File and folder contents are not stored.")
                                                 .font(.caption).foregroundStyle(.secondary)
@@ -148,6 +148,51 @@ struct ClipboardHistoryView: View {
         .onChange(of: plugin.filter) { plugin.selectedID = plugin.entries.first?.id }
         .onChange(of: plugin.query) { plugin.selectedID = plugin.entries.first?.id }
         .onExitCommand(perform: plugin.dismiss)
+    }
+}
+
+private struct ClipboardFileReferencePreview: View {
+    let url: URL
+    let isPresented: Bool
+    let maximumHeight: CGFloat
+    @State private var image: NSImage?
+    @State private var previewUnavailable = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if ClipboardImage.canPreviewFile(url) {
+                if let image {
+                    Image(nsImage: image).resizable().scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .frame(maxWidth: .infinity, maxHeight: maximumHeight)
+                        .accessibilityLabel(url.lastPathComponent)
+                } else if previewUnavailable {
+                    Text("Image preview unavailable").foregroundStyle(.secondary)
+                } else {
+                    ProgressView().controlSize(.small)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            Text(url.lastPathComponent).fontWeight(.medium).textSelection(.enabled)
+            Text(url.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+        }
+        .task(id: isPresented ? url : nil) {
+            image = nil
+            previewUnavailable = false
+            guard isPresented, ClipboardImage.canPreviewFile(url) else { return }
+            do {
+                let data = try await ClipboardImage.fileThumbnail(url)
+                try Task.checkCancellation()
+                image = NSImage(data: data)
+                previewUnavailable = image == nil
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                previewUnavailable = true
+            }
+        }
+        .onDisappear { image = nil }
     }
 }
 

@@ -18,6 +18,25 @@ nonisolated enum ClipboardImage {
         return (width, height)
     }
 
+    static func canPreviewFile(_ url: URL) -> Bool {
+        url.isFileURL && UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+    }
+
+    @concurrent
+    static func fileThumbnail(_ url: URL, maxPixelSize: Int = 640) async throws -> Data {
+        try Task.checkCancellation()
+        guard canPreviewFile(url) else { throw ClipboardHistoryError.unsupported }
+        let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+        guard values.isRegularFile == true else { throw ClipboardHistoryError.unsupported }
+        guard let size = values.fileSize, size <= byteLimit else { throw ClipboardHistoryError.tooLarge }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        // Bound the read even if the referenced file grows after the metadata check.
+        let data = try handle.read(upToCount: byteLimit + 1) ?? Data()
+        try Task.checkCancellation()
+        return try await thumbnail(data, maxPixelSize: maxPixelSize)
+    }
+
     @concurrent
     static func thumbnail(_ data: Data, maxPixelSize: Int = 640) async throws -> Data {
         _ = try dimensions(of: data)
