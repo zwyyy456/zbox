@@ -234,7 +234,6 @@ final class ScreenshotPlugin {
         export(format: .png) { [weak self] data in
             let board = NSPasteboard.general
             board.prepareForNewContents(with: .currentHostOnly)
-            defer { self?.clipboardCoordinator.didWrite(changeCount: board.changeCount) }
             guard board.setData(data, forType: .png) else { throw ScreenshotError.exportFailed }
             if closesEditor { self?.closeEditor() }
             else { self?.showExportFeedback(String(localized: "Image copied.")) }
@@ -568,7 +567,6 @@ final class ScreenshotPlugin {
                     if board.changeCount == clipboardCount {
                         board.prepareForNewContents(with: .currentHostOnly)
                         let copied = board.setData(data, forType: .png)
-                        clipboardCoordinator.didWrite(changeCount: board.changeCount)
                         if !copied { throw ScreenshotError.exportFailed }
                     } else {
                         failures.append(String(localized: "Your clipboard changed. Use Copy Image when ready."))

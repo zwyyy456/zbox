@@ -57,9 +57,9 @@
 - 使用支持 macOS 15 的 ScreenCaptureKit 单帧接口；区域和窗口选择、屏幕坐标转换留在插件内。普通截图不依赖 Accessibility。
 - 编辑器只在会话内保存原图和标注，导出必须合成裁剪及遮挡结果。编码、签名和网络工作离开 Main Actor，UI 和 AppKit 状态保持 Main Actor。
 - 上传是用户配置并触发的独立网络边界；平台协议、Keychain、URLSession 留在插件内，不建立通用上传 Runtime。重试保留同一导出快照，停止后拒绝旧任务的成功、错误及进度结果。
-- 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，所有自身回写通知现有协调对象。
+- 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，复制上传链接时通过 ClipboardAccessCoordinator 登记。
 
-- OCR 使用 Apple Vision 处理截图最终合成像素，贴图保存独立合成快照；两者不读取未合成的裁剪外或遮挡前内容，不自行上传。所有图片／文字回写通过已有剪贴板协调器登记。
+- OCR 使用 Apple Vision 处理截图最终合成像素，贴图保存独立合成快照；两者不读取未合成的裁剪外或遮挡前内容，不自行上传。复制 OCR 文字和贴图图片时通过 ClipboardAccessCoordinator 登记。
 
 ## Display 边界
 
