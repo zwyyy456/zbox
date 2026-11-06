@@ -128,11 +128,12 @@ private final class AppMenuPanel: TransientPanel {
 
 private struct AppMenuView: View {
     @Bindable var plugin: AppMenuPlugin
-    @FocusState private var searchFocused: Bool
+    @State private var searchFocused = false
     var body: some View {
         VStack(spacing: 0) {
             ToolSearchBar {
-                TextField("Search Menu Items", text: $plugin.query).focused($searchFocused)
+                NativeSearchField(title: String(localized: "Search Menu Items"), text: $plugin.query,
+                                  isFocused: $searchFocused)
             } accessory: {
                 if plugin.isLoading {
                     ProgressView()
@@ -185,7 +186,7 @@ struct AppMenuSettingsView: View {
                                        request: environment.requestAccessibilityPermission,
                                        openSettings: environment.openAccessibilitySettings)
             if let message = environment.appMenuPlugin.statusMessage { SettingsErrorView(message: message) }
-            if let message = environment.shortcutRegistrationError { SettingsErrorView(message: message) }
+            if let message = environment.hotkeys.shortcutRegistrationError { SettingsErrorView(message: message) }
         }.settingsPane()
     }
 }

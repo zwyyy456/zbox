@@ -43,15 +43,15 @@ struct ShortcutSettingsView: View {
                     Label("Root Search", systemImage: "magnifyingglass")
                     Spacer()
                     ShortcutRecorder(
-                        hotkey: environment.rootSearchHotkey, allowsClearing: false,
+                        hotkey: environment.hotkeys.rootSearchHotkey, allowsClearing: false,
                         accessibilityLabel: String(localized: "Root Search shortcut"),
-                        onChange: { if let hotkey = $0 { environment.setRootSearchHotkey(hotkey) } },
-                        onInvalid: environment.reportInvalidRootSearchHotkey,
-                        onRecordingChanged: environment.setShortcutRecordingActive
+                        onChange: { if let hotkey = $0 { environment.hotkeys.setRootSearchHotkey(hotkey) } },
+                        onInvalid: environment.hotkeys.reportInvalidRootSearchHotkey,
+                        onRecordingChanged: environment.hotkeys.setShortcutRecordingActive
                     )
                     .frame(width: 140)
                 }
-                if let error = environment.rootSearchHotkeyError {
+                if let error = environment.hotkeys.rootSearchHotkeyError {
                     SettingsErrorView(message: error)
                 }
                 HStack(spacing: 12) {
@@ -124,8 +124,8 @@ struct ShortcutSettingsView: View {
                 Text("Click an alias to edit it. Type the alias in Root Search, then press Return.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if let error = selection.flatMap({ environment.commandHotkeyErrors[$0] })
-                    ?? environment.shortcutRegistrationError {
+                if let error = selection.flatMap({ environment.hotkeys.commandHotkeyErrors[$0] })
+                    ?? environment.hotkeys.shortcutRegistrationError {
                     SettingsErrorView(message: error)
                 }
             }
@@ -158,13 +158,13 @@ struct ShortcutSettingsView: View {
             accessibilityLabel: String(localized: "\(target.title) shortcut"),
             onChange: {
                 selection = target.id
-                environment.setCommandHotkey($0, for: target.id)
+                environment.hotkeys.setCommandHotkey($0, for: target.id)
             },
             onInvalid: {
                 selection = target.id
-                environment.reportInvalidCommandHotkey($0, for: target.id)
+                environment.hotkeys.reportInvalidCommandHotkey($0, for: target.id)
             },
-            onRecordingChanged: environment.setShortcutRecordingActive,
+            onRecordingChanged: environment.hotkeys.setShortcutRecordingActive,
             presentation: .table,
             isSelected: selection == target.id
         )
@@ -211,7 +211,7 @@ private struct CommandConfigurationEditor: View {
                         onInvalid: { error = $0 },
                         onRecordingChanged: {
                             isRecording = $0
-                            environment.setShortcutRecordingActive($0)
+                            environment.hotkeys.setShortcutRecordingActive($0)
                         }
                     )
                     .frame(width: 140)

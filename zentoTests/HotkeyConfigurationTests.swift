@@ -106,9 +106,9 @@ struct HotkeyConfigurationTests {
         let environment = AppEnvironment(defaults: defaults, hotkeyRegistrar: registrar)
         registrar.shouldFail = true
 
-        environment.setRootSearchHotkey(replacement)
+        environment.hotkeys.setRootSearchHotkey(replacement)
 
-        #expect(environment.rootSearchHotkey == previous)
+        #expect(environment.hotkeys.rootSearchHotkey == previous)
         #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == previous)
     }
 
@@ -125,26 +125,26 @@ struct HotkeyConfigurationTests {
         try registrar.replace(ids: ["other"], with: [
             HotkeyRegistrationRequest(id: "other", hotkey: other, label: "Other", action: {})
         ])
-        environment.setRootSearchHotkey(previous)
+        environment.hotkeys.setRootSearchHotkey(previous)
         registrar.rejectedHotkey = replacement
         registrar.failNextResume = failOnResume
 
-        environment.setShortcutRecordingActive(true)
-        environment.setRootSearchHotkey(replacement)
-        environment.setShortcutRecordingActive(false)
+        environment.hotkeys.setShortcutRecordingActive(true)
+        environment.hotkeys.setRootSearchHotkey(replacement)
+        environment.hotkeys.setShortcutRecordingActive(false)
 
-        #expect(environment.rootSearchHotkey == previous)
+        #expect(environment.hotkeys.rootSearchHotkey == previous)
         #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == previous)
-        #expect(environment.rootSearchHotkeyError != nil)
+        #expect(environment.hotkeys.rootSearchHotkeyError != nil)
         #expect(registrar.active["root-search"] == previous)
         #expect(!registrar.isSuspended)
         #expect(registrar.active["other"] == other)
 
         registrar.rejectedHotkey = nil
-        environment.setShortcutRecordingActive(true)
-        environment.setRootSearchHotkey(replacement)
-        environment.setShortcutRecordingActive(false)
-        #expect(environment.rootSearchHotkey == replacement)
+        environment.hotkeys.setShortcutRecordingActive(true)
+        environment.hotkeys.setRootSearchHotkey(replacement)
+        environment.hotkeys.setShortcutRecordingActive(false)
+        #expect(environment.hotkeys.rootSearchHotkey == replacement)
         #expect(HotkeyConfigurationStore(defaults: defaults).rootSearchHotkey() == replacement)
         #expect(registrar.active["root-search"] == replacement)
         #expect(registrar.active["other"] == other)
@@ -200,7 +200,7 @@ struct HotkeyConfigurationTests {
             try environment.setApplicationConfiguration(alias: "new", hotkey: replacement, for: id)
         }
         #expect(throws: HotkeyConfigurationError.self) {
-            try environment.setApplicationConfiguration(alias: "new", hotkey: environment.rootSearchHotkey, for: id)
+            try environment.setApplicationConfiguration(alias: "new", hotkey: environment.hotkeys.rootSearchHotkey, for: id)
         }
         try environment.aliasStore.set("taken", for: CommandID("other"))
         #expect(throws: CommandAliasStore.AliasError.self) {

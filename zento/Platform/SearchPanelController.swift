@@ -39,8 +39,8 @@ final class SearchPanelController: NSObject {
         }
         panel.onEscape = { [weak environment] in
             guard let environment else { return }
-            if environment.isShowingRootSearchActions {
-                environment.isShowingRootSearchActions = false
+            if environment.rootSearch.isShowingRootSearchActions {
+                environment.rootSearch.isShowingRootSearchActions = false
             } else {
                 environment.hideRootSearch()
             }
@@ -90,7 +90,7 @@ final class SearchPanelController: NSObject {
     private func executeSelectedCommand() {
         guard let environment else { return }
         synchronizeSearchQuery(with: environment)
-        if environment.isShowingRootSearchActions {
+        if environment.rootSearch.isShowingRootSearchActions {
             environment.performSelectedRootSearchAction()
         } else {
             environment.executeSelectedCommand()
@@ -100,13 +100,13 @@ final class SearchPanelController: NSObject {
     private func toggleActions() {
         guard let environment else { return }
         synchronizeSearchQuery(with: environment)
-        guard let selected = environment.selectedSearchMatch,
+        guard let selected = environment.rootSearch.selectedSearchMatch,
               !environment.rootSearchActions(for: selected.id).isEmpty else {
-            environment.isShowingRootSearchActions = false
+            environment.rootSearch.isShowingRootSearchActions = false
             NSSound.beep()
             return
         }
-        environment.isShowingRootSearchActions.toggle()
+        environment.rootSearch.isShowingRootSearchActions.toggle()
     }
 
     private func moveSelection(by offset: Int) {
@@ -117,10 +117,10 @@ final class SearchPanelController: NSObject {
 
     private func synchronizeSearchQuery(with environment: AppEnvironment) {
         guard let searchField = firstTextField(in: panel.contentView),
-              searchField.stringValue != environment.searchQuery else {
+              searchField.stringValue != environment.rootSearch.searchQuery else {
             return
         }
-        environment.searchQuery = searchField.stringValue
+        environment.rootSearch.searchQuery = searchField.stringValue
     }
 
     private func firstTextField(in view: NSView?) -> NSTextField? {
@@ -138,7 +138,7 @@ final class SearchPanelController: NSObject {
 }
 
 @MainActor
-private final class SearchPanel: TransientPanel {
+final class SearchPanel: TransientPanel {
     var onReturn: (() -> Void)?
     var onEscape: (() -> Void)?
     var onMoveSelection: ((Int) -> Void)?
@@ -146,30 +146,30 @@ private final class SearchPanel: TransientPanel {
 
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .keyDown,
-           SearchKeyboardMapper.isActionsShortcut(
+        if !handleCommandKey(event) { super.sendEvent(event) }
+    }
+
+    /// Input methods own command keys until their marked text is committed.
+    func handleCommandKey(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown,
+              (firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
+        if SearchKeyboardMapper.isActionsShortcut(
             charactersIgnoringModifiers: event.charactersIgnoringModifiers,
             modifierFlags: event.modifierFlags
-           ) {
+        ) {
             onToggleActions?()
-            return
+            return true
         }
-        if event.type == .keyDown,
-           let action = SearchKeyboardMapper.action(
+        guard let action = SearchKeyboardMapper.action(
             keyCode: event.keyCode,
             charactersIgnoringModifiers: event.charactersIgnoringModifiers,
             modifierFlags: event.modifierFlags
-           ) {
-            switch action {
-            case .moveSelection(let offset):
-                onMoveSelection?(offset)
-            case .execute:
-                onReturn?()
-            case .dismiss:
-                onEscape?()
-            }
-            return
+        ) else { return false }
+        switch action {
+        case .moveSelection(let offset): onMoveSelection?(offset)
+        case .execute: onReturn?()
+        case .dismiss: onEscape?()
         }
-        super.sendEvent(event)
+        return true
     }
 }

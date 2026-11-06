@@ -2,12 +2,13 @@ import SwiftUI
 
 struct SnippetsView: View {
     @Bindable var plugin: SnippetsPlugin
-    @FocusState private var searchFocused: Bool
+    @State private var searchFocused = false
     var body: some View {
         let hasSelection = plugin.selectedItem != nil
         VStack(spacing: 0) {
             ToolSearchBar {
-                TextField("Search Snippets", text: $plugin.query).focused($searchFocused)
+                NativeSearchField(title: String(localized: "Search Snippets"), text: $plugin.query,
+                                  isFocused: $searchFocused)
             } accessory: {
                 Picker("Group", selection: $plugin.group) {
                     Text("All Groups").tag("")

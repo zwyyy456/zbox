@@ -12,6 +12,9 @@
 - AppKit、Carbon、Accessibility、ServiceManagement 和 NSWorkspace 由具体平台 adapter 隔离；跨功能共享的 adapter 放在 `Platform`，只服务单个内置扩展的实现留在扩展内部。只有真实替换或失败注入需求才增加协议。
 - SwiftUI Settings Scene 是完整管理全局偏好的入口；菜单、搜索和命令只打开或执行它定义的能力。只有产品合同明确要求的就地操作可以持久化对应偏好，例如 Text Lookup 悬浮窗中的目标语言快捷调整。
 
+- `CommandHotkeyController` 拥有快捷键配置编辑与提交、冲突校验、录制暂停和编辑失败反馈；AppEnvironment 提供当前命令集合及跨插件注册组合，GlobalHotkeyRegistrar 隔离 Carbon 注册与恢复。
+- `RootSearchSession` 拥有搜索查询、结果选择、动作菜单状态、最近命令及会话身份；AppEnvironment 保留共享 Command 执行与跨功能动作。
+
 ## 并发与恢复
 
 - UI、AppKit 对象、Carbon 注册表和 app-lifetime 可变状态在 Main Actor 更新；纯 SearchEngine/WindowGeometry 值保持 `Sendable`/`nonisolated`。
@@ -56,6 +59,7 @@
 - 产品行为与图床范围由 `docs/product/screenshot.md` 定义。ScreenshotPlugin 拥有截图、编辑会话和上传任务，AppEnvironment 只组合与协调命令快捷键。
 - 使用支持 macOS 15 的 ScreenCaptureKit 单帧接口；区域和窗口选择、屏幕坐标转换留在插件内。普通截图不依赖 Accessibility。
 - 编辑器只在会话内保存原图和标注，导出必须合成裁剪及遮挡结果。编码、签名和网络工作离开 Main Actor，UI 和 AppKit 状态保持 Main Actor。
+- `ScreenshotUploadSession` 拥有上传任务、请求身份、重试快照、进度与链接复制；ScreenshotPlugin 协调截图输出与窗口关闭。
 - 上传是用户配置并触发的独立网络边界；平台协议、Keychain、URLSession 留在插件内，不建立通用上传 Runtime。重试保留同一导出快照，停止后拒绝旧任务的成功、错误及进度结果。
 - 普通配置只保存服务参数；凭据只进入本机 Keychain。上传结果的自动剪贴板回写必须检查 changeCount，复制上传链接时通过 ClipboardAccessCoordinator 登记。
 
@@ -111,6 +115,7 @@
 
 - 产品行为由 `docs/product/script-commands.md` 定义。插件拥有脚本配置、运行任务和结果窗口；App 负责 Registry、快捷键事务和退出时等待任务清理。
 - AppleShortcuts 负责系统目录格式、稳定标识符、文本临时文件与 CLI 参数；复用 ScriptRunner 管理客户端进程，其结束不等同于系统快捷指令动作停止。原脚本存储与命令身份保留。
+- `ChildProcess.Termination` 集中进程组退出观察、终止宽限与回收；ScriptRunner 和 ExtensionConnection 分别保留文本与协议输出循环。
 - `ScriptRunner` 是进程副作用边界：argv 不拼接，标准输入关闭交互，双路输出有界且持续排空，工作线程负责启动、进程组终止和回收。Main Actor 只消费输出快照与结果。
 
 ## Audio 边界

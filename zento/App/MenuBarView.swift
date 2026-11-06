@@ -8,7 +8,7 @@ struct MenuBarView: View {
         Button("Open Zento") {
             environment.showRootSearch()
         }
-        .keyboardShortcut(HotkeyFormatter.keyboardShortcut(for: environment.rootSearchHotkey))
+        .keyboardShortcut(HotkeyFormatter.keyboardShortcut(for: environment.hotkeys.rootSearchHotkey))
 
         ApplicationMenuItems(environment: environment)
     }

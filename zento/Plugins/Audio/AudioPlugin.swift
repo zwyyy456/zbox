@@ -177,7 +177,7 @@ struct AudioSettingsView: View {
             Toggle("Enable Audio Controls", isOn: Binding(get: { environment.audioPlugin.isEnabled }, set: environment.setAudioEnabled))
             Text("Control default audio devices. Available volume and mute controls depend on the device.").foregroundStyle(.secondary)
             if let message = environment.audioPlugin.statusMessage { SettingsErrorView(message: message) }
-            if let message = environment.shortcutRegistrationError { SettingsErrorView(message: message) }
+            if let message = environment.hotkeys.shortcutRegistrationError { SettingsErrorView(message: message) }
         }.settingsPane()
     }
 }

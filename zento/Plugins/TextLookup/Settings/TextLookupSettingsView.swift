@@ -152,7 +152,7 @@ struct TextLookupSettingsView: View {
                 accessibilityLabel: title,
                 onChange: { if let value = $0 { binding.wrappedValue = TextLookupShortcut(keyCode: value.keyCode, modifiers: value.modifiers) } },
                 onInvalid: { recordingError = $0 },
-                onRecordingChanged: environment.setShortcutRecordingActive,
+                onRecordingChanged: environment.hotkeys.setShortcutRecordingActive,
                 modifierOnly: shortcut.keyCode == nil ? shortcut.modifiers : nil,
                 onModifierOnly: { binding.wrappedValue = TextLookupShortcut(modifiers: $0) })
                 .frame(width: 140)

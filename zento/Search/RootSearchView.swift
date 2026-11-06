@@ -6,9 +6,9 @@ struct RootSearchView: View {
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        @Bindable var environment = environment
-        let sections = environment.searchResultSections
-        let selected = environment.selectedSearchMatch
+        @Bindable var session = environment.rootSearch
+        let sections = environment.rootSearch.searchResultSections
+        let selected = environment.rootSearch.selectedSearchMatch
         let actions = selected.map { environment.rootSearchActions(for: $0.id) } ?? []
 
         VStack(spacing: 0) {
@@ -16,7 +16,7 @@ struct RootSearchView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
-                TextField("Search apps and commands", text: $environment.searchQuery)
+                TextField("Search apps and commands", text: $session.searchQuery)
                     .textFieldStyle(.plain)
                     .focused($isSearchFocused)
             }
@@ -34,33 +34,39 @@ struct RootSearchView: View {
                 .frame(maxHeight: .infinity)
             } else {
                 ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 2) {
-                            ForEach(sections) { section in
+                    List(selection: Binding(
+                        get: { session.selectedSearchMatch?.id },
+                        set: { session.selectedCommandID = $0 }
+                    )) {
+                        ForEach(sections) { section in
+                            Section {
                                 if let title = section.title {
                                     Text(title)
-                                        .font(.caption.weight(.semibold))
+                                        .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(.secondary)
-                                        .padding(.horizontal, 10)
-                                        .padding(.top, 8)
-                                        .padding(.bottom, 2)
                                         .accessibilityAddTraits(.isHeader)
+                                        .selectionDisabled()
+                                        .listRowSeparator(.hidden)
                                 }
                                 ForEach(section.matches) { match in
-                                    resultButton(match, isSelected: match.id == selected?.id)
+                                    resultButton(match)
+                                        .tag(match.id)
+                                        .listRowSeparator(.hidden)
                                 }
                             }
+                            .listSectionSeparator(.hidden)
                         }
-                        .padding(8)
                     }
+                    .listStyle(.inset)
+                    .scrollContentBackground(.hidden)
                     .onChange(of: selected?.id) { _, id in
                         if let id { proxy.scrollTo(id) }
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    if environment.isShowingRootSearchActions, !actions.isEmpty {
+                    if environment.rootSearch.isShowingRootSearchActions, !actions.isEmpty {
                         RootSearchActionsList(actions: actions,
-                                              selectedIndex: environment.selectedRootSearchActionIndex,
+                                              selectedIndex: $session.selectedRootSearchActionIndex,
                                               perform: environment.performRootSearchAction)
                             .padding(10)
                     }
@@ -87,9 +93,9 @@ struct RootSearchView: View {
         }
     }
 
-    private func resultButton(_ match: SearchMatch, isSelected: Bool) -> some View {
+    private func resultButton(_ match: SearchMatch) -> some View {
         Button {
-            environment.select(match.id)
+            environment.rootSearch.select(match.id)
             environment.executeSelectedCommand()
         } label: {
             CommandResultRow(
@@ -98,14 +104,12 @@ struct RootSearchView: View {
                 subtitle: environment.subtitle(for: match.descriptor),
                 accessory: environment.accessoryTitle(for: match.descriptor),
                 alias: environment.aliasStore.aliases[match.id],
-                hotkey: environment.commandHotkey(for: match.id).map(HotkeyFormatter.displayName(for:)),
-                isSelected: isSelected
+                hotkey: environment.commandHotkey(for: match.id).map(HotkeyFormatter.displayName(for:))
             )
         }
         .id(match.id)
         .buttonStyle(.plain)
         .accessibilityLabel(match.descriptor.title)
-        .accessibilityValue(isSelected ? String(localized: "Selected") : "")
     }
 
     @ViewBuilder
@@ -124,7 +128,7 @@ struct RootSearchView: View {
             .fixedSize()
             .help("Zento Menu")
             .accessibilityLabel("Zento Menu")
-            if let feedback = environment.commandFeedback {
+            if let feedback = environment.rootSearch.commandFeedback {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(feedback.message, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
@@ -142,13 +146,13 @@ struct RootSearchView: View {
                 }
                 if hasActions {
                     Button {
-                        environment.isShowingRootSearchActions.toggle()
+                        environment.rootSearch.isShowingRootSearchActions.toggle()
                     } label: {
                         KeyHint(title: String(localized: "Actions"), key: "⌘K")
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Actions")
-                    .accessibilityValue(environment.isShowingRootSearchActions
+                    .accessibilityValue(environment.rootSearch.isShowingRootSearchActions
                         ? String(localized: "Expanded") : String(localized: "Collapsed"))
                 }
                 KeyHint(title: String(localized: "Close"), key: "esc")
@@ -178,33 +182,29 @@ struct KeyHint: View {
 
 private struct RootSearchActionsList: View {
     let actions: [RootSearchAction]
-    let selectedIndex: Int
+    @Binding var selectedIndex: Int
     let perform: (RootSearchAction) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        List(selection: Binding<Int?>(
+            get: { selectedIndex },
+            set: { if let index = $0 { selectedIndex = index } }
+        )) {
             ForEach(Array(actions.enumerated()), id: \.element) { index, action in
                 Button { perform(action) } label: {
-                    HStack {
-                        Label(action.title, systemImage: action.systemImage)
-                        Spacer()
-                        if index == selectedIndex { Text(verbatim: "↩") }
-                    }
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .contentShape(.rect)
-                    .background(index == selectedIndex ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor) : Color.clear, in: .rect(cornerRadius: 6))
+                    Label(action.title, systemImage: action.systemImage)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .accessibilityValue(index == selectedIndex ? String(localized: "Selected") : "")
+                .tag(index)
+                .listRowSeparator(.hidden)
             }
         }
-        .padding(6)
-        .frame(width: 240)
-        .background(Color(nsColor: .windowBackgroundColor), in: .rect(cornerRadius: 10))
+        .listStyle(.inset)
+        .frame(width: 240, height: CGFloat(actions.count) * 32 + 16)
+        .clipShape(.rect(cornerRadius: 10))
         .shadow(radius: 8)
-        .accessibilityElement(children: .contain)
         .accessibilityLabel("Actions")
     }
 }
@@ -216,7 +216,6 @@ private struct CommandResultRow: View {
     let accessory: String
     let alias: String?
     let hotkey: String?
-    let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -266,6 +265,5 @@ private struct CommandResultRow: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .contentShape(.rect)
-        .background(isSelected ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor) : Color.clear, in: .rect(cornerRadius: 8))
     }
 }

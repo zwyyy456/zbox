@@ -79,11 +79,11 @@ struct SettingsView: View {
         case .clipboardHistory:
             ClipboardHistorySettingsView(plugin: environment.clipboardHistoryPlugin,
                                          onEnabledChanged: environment.setClipboardHistoryEnabled,
-                                         shortcutError: environment.shortcutRegistrationError)
+                                         shortcutError: environment.hotkeys.shortcutRegistrationError)
         case .screenshot:
             ScreenshotSettingsView(plugin: environment.screenshotPlugin,
                                    onEnabledChanged: environment.setScreenshotEnabled,
-                                   shortcutError: environment.shortcutRegistrationError)
+                                   shortcutError: environment.hotkeys.shortcutRegistrationError)
         case .textLookup:
             Form { TextLookupSettingsView(environment: environment) }.settingsPane()
         }
@@ -120,8 +120,8 @@ private struct GeneralSettingsView: View {
                     )
                 )
                 LabeledContent("Recent Commands") {
-                    Button("Clear Recent Commands", action: environment.clearRecentCommands)
-                        .disabled(environment.recentCommandIDs.isEmpty)
+                    Button("Clear Recent Commands", action: environment.rootSearch.clearRecentCommands)
+                        .disabled(environment.rootSearch.recentCommandIDs.isEmpty)
                 }
             }
 

@@ -2,15 +2,14 @@ import SwiftUI
 
 struct ClipboardHistoryView: View {
     @Bindable var plugin: ClipboardHistoryPlugin
-    @FocusState private var searchFocused: Bool
+    @State private var searchFocused = false
 
     var body: some View {
         let hasSelection = plugin.selectedID != nil
         VStack(spacing: 0) {
             ToolSearchBar {
-                TextField("Search Clipboard History", text: $plugin.query)
-                    .focused($searchFocused)
-                    .onSubmit { plugin.pasteSelection() }
+                NativeSearchField(title: String(localized: "Search Clipboard History"), text: $plugin.query,
+                                  isFocused: $searchFocused)
             } accessory: {
                 Picker("Filter", selection: $plugin.filter) {
                     ForEach(ClipboardHistoryFilter.allCases) { Text($0.title).tag($0) }

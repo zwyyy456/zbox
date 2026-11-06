@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Large borderless search row shared by Root Search–style tool panels.
+/// Search field and accessories shared by tool panels.
 struct ToolSearchBar<Field: View, Accessory: View>: View {
     @ViewBuilder let field: Field
     @ViewBuilder let accessory: Accessory
@@ -13,12 +13,7 @@ struct ToolSearchBar<Field: View, Accessory: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
                 field
-                    .textFieldStyle(.plain)
-                    .font(.title3)
                 accessory
                     .controlSize(.small)
             }

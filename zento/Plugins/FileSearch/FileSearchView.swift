@@ -2,15 +2,15 @@ import SwiftUI
 
 struct FileSearchView: View {
     @Bindable var plugin: FileSearchPlugin
-    private enum Focus { case search, results }
-    @FocusState private var focus: Focus?
+    @State private var searchFocused = false
+    @FocusState private var resultsFocused: Bool
 
     var body: some View {
         let hasSelection = plugin.selectedFile != nil
         VStack(spacing: 0) {
             ToolSearchBar {
-                TextField("Search file names — ext:pdf, type:folder, path:project", text: $plugin.query)
-                    .focused($focus, equals: .search)
+                NativeSearchField(title: String(localized: "Search file names — ext:pdf, type:folder, path:project"),
+                                  text: $plugin.query, isFocused: $searchFocused)
             } accessory: {
                 TextField("Extension", text: $plugin.extensionFilter)
                     .textFieldStyle(.roundedBorder)
@@ -59,7 +59,7 @@ struct FileSearchView: View {
                     Button("Quick Look") { plugin.selectedID = file.id; plugin.perform(.preview) }
                 }
             }
-            .focused($focus, equals: .results)
+            .focused($resultsFocused)
             .overlay {
                 if plugin.query.isEmpty && plugin.typeFilter.isEmpty && plugin.extensionFilter.isEmpty {
                     ContentUnavailableView("Search Files", systemImage: "doc.text.magnifyingglass",
@@ -97,8 +97,8 @@ struct FileSearchView: View {
                 .disabled(!hasSelection)
             }
         }
-        .onAppear { focus = .search }
-        .onChange(of: focus) { plugin.resultsFocused = focus == .results }
+        .onAppear { searchFocused = true }
+        .onChange(of: resultsFocused) { plugin.resultsFocused = resultsFocused }
     }
 
     private var filterMenu: some View {
