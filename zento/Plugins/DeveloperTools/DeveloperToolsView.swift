@@ -57,18 +57,34 @@ struct DeveloperToolsView: View {
                 Stepper("Count: \(plugin.uuidCount)", value: $plugin.uuidCount, in: 1...100)
                     .fixedSize()
                 Toggle("Uppercase", isOn: $plugin.uppercaseUUIDs)
-                Spacer()
+                    .toggleStyle(.checkbox)
                 Button("Generate") { plugin.generateUUIDs() }
                     .keyboardShortcut(.return, modifiers: .command)
+                    .buttonStyle(.borderedProminent)
+                Spacer()
             }
             Text("UUID v4 · One UUID per line")
                 .font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text("Output").font(.headline)
+                Button("Clear") { plugin.clearUUIDs() }.disabled(plugin.uuids.isEmpty)
+                Button("Copy All") { plugin.copy(plugin.uuids.map(plugin.uuidText).joined(separator: "\n")) }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
+                    .disabled(plugin.uuids.isEmpty)
+                Spacer()
+            }
             List(plugin.uuids, id: \.self) { uuid in
                 HStack {
                     Text(plugin.uuidText(uuid)).font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
+                    Button {
+                        plugin.copy(plugin.uuidText(uuid))
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("Copy")
                     Spacer()
-                    Button("Copy") { plugin.copy(plugin.uuidText(uuid)) }
                 }
             }
             .overlay {
@@ -77,13 +93,7 @@ struct DeveloperToolsView: View {
                                            description: Text("Choose a count, then generate UUIDs."))
                 }
             }
-            HStack {
-                Button("Clear") { plugin.clearUUIDs() }.disabled(plugin.uuids.isEmpty)
-                Spacer()
-                Button("Copy All") { plugin.copy(plugin.uuids.map(plugin.uuidText).joined(separator: "\n")) }
-                    .keyboardShortcut("c", modifiers: [.command, .shift])
-                    .disabled(plugin.uuids.isEmpty)
-            }
+
         }
     }
 }

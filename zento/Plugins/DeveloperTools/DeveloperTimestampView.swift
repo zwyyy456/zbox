@@ -10,28 +10,37 @@ struct DeveloperTimestampView: View {
                 Picker("Direction", selection: $session.fromDate) {
                     Text("Timestamp to Date").tag(false)
                     Text("Date to Timestamp").tag(true)
-                }.pickerStyle(.segmented)
-                if !session.fromDate {
-                    Picker("Input Unit", selection: $session.unit) {
-                        ForEach(TimestampConverter.Unit.allCases, id: \.self) { unit in
-                            Text(unit.title).tag(unit)
-                        }
-                    }.fixedSize()
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                HStack {
+                    Text("Input").font(.headline)
+                    if !session.fromDate {
+                        Picker("Input Unit", selection: $session.unit) {
+                            ForEach(TimestampConverter.Unit.allCases, id: \.self) { unit in
+                                Text(unit.title).tag(unit)
+                            }
+                        }.fixedSize()
+                    }
+                }
+                HStack {
+                    TextField(session.fromDate ? "2026-01-01T00:00:00Z" : (session.unit == .seconds ? "1767225600" : "1767225600000"), text: $session.input)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(Text("Input"))
+                    Button("Convert") { session.run() }
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .buttonStyle(.borderedProminent)
                 }
                 Text(session.fromDate
                      ? String(localized: "Include Z or an explicit offset such as +08:00. Precision: up to milliseconds.")
                      : String(localized: "Units are explicit. Negative timestamps are supported."))
                     .font(.caption).foregroundStyle(.secondary)
-                Text("Timestamp Input").font(.headline)
-                PlainTextEditor(text: $session.input, label: String(localized: "Timestamp Input"))
-                    .frame(height: 64)
                 HStack {
                     Button("Current Time") { session.useCurrentTime() }
                     Button("Clear") { session.input = "" }
-                    Spacer()
-                    Button("Convert") { session.run() }
-                        .keyboardShortcut(.return, modifiers: .command)
-                        .buttonStyle(.borderedProminent)
                 }
                 if let error = session.error {
                     Text(error).foregroundStyle(.red).textSelection(.enabled)
@@ -50,6 +59,7 @@ struct DeveloperTimestampView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -58,8 +68,13 @@ struct DeveloperTimestampView: View {
             Text(title).font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .top) {
                 Text(value).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                Button { copy(value) } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+                .labelStyle(.iconOnly)
+                .help("Copy")
+                .accessibilityLabel(String(localized: "Copy \(title)"))
                 Spacer()
-                Button("Copy") { copy(value) }.accessibilityLabel(String(localized: "Copy \(title)"))
             }
         }
     }

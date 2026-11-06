@@ -5770,6 +5770,7 @@
       }
     },
     "Reading text under the pointer…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
