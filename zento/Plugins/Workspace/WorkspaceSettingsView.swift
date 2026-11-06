@@ -172,71 +172,67 @@ private struct WorkspaceCaptureView: View {
             if let errorMessage { SettingsErrorView(message: errorMessage) }
             Text("Each application restores its current main window, not a specific document.")
                 .font(.caption).foregroundStyle(.secondary)
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
-                    ForEach(snapshot.applications) { app in
-                        VStack(alignment: .leading, spacing: 6) {
-                            let window = app.windows.first(where: { $0.id == selection[app.id] }) ?? app.windows.first
-                            HStack(spacing: 12) {
-                                Toggle(app.name, isOn: Binding(get: { selection[app.id] != nil }, set: { enabled in
-                                    selection[app.id] = enabled ? app.windows.first?.id : nil
-                                    if !enabled, foreground == app.id { foreground = nil }
-                                }))
-                                .toggleStyle(.checkbox)
-                                .fontWeight(.medium)
-                                .lineLimit(1)
-                                .help(app.name)
-                                Spacer(minLength: 8)
-                                if let window {
-                                    Text(window.entry.displayName)
-                                        .font(.caption).foregroundStyle(.secondary)
-                                        .lineLimit(1).truncationMode(.middle)
-                                        .help("\(window.entry.displayName) · \(Int(window.size.width.rounded())) × \(Int(window.size.height.rounded())) pt")
-                                }
-                            }
+            List {
+                ForEach(snapshot.applications) { app in
+                    VStack(alignment: .leading, spacing: 6) {
+                        let window = app.windows.first(where: { $0.id == selection[app.id] }) ?? app.windows.first
+                        HStack(spacing: 12) {
+                            Toggle(app.name, isOn: Binding(get: { selection[app.id] != nil }, set: { enabled in
+                                selection[app.id] = enabled ? app.windows.first?.id : nil
+                                if !enabled, foreground == app.id { foreground = nil }
+                            }))
+                            .toggleStyle(.checkbox)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                            .help(app.name)
+                            Spacer(minLength: 8)
                             if let window {
-                                Group {
-                                    if app.windows.count > 1 {
-                                        Picker("Window to Save", selection: Binding(get: { selection[app.id] ?? app.windows.first?.id }, set: { selection[app.id] = $0 })) {
-                                            ForEach(app.windows) { candidate in
-                                                Text(candidate.title).tag(Optional(candidate.id))
-                                            }
-                                        }
-                                        .labelsHidden()
-                                        .disabled(selection[app.id] == nil)
-                                    } else {
-                                        Text(window.title).lineLimit(1).truncationMode(.middle)
-                                    }
-                                }
-                                .help(window.title)
-                                .padding(.leading, 22)
+                                Text(window.entry.displayName)
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .lineLimit(1).truncationMode(.middle)
+                                    .help("\(window.entry.displayName) · \(Int(window.size.width.rounded())) × \(Int(window.size.height.rounded())) pt")
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    if snapshot.applications.isEmpty {
-                        Text("No eligible windows on the current desktop.").foregroundStyle(.secondary)
-                    }
-                    if !snapshot.notices.isEmpty {
-                        Divider()
-                        DisclosureGroup("Skipped Windows") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                ForEach(snapshot.notices) { notice in
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(notice.applicationName).fontWeight(.medium)
-                                        if let title = notice.windowTitle {
-                                            Text(title).lineLimit(1).truncationMode(.middle).help(title)
+                        if let window {
+                            Group {
+                                if app.windows.count > 1 {
+                                    Picker("Window to Save", selection: Binding(get: { selection[app.id] ?? app.windows.first?.id }, set: { selection[app.id] = $0 })) {
+                                        ForEach(app.windows) { candidate in
+                                            Text(candidate.title).tag(Optional(candidate.id))
                                         }
-                                        Text(notice.reason).foregroundStyle(.secondary)
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .labelsHidden()
+                                    .disabled(selection[app.id] == nil)
+                                } else {
+                                    Text(window.title).lineLimit(1).truncationMode(.middle)
                                 }
-                            }.font(.caption).padding(.top, 6)
+                            }
+                            .help(window.title)
+                            .padding(.leading, 22)
                         }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if snapshot.applications.isEmpty {
+                    Text("No eligible windows on the current desktop.").foregroundStyle(.secondary)
+                }
+                if !snapshot.notices.isEmpty {
+                    DisclosureGroup("Skipped Windows") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(snapshot.notices) { notice in
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(notice.applicationName).fontWeight(.medium)
+                                    if let title = notice.windowTitle {
+                                        Text(title).lineLimit(1).truncationMode(.middle).help(title)
+                                    }
+                                    Text(notice.reason).foregroundStyle(.secondary)
+                                }.frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }.font(.caption).padding(.top, 6)
                     }
                 }
-                .padding(12)
             }
-            .background(Color(nsColor: .controlBackgroundColor), in: .rect(cornerRadius: 8))
+            .listStyle(.inset)
             Picker("Activate after restoring", selection: $foreground) {
                 Text("Do not activate").tag(String?.none)
                 ForEach(entries) { entry in Text(entry.applicationName).tag(Optional(entry.bundleID)) }
