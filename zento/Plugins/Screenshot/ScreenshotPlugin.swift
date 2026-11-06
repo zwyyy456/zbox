@@ -66,17 +66,17 @@ final class ScreenshotPlugin {
     }
     private var exportTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
-    private var uploadTask: Task<Void, Never>?
-    private var uploadID: UUID?
-    private var closesAfterUpload = false
-    private var pendingUpload: ScreenshotUploadSnapshot?
-    var canRetryUpload: Bool { pendingUpload != nil && !isUploading && !isExporting }
-    private(set) var isUploading = false {
-        didSet { window?.toolbar?.validateVisibleItems() }
-    }
-    private(set) var uploadProgress = 0.0
-    private(set) var uploadedURL: URL?
-    private(set) var uploadHostName = ""
+    @ObservationIgnored private lazy var upload = ScreenshotUploadSession(
+        hosting: hosting, coordinator: clipboardCoordinator,
+        status: { [weak self] in self?.statusMessage = $0 },
+        changed: { [weak self] in self?.window?.toolbar?.validateVisibleItems() },
+        completed: { [weak self] in self?.closeEditor() }
+    )
+    var canRetryUpload: Bool { upload.canRetryUpload && !isExporting }
+    var isUploading: Bool { upload.isUploading }
+    var uploadProgress: Double { upload.uploadProgress }
+    var uploadedURL: URL? { upload.uploadedURL }
+    var uploadHostName: String { upload.uploadHostName }
 
     init(defaults: UserDefaults = .standard, clipboardCoordinator: ClipboardAccessCoordinator) {
         self.defaults = defaults
@@ -145,19 +145,12 @@ final class ScreenshotPlugin {
         feedbackTask = nil
         cancelCapture()
         document?.ocr.invalidate()
-        discardUpload()
+        upload.discardUpload()
         window?.orderOut(nil)
         window?.contentView = nil
         window = nil
         cancelExport()
         document = nil
-    }
-
-    private func discardUpload() {
-        cancelUpload()
-        closesAfterUpload = false
-        uploadedURL = nil
-        pendingUpload = nil
     }
 
     private func cancelExport() {
@@ -297,13 +290,13 @@ final class ScreenshotPlugin {
     func finishEditing() {
         if hosting.automaticallyUpload {
             guard let document, !isUploading, !isExporting else { return }
-            beginUpload(image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: true)
+            upload.beginUpload(quality: jpegQuality, image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: true)
         } else { copyImage(closesEditor: true) }
     }
 
     func uploadImage(closesEditor: Bool = false) {
         guard let document, !isUploading, !isExporting else { return }
-        beginUpload(image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: closesEditor)
+        upload.beginUpload(quality: jpegQuality, image: document.image, edit: document.edit, format: format, copiesLink: true, closesEditor: closesEditor)
     }
 
     func uploadTestImage() {
@@ -313,123 +306,14 @@ final class ScreenshotPlugin {
         context.setFillColor(CGColor(red: 0.1, green: 0.4, blue: 0.8, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 160, height: 80))
         guard let image = context.makeImage() else { return }
-        beginUpload(image: image, edit: ScreenshotEdit(crop: CGRect(x: 0, y: 0, width: 160, height: 80)), format: .png, copiesLink: false)
+        upload.beginUpload(quality: jpegQuality, image: image, edit: ScreenshotEdit(crop: CGRect(x: 0, y: 0, width: 160, height: 80)), format: .png, copiesLink: false)
     }
 
-    func cancelUpload() {
-        if isUploading { statusMessage = String(localized: "Upload cancelled. The host may already have received the image.") }
-        uploadID = nil
-        uploadTask?.cancel()
-        uploadTask = nil
-        isUploading = false
-        uploadProgress = 0
-    }
-
-    func copyUploadedLink() {
-        guard let uploadedURL else { return }
-        if ScreenshotClipboard.copyLink(uploadedURL, format: hosting.linkFormat, to: .general, coordinator: clipboardCoordinator) {
-            statusMessage = String(localized: "Link copied.")
-            if closesAfterUpload { closeEditor() }
-        }
-    }
-
+    func cancelUpload() { upload.cancelUpload() }
+    func copyUploadedLink() { upload.copyUploadedLink() }
     func retryUpload() {
-        guard let snapshot = pendingUpload, !isUploading, !isExporting else { return }
-        guard hosting.profiles.contains(snapshot.profile) else {
-            statusMessage = String(localized: "The host configuration changed. Start a new upload to use the new settings.")
-            return
-        }
-        do {
-            let credentials = try ScreenshotCredentialStore.load(snapshot.profile.id)
-            try credentials.validate(for: snapshot.profile.provider)
-            let id = startUploadState(hostName: snapshot.profile.name)
-            let clipboardCount = snapshot.copiesLink ? NSPasteboard.general.changeCount : nil
-            uploadTask = Task { [weak self] in
-                do { try await self?.send(snapshot, credentials: credentials, id: id, clipboardCount: clipboardCount) }
-                catch { self?.handleUploadError(error, id: id) }
-            }
-        } catch { statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.keychain.localizedDescription }
-    }
-
-    private func beginUpload(image: CGImage, edit: ScreenshotEdit, format: ScreenshotFormat, copiesLink: Bool, closesEditor: Bool = false) {
-        guard let profile = hosting.selected else {
-            statusMessage = String(localized: "Choose an image host in Screenshot settings first.")
-            return
-        }
-        let credentials: ScreenshotHostCredentials
-        do {
-            try profile.validate()
-            credentials = try ScreenshotCredentialStore.load(profile.id)
-            try credentials.validate(for: profile.provider)
-        } catch {
-            statusMessage = (error as? ScreenshotUploadError)?.localizedDescription ?? ScreenshotUploadError.keychain.localizedDescription
-            return
-        }
-        let id = startUploadState(hostName: profile.name)
-        closesAfterUpload = closesEditor
-        pendingUpload = nil
-        let clipboardCount = copiesLink ? NSPasteboard.general.changeCount : nil
-        let quality = jpegQuality
-        let filename = "Screenshot-" + id.uuidString.lowercased() + "." + format.rawValue
-        uploadTask = Task { [weak self] in
-            do {
-                let data = try await ScreenshotRenderer.export(image: image, edit: edit, format: format, quality: quality)
-                try Task.checkCancellation()
-                guard let self, uploadID == id else { return }
-                let snapshot = ScreenshotUploadSnapshot(profile: profile, image: data, format: format,
-                    filename: filename, copiesLink: copiesLink)
-                pendingUpload = snapshot
-                try await send(snapshot, credentials: credentials, id: id, clipboardCount: clipboardCount)
-            } catch { self?.handleUploadError(error, id: id) }
-        }
-    }
-
-    private func startUploadState(hostName: String) -> UUID {
-        let id = UUID()
-        uploadID = id
-        isUploading = true
-        uploadProgress = 0
-        uploadHostName = hostName
-        uploadedURL = nil
-        statusMessage = nil
-        return id
-    }
-
-    private func send(_ snapshot: ScreenshotUploadSnapshot, credentials: ScreenshotHostCredentials, id: UUID, clipboardCount: Int?) async throws {
-        let linkFormat = hosting.linkFormat
-        let url = try await ScreenshotUploader.upload(profile: snapshot.profile, credentials: credentials,
-            image: snapshot.image, format: snapshot.format, filename: snapshot.filename) { [weak self] value in
-                Task { @MainActor [weak self] in
-                    guard self?.uploadID == id else { return }
-                    self?.uploadProgress = value
-                }
-            }
-        try Task.checkCancellation()
-        guard uploadID == id else { return }
-        uploadedURL = url
-        isUploading = false
-        uploadID = nil
-        uploadTask = nil
-        pendingUpload = nil
-        statusMessage = String(localized: "Upload complete. The link is ready to copy.")
-        if let clipboardCount {
-            if ScreenshotClipboard.copyLink(url, format: linkFormat, to: .general,
-                    coordinator: clipboardCoordinator, ifUnchangedSince: clipboardCount) {
-                statusMessage = String(localized: "Upload complete. Link copied.")
-                if closesAfterUpload { closeEditor() }
-            } else {
-                statusMessage = String(localized: "Upload complete. Your clipboard changed, so the link was not copied. Use Copy Link when ready.")
-            }
-        }
-    }
-
-    private func handleUploadError(_ error: Error, id: UUID) {
-        guard !Task.isCancelled, uploadID == id else { return }
-        isUploading = false
-        uploadID = nil
-        uploadTask = nil
-        statusMessage = (error as? ScreenshotUploadError)?.localizedDescription
-            ?? (error as? ScreenshotError)?.localizedDescription ?? ScreenshotUploadError.network.localizedDescription
+        guard !isExporting else { return }
+        upload.retryUpload()
     }
 
     func refreshScreenRecordingPermission() {
@@ -449,7 +333,7 @@ final class ScreenshotPlugin {
 
     private func capture(_ mode: ScreenshotMode, purpose: CapturePurpose = .edit) {
         cancelCapture()
-        discardUpload()
+        upload.discardUpload()
         cancelExport()
         statusMessage = nil
         needsScreenRecordingPermission = false
