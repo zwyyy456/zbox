@@ -25,18 +25,15 @@ actor ExtensionConnection {
         let clock = ContinuousClock()
         var decoder = ExtensionFrameDecoder()
         var stderr = Data(), truncated = false
-        var stoppingAt: ContinuousClock.Instant?
+        var termination = ChildProcess.Termination(pid: child.pid)
         var failure: (any Error)?
-        var exited = false
         var status: Int32 = 0
         do { try send(initial) } catch { failure = error }
         while true {
-            var info = siginfo_t()
-            if waitid(P_PID, id_t(child.pid), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == child.pid { exited = true }
-            if stoppingAt == nil && (Task.isCancelled || failure != nil || exited) {
-                stoppingAt = clock.now
+            termination.observeExit()
+            if termination.startedAt == nil && (Task.isCancelled || failure != nil || termination.exited) {
                 await stopping()
-                kill(-child.pid, SIGTERM)
+                termination.begin(at: clock.now)
             }
             var outputDrained = false, errorDrained = false
             var buffer = [UInt8](repeating: 0, count: 8192)
@@ -45,7 +42,7 @@ actor ExtensionConnection {
                     let count = read(fd, &buffer, buffer.count)
                     guard count > 0 else {
                         if isError { errorDrained = true } else { outputDrained = true }
-                        if count == 0 && !isError && !exited && stoppingAt == nil { failure = ExtensionFailure("The extension output pipe closed.") }
+                        if count == 0 && !isError && !termination.exited && termination.startedAt == nil { failure = ExtensionFailure("The extension output pipe closed.") }
                         break
                     }
                     if isError {
@@ -59,14 +56,13 @@ actor ExtensionConnection {
                     }
                 }
             }
-            if stoppingAt == nil, !outgoing.isEmpty, let input = child.input {
+            if termination.startedAt == nil, !outgoing.isEmpty, let input = child.input {
                 let count = outgoing.withUnsafeBytes { write(input.fileDescriptor, $0.baseAddress, min($0.count, 65536)) }
                 if count > 0 { outgoing.removeFirst(count) }
                 else if count < 0 && errno != EAGAIN && errno != EINTR { failure = ExtensionFailure("The extension input pipe closed.") }
             }
-            if let stoppingAt, (exited && outputDrained && errorDrained) || clock.now - stoppingAt >= .seconds(2) {
-                kill(-child.pid, SIGKILL)
-                while waitpid(child.pid, &status, 0) < 0 && errno == EINTR {}
+            if termination.startedAt != nil, (termination.exited && outputDrained && errorDrained) || termination.graceExpired(at: clock.now) {
+                status = termination.reap()
                 break
             }
             // Cancellation still needs a non-cancelling wait while the process group is reaped.

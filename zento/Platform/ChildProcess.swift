@@ -62,6 +62,38 @@ nonisolated struct ChildProcess: Sendable {
                             output: out.fileHandleForReading, error: err.fileHandleForReading)
     }
 
+    /// The caller keeps draining its pipes while this state owns group termination.
+    struct Termination {
+        private let pid: pid_t
+        private(set) var exited = false
+        private(set) var startedAt: ContinuousClock.Instant?
+
+        init(pid: pid_t) { self.pid = pid }
+
+        mutating func observeExit() {
+            var info = siginfo_t()
+            if waitid(P_PID, id_t(pid), &info, WEXITED | WNOHANG | WNOWAIT) == 0,
+               info.si_pid == pid { exited = true }
+        }
+
+        mutating func begin(at now: ContinuousClock.Instant) {
+            guard startedAt == nil else { return }
+            startedAt = now
+            kill(-pid, SIGTERM)
+        }
+
+        func graceExpired(at now: ContinuousClock.Instant) -> Bool {
+            startedAt.map { now - $0 >= .seconds(2) } ?? false
+        }
+
+        func reap() -> Int32 {
+            kill(-pid, SIGKILL)
+            var status: Int32 = 0
+            while waitpid(pid, &status, 0) < 0 && errno == EINTR {}
+            return status
+        }
+    }
+
     func close() {
         try? input?.close(); try? output.close(); try? error.close()
     }

@@ -49,8 +49,8 @@ nonisolated enum ScriptRunner {
         let pid = child.pid, outFD = child.output.fileDescriptor, errFD = child.error.fileDescriptor
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: .seconds(invocation.timeout))
-        var stoppingAt: ContinuousClock.Instant?
-        var cancelled = false, timedOut = false, exited = false
+        var termination = ChildProcess.Termination(pid: pid)
+        var cancelled = false, timedOut = false
         var output = ScriptOutput()
         var lastPublish = clock.now
         var status: Int32 = 0
@@ -58,21 +58,18 @@ nonisolated enum ScriptRunner {
             drain(outFD, into: &output.stdout, truncated: &output.truncated)
             drain(errFD, into: &output.stderr, truncated: &output.truncated)
             // Leave the child waitable until group cleanup, preventing its PID from being reused.
-            var info = siginfo_t()
-            if waitid(P_PID, id_t(pid), &info, WEXITED | WNOHANG | WNOWAIT) == 0, info.si_pid == pid { exited = true }
-            if stoppingAt == nil {
+            termination.observeExit()
+            if termination.startedAt == nil {
                 cancelled = Task.isCancelled
-                timedOut = !cancelled && !exited && clock.now >= deadline
-                if cancelled || timedOut || exited {
-                    kill(-pid, SIGTERM)
-                    stoppingAt = clock.now
+                timedOut = !cancelled && !termination.exited && clock.now >= deadline
+                if cancelled || timedOut || termination.exited {
+                    termination.begin(at: clock.now)
                 }
             }
-            if let stoppingAt {
+            if termination.startedAt != nil {
                 // A normally completed script must not leave background jobs owned by zento.
-                if (exited && !cancelled && !timedOut) || clock.now - stoppingAt >= .seconds(2) {
-                    kill(-pid, SIGKILL)
-                    while waitpid(pid, &status, 0) < 0 && errno == EINTR {}
+                if (termination.exited && !cancelled && !timedOut) || termination.graceExpired(at: clock.now) {
+                    status = termination.reap()
                     drain(outFD, into: &output.stdout, truncated: &output.truncated)
                     drain(errFD, into: &output.stderr, truncated: &output.truncated)
                     break
