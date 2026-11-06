@@ -32,6 +32,7 @@ final class TextLookupPlugin {
         clipboardCoordinator: ClipboardAccessCoordinator,
         hotkeyRegistrar: any HotkeyRegistering,
         capturer: any TextCapturing = AccessibilityTextCapturer(),
+        session: TextLookupSessionModel? = nil,
         isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {
         clipboardCapturer = ClipboardSelectionCapturer(coordinator: clipboardCoordinator)
@@ -39,12 +40,11 @@ final class TextLookupPlugin {
         self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer
         self.isAccessibilityTrusted = isAccessibilityTrusted
-        session = TextLookupSessionModel(
+        self.session = session ?? TextLookupSessionModel(
             flashDict: try? FlashDictBridgeClient.production()
         )
         triggerMonitor.onMouseDown = { [weak self] in
             self?.panelController.hide()
-            self?.cancelCapture()
         }
         triggerMonitor.onSelection = { [weak self] point, explicit in
             self?.lookupSelection(at: point, explicit: explicit)
@@ -137,13 +137,13 @@ final class TextLookupPlugin {
         )
     }
 
-    private func beginCapture(
+    func beginCapture(
         _ request: TextCaptureRequest,
         delay: Duration? = nil,
         reportFailure: Bool,
         completion: @escaping (TextLookupCapture) -> Void
     ) {
-        captureTask?.cancel()
+        panelController.hide()
         captureAttemptID = request.id
         captureTask = Task { [weak self, capturer] in
             guard let self else { return }

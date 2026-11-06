@@ -27,22 +27,21 @@ struct TextLookupPresentationTests {
     }
 
     @Test @MainActor
-    func explicitCaptureClearsThePreviousSession() {
+    func clearingInvalidatesThePreviousSession() {
         let model = TextLookupSessionModel()
         model.beginLookup(
             with: capture(id: UUID(), term: "previous"),
             targetLanguageIdentifier: "zh-Hans"
         )
 
-        model.beginCapture()
+        model.clear()
 
-        #expect(model.isCapturing)
         #expect(model.capture?.id == nil)
         #expect(model.captureError == nil)
         if case .idle = model.dictionaryState {
-            // Expected while text is being captured.
+            // Clearing releases the previous lookup state.
         } else {
-            Issue.record("Expected dictionary state to reset before capture")
+            Issue.record("Expected dictionary state to reset after clearing")
         }
     }
 

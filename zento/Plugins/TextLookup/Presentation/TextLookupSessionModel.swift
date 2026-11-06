@@ -99,7 +99,6 @@ final class TextLookupSessionModel {
 
     private(set) var capture: TextLookupCapture?
     private(set) var captureError: TextCaptureError?
-    private(set) var isCapturing = false
     private(set) var dictionaryState: TextLookupDictionaryState = .idle
     private(set) var selectionStates: [String: SenseSelectionState] = [:]
     private(set) var surfaceMessage: String?
@@ -112,21 +111,8 @@ final class TextLookupSessionModel {
         self.flashDict = flashDict
     }
 
-    func beginCapture() {
-        cancelWork()
-        isCapturing = true
-        capture = nil
-        captureError = nil
-        dictionaryState = .idle
-        selectionStates = [:]
-        surfaceMessage = nil
-        translationRequest = nil
-        translationState = .sentenceUnavailable
-    }
-
     func beginLookup(with capture: TextLookupCapture, targetLanguageIdentifier: String) {
         cancelWork()
-        isCapturing = false
         self.capture = capture
         captureError = nil
         selectionStates = [:]
@@ -137,7 +123,6 @@ final class TextLookupSessionModel {
 
     func present(_ error: TextCaptureError) {
         cancelWork()
-        isCapturing = false
         capture = nil
         captureError = error
         dictionaryState = .idle
@@ -209,7 +194,6 @@ final class TextLookupSessionModel {
 
     func clear() {
         cancelWork()
-        isCapturing = false
         capture = nil
         captureError = nil
         dictionaryState = .idle
