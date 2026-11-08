@@ -2,7 +2,6 @@ import AppKit
 
 @MainActor
 final class ClipboardHistoryPanel: TransientPanel {
-    var navigate: ((Int) -> Void)?
     var paste: (() -> Void)?
     var pasteItem: ((Int) -> Void)?
     var copy: (() -> Void)?
@@ -40,14 +39,17 @@ final class ClipboardHistoryPanel: TransientPanel {
                 copy?()
                 return
             }
-            if let action = SearchKeyboardMapper.action(keyCode: event.keyCode,
-                charactersIgnoringModifiers: event.charactersIgnoringModifiers, modifierFlags: event.modifierFlags) {
-                switch action {
-                case .moveSelection(let offset): navigate?(offset)
-                case .execute: paste?()
-                case .dismiss: dismiss?()
+            if modifiers.isEmpty {
+                switch event.keyCode {
+                case 36, 76:
+                    paste?()
+                    return
+                case 53:
+                    dismiss?()
+                    return
+                default:
+                    break
                 }
-                return
             }
         }
         super.sendEvent(event)

@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Keeps native search editing and clearing while the panel owns command keys.
+/// Native search editing with optional candidate navigation through text commands.
 struct NativeSearchField: NSViewRepresentable {
     let title: String
     @Binding var text: String
     @Binding var isFocused: Bool
+    var moveSelection: ((Int) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -39,6 +40,19 @@ struct NativeSearchField: NSViewRepresentable {
 
         @objc func searchChanged(_ field: NSSearchField) {
             parent.text = field.stringValue
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy command: Selector) -> Bool {
+            guard !textView.hasMarkedText(), let moveSelection = parent.moveSelection else { return false }
+            switch command {
+            case #selector(NSResponder.moveDown(_:)), #selector(NSResponder.insertTab(_:)):
+                moveSelection(1)
+            case #selector(NSResponder.moveUp(_:)), #selector(NSResponder.insertBacktab(_:)):
+                moveSelection(-1)
+            default:
+                return false
+            }
+            return true
         }
 
         func controlTextDidBeginEditing(_ notification: Notification) {

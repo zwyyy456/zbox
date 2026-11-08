@@ -3,7 +3,7 @@ import SwiftUI
 struct RootSearchView: View {
     let environment: AppEnvironment
 
-    @FocusState private var isSearchFocused: Bool
+    @State private var isSearchFocused = false
 
     var body: some View {
         @Bindable var session = environment.rootSearch
@@ -12,16 +12,11 @@ struct RootSearchView: View {
         let actions = selected.map { environment.rootSearchActions(for: $0.id) } ?? []
 
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                TextField("Search apps and commands", text: $session.searchQuery)
-                    .textFieldStyle(.plain)
-                    .focused($isSearchFocused)
-            }
-            .font(.title2)
-            .padding(18)
+            NativeSearchField(title: String(localized: "Search apps and commands"),
+                              text: $session.searchQuery, isFocused: $isSearchFocused,
+                              moveSelection: environment.moveSelection)
+                .controlSize(.large)
+                .padding(18)
 
             Divider()
 

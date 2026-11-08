@@ -9,7 +9,7 @@ struct ClipboardHistoryView: View {
         VStack(spacing: 0) {
             ToolSearchBar {
                 NativeSearchField(title: String(localized: "Search Clipboard History"), text: $plugin.query,
-                                  isFocused: $searchFocused)
+                                  isFocused: $searchFocused, moveSelection: plugin.moveSelection)
             } accessory: {
                 Picker("Filter", selection: $plugin.filter) {
                     ForEach(ClipboardHistoryFilter.allCases) { Text($0.title).tag($0) }
@@ -19,42 +19,52 @@ struct ClipboardHistoryView: View {
             }
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    List(selection: $plugin.selectedID) {
-                        ForEach(Array(plugin.entries.enumerated()), id: \.element.id) { index, entry in
-                            HStack(spacing: 10) {
-                                ClipboardHistoryRowImage(plugin: plugin, entry: entry)
-                                Text(entry.title.prefix(256).split(whereSeparator: \.isWhitespace).joined(separator: " "))
-                                    .lineLimit(1).truncationMode(.tail)
-                                Spacer(minLength: 4)
-                                if entry.fileURLs.count > 1 {
-                                    Text("\(entry.fileURLs.count) items").font(.caption).foregroundStyle(.secondary)
+                    ScrollViewReader { proxy in
+                        List(selection: $plugin.selectedID) {
+                            ForEach(Array(plugin.entries.enumerated()), id: \.element.id) { index, entry in
+                                HStack(spacing: 10) {
+                                    ClipboardHistoryRowImage(plugin: plugin, entry: entry)
+                                    Text(entry.title.prefix(256).split(whereSeparator: \.isWhitespace).joined(separator: " "))
+                                        .lineLimit(1).truncationMode(.tail)
+                                    Spacer(minLength: 4)
+                                    if entry.fileURLs.count > 1 {
+                                        Text("\(entry.fileURLs.count) items").font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    if entry.pinned { Image(systemName: "pin.fill").font(.caption).accessibilityLabel("Pinned") }
+                                    if index < 9 {
+                                        Text("⌘\(index + 1)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                                    }
                                 }
-                                if entry.pinned { Image(systemName: "pin.fill").font(.caption).accessibilityLabel("Pinned") }
-                                if index < 9 {
-                                    Text("⌘\(index + 1)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                                .padding(.vertical, 6)
+                                .listRowSeparator(.hidden)
+                                .id(entry.id)
+                                .tag(entry.id)
+                                .contextMenu {
+                                    Button("Paste") { plugin.selectedID = entry.id; plugin.pasteSelection() }
+                                    Button("Copy") { plugin.selectedID = entry.id; plugin.copySelection() }
+                                    Button(entry.pinned ? String(localized: "Unpin") : String(localized: "Pin")) {
+                                        plugin.selectedID = entry.id
+                                        plugin.togglePin()
+                                    }
+                                    Divider()
+                                    Button("Delete", role: .destructive) { plugin.selectedID = entry.id; plugin.deleteSelection() }
                                 }
                             }
-                            .padding(.vertical, 6)
-                            .listRowSeparator(.hidden)
-                            .tag(entry.id)
-                            .contextMenu {
-                                Button("Paste") { plugin.selectedID = entry.id; plugin.pasteSelection() }
-                                Button("Copy") { plugin.selectedID = entry.id; plugin.copySelection() }
-                                Button(entry.pinned ? String(localized: "Unpin") : String(localized: "Pin")) {
-                                    plugin.selectedID = entry.id
-                                    plugin.togglePin()
-                                }
-                                Divider()
-                                Button("Delete", role: .destructive) { plugin.selectedID = entry.id; plugin.deleteSelection() }
+                            if plugin.hasMoreEntries {
+                                Button("Load More", action: plugin.loadMore).listRowSeparator(.hidden)
                             }
                         }
-                        if plugin.hasMoreEntries {
-                            Button("Load More", action: plugin.loadMore).listRowSeparator(.hidden)
+                        .listStyle(.inset)
+                        .padding(.vertical, 8)
+                        .scrollContentBackground(.hidden)
+                        .onChange(of: plugin.selectedID) { _, id in
+                            if let id { proxy.scrollTo(id) }
+                            // Native List navigation must also be able to continue into the next page.
+                            if id != nil, id == plugin.entries.last?.id, plugin.hasMoreEntries {
+                                plugin.loadMore()
+                            }
                         }
                     }
-                    .listStyle(.inset)
-                    .padding(.vertical, 8)
-                    .scrollContentBackground(.hidden)
                     if geometry.size.width >= 640 {
                         Divider()
                         ScrollView {

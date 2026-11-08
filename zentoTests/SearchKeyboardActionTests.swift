@@ -45,11 +45,9 @@ struct SearchKeyboardActionTests {
             panel.contentView = editor
             #expect(panel.makeFirstResponder(editor))
         }
-        var movements: [Int] = []
         var executions = 0
         var dismissals = 0
         var actions = 0
-        panel.onMoveSelection = { movements.append($0) }
         panel.onReturn = { executions += 1 }
         panel.onEscape = { dismissals += 1 }
         panel.onToggleActions = { actions += 1 }
@@ -64,13 +62,16 @@ struct SearchKeyboardActionTests {
                 isARepeat: false, keyCode: code))
             #expect(!panel.handleCommandKey(event))
         }
-        #expect(movements.isEmpty && executions == 0 && dismissals == 0 && actions == 0)
+        #expect(executions == 0 && dismissals == 0 && actions == 0)
         editor.unmarkText()
         let down = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
             modifierFlags: [], timestamp: 0, windowNumber: panel.windowNumber, context: nil,
             characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: 125))
+        #expect(!panel.handleCommandKey(down))
+        var actionOffset = 0
+        panel.moveActionSelection = { actionOffset = $0; return true }
         #expect(panel.handleCommandKey(down))
-        #expect(movements == [1])
+        #expect(actionOffset == 1)
     }
 
     private func action(

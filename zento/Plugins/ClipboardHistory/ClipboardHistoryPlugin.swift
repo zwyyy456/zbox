@@ -385,7 +385,6 @@ final class ClipboardHistoryPlugin {
             let panel = ClipboardHistoryPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480),
                                 styleMask: [.borderless, .resizable, .nonactivatingPanel],
                                 backing: .buffered, defer: false)
-            panel.navigate = { [weak self] in self?.moveSelection(by: $0) }
             panel.paste = { [weak self] in self?.pasteSelection() }
             panel.pasteItem = { [weak self] in self?.pasteItem(at: $0) }
             panel.copy = { [weak self] in self?.copySelection() }

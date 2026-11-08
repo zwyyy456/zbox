@@ -34,8 +34,10 @@ final class SearchPanelController: NSObject {
         panel.onReturn = { [weak self] in
             self?.executeSelectedCommand()
         }
-        panel.onMoveSelection = { [weak self] offset in
-            self?.moveSelection(by: offset)
+        panel.moveActionSelection = { [weak environment] offset in
+            guard let environment, environment.rootSearch.isShowingRootSearchActions else { return false }
+            environment.moveSelection(by: offset)
+            return true
         }
         panel.onEscape = { [weak environment] in
             guard let environment else { return }
@@ -109,12 +111,6 @@ final class SearchPanelController: NSObject {
         environment.rootSearch.isShowingRootSearchActions.toggle()
     }
 
-    private func moveSelection(by offset: Int) {
-        guard let environment else { return }
-        synchronizeSearchQuery(with: environment)
-        environment.moveSelection(by: offset)
-    }
-
     private func synchronizeSearchQuery(with environment: AppEnvironment) {
         guard let searchField = firstTextField(in: panel.contentView),
               searchField.stringValue != environment.rootSearch.searchQuery else {
@@ -141,8 +137,8 @@ final class SearchPanelController: NSObject {
 final class SearchPanel: TransientPanel {
     var onReturn: (() -> Void)?
     var onEscape: (() -> Void)?
-    var onMoveSelection: ((Int) -> Void)?
     var onToggleActions: (() -> Void)?
+    var moveActionSelection: ((Int) -> Bool)?
 
 
     override func sendEvent(_ event: NSEvent) {
@@ -166,7 +162,7 @@ final class SearchPanel: TransientPanel {
             modifierFlags: event.modifierFlags
         ) else { return false }
         switch action {
-        case .moveSelection(let offset): onMoveSelection?(offset)
+        case .moveSelection(let offset): return moveActionSelection?(offset) ?? false
         case .execute: onReturn?()
         case .dismiss: onEscape?()
         }

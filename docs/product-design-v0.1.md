@@ -114,7 +114,7 @@ Window Management 默认关闭，但窗口命令始终保留在 Root Search 中�
 | ID | 优先级 | 需求 | 验收摘要 |
 | --- | --- | --- | --- |
 | FR-01 | P0 | 全局快捷键唤起/隐藏 Root Search | 在普通前台应用、全屏应用和不同 Space 中行为一致 |
-| FR-02 | P0 | 键盘完成查询、选择、执行和退出 | 输入焦点默认在搜索框；方向键、`Control-N` / `Control-P`、Return、Escape 行为明确 |
+| FR-02 | P0 | 键盘完成查询、选择、执行和退出 | 输入焦点默认在搜索框；上下键、`Control-N` / `Control-P`、`Tab` / `Shift-Tab` 在保持输入焦点时选择下一项／上一项；Return 执行，Escape 关闭 |
 | FR-03 | P0 | 枚举、搜索并启动本机应用 | 支持应用名、中文应用名的全拼/首字母和简单模糊匹配；已运行应用可被激活 |
 | FR-04 | P0 | 搜索并执行内置 Command | App Launch 与内置命令使用同一个 Registry 和结果模型 |
 | FR-05 | P0 | 窗口布局、居中、恢复和跨显示器移动（见 Window Management 产品约定） | Window Management 默认关闭但命令保持可发现；启用后作用于唤起 zento 前的目标窗口，并按当前显示器可用区域计算 |
