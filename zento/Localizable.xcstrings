@@ -5355,7 +5355,8 @@
             "value" : "操作"
           }
         }
-      }
+      },
+      "extractionState" : "stale"
     },
     "Operator" : {
       "localizations" : {
@@ -8743,7 +8744,8 @@
             "value" : "时间戳输入"
           }
         }
-      }
+      },
+      "extractionState" : "stale"
     },
     "Timestamp to Date" : {
       "localizations" : {
@@ -9689,6 +9691,25 @@
     },
     "zsh" : {
       "shouldTranslate" : false
+    },
+    "1767225600" : {
+
+    },
+    "1767225600000" : {
+
+    },
+    "2026-01-01T00:00:00Z" : {
+
+    },
+    "Capture processing could not keep up. Finish with the captured content or retry." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图处理未能跟上采集速度。可完成已捕获的内容，或回到最后预览位置重试。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

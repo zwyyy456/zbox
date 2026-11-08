@@ -51,7 +51,7 @@ enum ScreenshotCapture {
     }
 
     static func image(content: SCShareableContent, screen: NSScreen,
-                      area: CGRect? = nil, window: SCWindow? = nil) async throws -> CGImage {
+                      area: CGRect? = nil, window: SCWindow? = nil, alignToPixels: Bool = false) async throws -> CGImage {
         let filter: SCContentFilter
         let config = SCStreamConfiguration()
         config.showsCursor = false
@@ -66,7 +66,14 @@ enum ScreenshotCapture {
                 throw ScreenshotError.unavailable
             }
             filter = SCContentFilter(display: display, excludingWindows: [])
-            let rect = ScreenshotGeometry.sourceRect(area ?? screen.frame, in: screen.frame)
+            var rect = ScreenshotGeometry.sourceRect(area ?? screen.frame, in: screen.frame)
+            if alignToPixels {
+                let scale = CGFloat(filter.pointPixelScale)
+                let left = ceil(rect.minX * scale), top = ceil(rect.minY * scale)
+                rect = CGRect(x: left / scale, y: top / scale,
+                    width: (floor(rect.maxX * scale) - left) / scale,
+                    height: (floor(rect.maxY * scale) - top) / scale)
+            }
             config.sourceRect = rect
             config.width = Int((rect.width * CGFloat(filter.pointPixelScale)).rounded())
             config.height = Int((rect.height * CGFloat(filter.pointPixelScale)).rounded())

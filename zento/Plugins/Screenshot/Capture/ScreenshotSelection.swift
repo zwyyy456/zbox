@@ -43,7 +43,7 @@ final class ScreenshotSelection {
 
     func finishChoosing() {
         for panel in panels {
-            (panel.contentView as? ScreenshotSelectionView)?.selected = nil
+            (panel.contentView as? ScreenshotSelectionView)?.finishChoosing()
             panel.ignoresMouseEvents = true
         }
     }
@@ -58,7 +58,7 @@ private final class ScreenshotSelectionPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
-private final class ScreenshotSelectionView: NSView {
+final class ScreenshotSelectionView: NSView {
     private static let logger = Logger(subsystem: "tech.hyperseek.zento", category: "ScreenshotSelection")
     private static let cameraCursor: NSCursor = {
         let symbol = NSImage(systemSymbolName: "camera.fill", accessibilityDescription: nil)!
@@ -80,10 +80,20 @@ private final class ScreenshotSelectionView: NSView {
     var windowFrames: [(SCWindow, CGRect)] = []
     var selected: ((CGRect?, SCWindow?) -> Void)?
     var cancel: (() -> Void)?
+    private var isChoosing = true
     private var anchor: CGPoint?
     private var selection: CGRect?
     private var hoveredWindow: SCWindow?
     private var mouseTracking: NSTrackingArea?
+    func finishChoosing() {
+        selected = nil
+        isChoosing = false
+        if mode == .scrolling {
+            needsDisplay = true
+            displayIfNeeded()
+        }
+    }
+
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -151,6 +161,9 @@ private final class ScreenshotSelectionView: NSView {
         shade.windingRule = .evenOdd
         NSColor.black.withAlphaComponent(0.3).setFill()
         shade.fill()
+        // The scrolling session draws its guide outside the captured area. A centered
+        // selection stroke would otherwise become fixed content in every frame.
+        if mode == .scrolling && !isChoosing { return }
         if let selection {
             if mode == .window {
                 NSColor.controlAccentColor.withAlphaComponent(0.22).setFill()

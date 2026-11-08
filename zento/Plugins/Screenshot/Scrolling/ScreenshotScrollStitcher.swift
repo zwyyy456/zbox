@@ -1,10 +1,15 @@
+import Accelerate
 import CoreGraphics
 import Foundation
-import Vision
+import OSLog
 
 /// ScreenCaptureKit frames stay at native resolution. Only independently copied new strips
 /// survive ingestion; cropping alone can retain the entire source frame's backing storage.
 actor ScreenshotScrollStitcher {
+    private static let logger = Logger(subsystem: "tech.hyperseek.zento", category: "ScreenshotScroll")
+    private var frameNumber = 0
+    private var unmatchedSince: ContinuousClock.Instant?
+
     enum Failure: Error { case alignment, limit, dimensions }
     struct Update: Sendable {
         let preview: CGImage
@@ -15,24 +20,48 @@ actor ScreenshotScrollStitcher {
     private var reference: GrayFrame?
     private var width = 0
     private var height = 0
+    private var roundingRemainder = 0.0
 
     init(maximumPixels: Int = 32_000_000) { self.maximumPixels = maximumPixels }
 
     func append(_ image: CGImage) throws -> Update? {
-        // Vision/CoreGraphics temporaries must drain per frame, not at the end of a
+        // CoreGraphics temporaries must drain per frame, not at the end of a
         // potentially minutes-long capture task.
         try autoreleasepool { try appendFrame(image) }
     }
 
+    func append(_ image: CGImage, capturedAt: ContinuousClock.Instant) throws -> Update? {
+        do {
+            let update = try append(image)
+            unmatchedSince = nil
+            return update
+        } catch Failure.alignment {
+            if let unmatchedSince, unmatchedSince.duration(to: capturedAt) >= .milliseconds(500) {
+                self.unmatchedSince = nil
+                throw Failure.alignment
+            }
+            if unmatchedSince == nil { unmatchedSince = capturedAt }
+            Self.logger.info("Waiting for reliable overlap; reference unchanged")
+            return nil
+        }
+    }
+
     private func appendFrame(_ image: CGImage) throws -> Update? {
         try Task.checkCancellation()
+        frameNumber += 1
+        Self.logger.info("Frame \(self.frameNumber): size=\(image.width)x\(image.height), acceptedHeight=\(self.height)")
         guard image.width >= 64, image.height >= 64,
               image.width * image.height <= 16_000_000 else { throw Failure.dimensions }
         if reference != nil, image.width != width || image.height != reference?.height { throw Failure.dimensions }
         let gray = try GrayFrame(image)
         let addition: Int
+        var remainder = roundingRemainder
         if let reference {
-            addition = try Self.displacement(previous: reference, current: gray)
+            let movement = try Self.displacement(previous: reference, current: gray)
+            if movement == 0 { return nil }
+            let accumulated = movement + remainder
+            addition = Int(accumulated.rounded())
+            remainder = accumulated - Double(addition)
             if addition == 0 { return nil }
         } else { addition = image.height }
         guard image.width * (height + addition) <= maximumPixels,
@@ -49,8 +78,10 @@ actor ScreenshotScrollStitcher {
         // must leave the last user-visible result and reference unchanged.
         strips = nextStrips
         reference = gray
+        roundingRemainder = remainder
         width = image.width
         height = nextHeight
+        Self.logger.info("Accepted: addedRows=\(addition), totalRows=\(self.height), strips=\(self.strips.count)")
         return Update(preview: preview, height: height)
     }
 
@@ -86,7 +117,8 @@ actor ScreenshotScrollStitcher {
 
     private struct GrayFrame {
         let pixels: [UInt8]
-        let image: CGImage
+        let samples: [Float]
+        let sampleWidth: Int
         let width: Int
         let height: Int
         init(_ source: CGImage) throws {
@@ -96,86 +128,92 @@ actor ScreenshotScrollStitcher {
                   let data = context.data else { throw ScreenshotError.captureFailed }
             context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
             pixels = Array(UnsafeBufferPointer(start: data.assumingMemoryBound(to: UInt8.self), count: width * height))
-            // Vision works on a bounded image, while overlap validation uses native pixels.
-            let scale = min(1, 1024 / Double(max(width, height)))
-            let w = max(1, Int(Double(width) * scale)), h = max(1, Int(Double(height) * scale))
-            guard let small = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8,
-                bytesPerRow: w, space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else {
-                throw ScreenshotError.captureFailed
+            let columns = Array(stride(from: 0, to: width, by: max(1, width / 96)))
+            sampleWidth = columns.count
+            var samples = [Float]()
+            samples.reserveCapacity(sampleWidth * height)
+            for y in 0..<height {
+                for x in columns { samples.append(Float(pixels[y * width + x])) }
             }
-            small.draw(source, in: CGRect(x: 0, y: 0, width: w, height: h))
-            guard let result = small.makeImage() else { throw ScreenshotError.captureFailed }
-            image = result
+            self.samples = samples
+
         }
     }
 
-    private static func displacement(previous: GrayFrame, current: GrayFrame) throws -> Int {
-        // Keep the last accepted reference for tiny movements: repeatedly updating it would lose rows.
-        if match(previous, current, offset: 0) >= 0.985 { return 0 }
-        let request = VNTranslationalImageRegistrationRequest(targetedCGImage: previous.image)
-        try VNImageRequestHandler(cgImage: current.image).perform([request])
-        try Task.checkCancellation()
-        guard let result = request.results?.first, result.confidence >= 0.8,
-              abs(result.alignmentTransform.tx) <= 2 else { throw Failure.alignment }
-        let scale = Double(current.height) / Double(current.image.height)
-        let estimate = Int((abs(result.alignmentTransform.ty) * scale).rounded())
-        let radius = max(2, Int(ceil(scale * 2)))
-        var best = 0, quality = 0.0
-        var ambiguous = false
-        // Validate both signs against actual pixels, independent of Vision's coordinate convention.
-        for distance in max(1, estimate - radius)...max(1, estimate + radius) {
+    private static func displacement(previous: GrayFrame, current: GrayFrame) throws -> Double {
+        if previous.pixels == current.pixels { return 0 }
+        let maximum = current.height - max(32, current.height * 15 / 100)
+        var scores = [Double](repeating: -1, count: maximum + 1)
+        var best = 0
+        for offset in 0...maximum {
             try Task.checkCancellation()
-            guard distance <= current.height * 3 / 4 else { continue }
-            for offset in [distance, -distance] {
-                let score = match(previous, current, offset: offset)
-                if score > quality {
-                    best = offset; quality = score; ambiguous = false
-                } else if score == quality { ambiguous = true }
+            scores[offset] = correlation(previous, current, offset: Double(offset))
+            if scores[offset] > scores[best] { best = offset }
+        }
+        // Neighboring rows belong to one peak. Compare independent peaks instead.
+        let competitor = scores.indices.filter { abs($0 - best) > 3 }.map { scores[$0] }.max() ?? -1
+        let quality = scores[best]
+        logger.info("Vertical candidate: offset=\(best), correlation=\(quality), otherPeak=\(competitor), overlap=\(current.height - best)")
+        var movement = Double(best)
+        // Refine on the original pixels, including fractional scroll positions.
+        for step in -3...3 {
+            let candidate = Double(best) + Double(step) / 4
+            guard candidate >= 0, candidate <= Double(maximum) else { continue }
+            if correlation(previous, current, offset: candidate) > correlation(previous, current, offset: movement) {
+                movement = candidate
             }
         }
-        guard best > 0, quality >= 0.96, !ambiguous else { throw Failure.alignment }
-        return best
+        let refinedQuality = correlation(previous, current, offset: movement)
+        guard refinedQuality >= 0.85, refinedQuality - competitor >= 0.015 else {
+            logger.info("Rejected candidate: offset=\(movement), refinedCorrelation=\(refinedQuality), peakGap=\(refinedQuality - competitor)")
+            _ = correlation(previous, current, offset: movement, logBands: true)
+            throw Failure.alignment
+        }
+        logger.info("Confirmed vertical movement=\(movement)")
+        return movement
     }
 
-    private static func match(_ a: GrayFrame, _ b: GrayFrame, offset: Int) -> Double {
-        let overlap = a.height - abs(offset)
-        guard overlap > 0 else { return 0 }
+    private static func correlation(_ a: GrayFrame, _ b: GrayFrame, offset: Double, logBands: Bool = false) -> Double {
+        let row = Int(offset), fraction = offset - Double(row)
+        let overlap = a.height - row - (fraction > 0 ? 1 : 0)
         var worst = 1.0
-        // All three horizontal bands must agree. Fixed headers/footers and changing content
-        // must not be mistaken for a valid global translation.
+        var informativeBands = 0
         for band in 0..<3 {
-            var matches = 0, count = 0, low = 255, high = 0, difference = 0
-            var allMatches = 0, allCount = 0
             let start = band * overlap / 3, end = (band + 1) * overlap / 3
-            for y in stride(from: start, to: end, by: max(1, overlap / 192)) {
-                for x in stride(from: 0, to: a.width, by: max(1, a.width / 96)) {
-                    let p = Int(a.pixels[(y + max(0, offset)) * a.width + x])
-                    let q = Int(b.pixels[(y + max(0, -offset)) * b.width + x])
-                    allCount += 1
-                    if abs(p - q) <= 12 { allMatches += 1 }
-                    // Blank margins must not overwhelm a bad match on sparse text,
-                    // including the stationary-frame check.
-                    let neighbor = min(a.width - 1, x + 3)
-                    let ap = Int(a.pixels[(y + max(0, offset)) * a.width + neighbor])
-                    let bp = Int(b.pixels[(y + max(0, -offset)) * b.width + neighbor])
-                    if abs(p - ap) < 16 && abs(q - bp) < 16 { continue }
-                    low = min(low, p); high = max(high, p)
-                    if abs(p - q) <= 12 { matches += 1 }
-                    count += 1
-                    difference += abs(p - q)
+            let count = Double((end - start) * a.sampleWidth)
+            var sumA: Float = 0, sumB: Float = 0, squareA: Float = 0, squareB: Float = 0, product: Float = 0
+            a.samples.withUnsafeBufferPointer { ap in
+                b.samples.withUnsafeBufferPointer { bp in
+                    let left = ap.baseAddress! + (start + row) * a.sampleWidth
+                    let right = bp.baseAddress! + start * b.sampleWidth
+                    let length = vDSP_Length(Int(count))
+                    func measure(_ values: UnsafePointer<Float>) {
+                        vDSP_sve(values, 1, &sumA, length)
+                        vDSP_sve(right, 1, &sumB, length)
+                        vDSP_svesq(values, 1, &squareA, length)
+                        vDSP_svesq(right, 1, &squareB, length)
+                        vDSP_dotpr(values, 1, right, 1, &product, length)
+                    }
+                    if fraction == 0 { measure(left) }
+                    else {
+                        var interpolated = [Float](repeating: 0, count: Int(count))
+                        var weight = Float(fraction)
+                        vDSP_vintb(left, 1, left + a.sampleWidth, 1, &weight, &interpolated, 1, length)
+                        interpolated.withUnsafeBufferPointer { measure($0.baseAddress!) }
+                    }
                 }
             }
-            if count == 0 && offset == 0 {
-                guard allCount > 0 else { return 0 }
-                worst = min(worst, Double(allMatches) / Double(allCount))
-            } else {
-                guard count >= 32, high - low >= 24 else { return 0 }
-                // The threshold alone gives neighboring smooth rows identical scores.
-                // Prefer the actual lowest-error alignment instead of the first candidate.
-                let score = Double(matches) / Double(count) - Double(difference) / Double(count * 255) * 0.03
-                worst = min(worst, score)
+            let varianceA = Double(squareA) - Double(sumA) * Double(sumA) / count
+            let varianceB = Double(squareB) - Double(sumB) * Double(sumB) / count
+            if varianceA / count < 4 && varianceB / count < 4 { continue }
+            guard varianceA > 0, varianceB > 0 else { return -1 }
+            informativeBands += 1
+            let score = (Double(product) - Double(sumA) * Double(sumB) / count) / sqrt(varianceA * varianceB)
+            if logBands {
+                logger.info("Overlap band=\(band), correlation=\(score), varianceA=\(varianceA / count), varianceB=\(varianceB / count)")
             }
+            worst = min(worst, score)
         }
-        return worst
+        return informativeBands >= 2 ? worst : -1
     }
 }

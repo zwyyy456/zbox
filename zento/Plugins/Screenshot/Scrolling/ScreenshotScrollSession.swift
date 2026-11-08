@@ -2,9 +2,11 @@ import AppKit
 import Observation
 import ScreenCaptureKit
 import SwiftUI
+import OSLog
 
 @MainActor @Observable
 final class ScreenshotScrollSession {
+    private let logger = Logger(subsystem: "tech.hyperseek.zento", category: "ScreenshotScroll")
     private(set) var preview: CGImage?
     private(set) var height = 0
     private(set) var message = String(localized: "Scroll slowly downward. Keep fixed headers and footers outside the selection.")
@@ -12,6 +14,7 @@ final class ScreenshotScrollSession {
     private(set) var finishing = false
     private(set) var canResume = true
     @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var captureTask: Task<Void, Never>?
     @ObservationIgnored private var panel: NSPanel?
     @ObservationIgnored private var border: NSPanel?
     @ObservationIgnored private var stitcher = ScreenshotScrollStitcher()
@@ -35,6 +38,7 @@ final class ScreenshotScrollSession {
     func start() {
         let border = NSPanel(contentRect: area.insetBy(dx: -2, dy: -2),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        border.hasShadow = false
         border.isOpaque = false; border.backgroundColor = .clear; border.ignoresMouseEvents = true
         border.level = .screenSaver; border.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         border.isReleasedWhenClosed = false
@@ -50,12 +54,14 @@ final class ScreenshotScrollSession {
         let visible = screen.visibleFrame
         let x = area.maxX + 12 + 280 <= visible.maxX ? area.maxX + 12 : max(visible.minX, area.minX - 292)
         panel.setFrameOrigin(CGPoint(x: x, y: max(visible.minY, min(area.maxY - 440, visible.maxY - 470))))
+        logger.info("Started: selectionSize=\(self.area.width)x\(self.area.height), scale=\(self.screenScale), previewOverlapsSelection=\(panel.frame.intersects(self.area))")
         panel.orderFrontRegardless(); self.panel = panel
         resume()
     }
 
     func resume() {
         guard active, !finishing, canResume else { return }
+        logger.info("Resume: acceptedHeight=\(self.height)")
         paused = false
         message = String(localized: "Scroll slowly downward. Keep fixed headers and footers outside the selection.")
         task = Task { [weak self] in
@@ -65,20 +71,55 @@ final class ScreenshotScrollSession {
                 let pixelHeight = Int((area.height * screenScale).rounded())
                 guard pixelWidth >= 64, pixelHeight >= 64,
                       pixelWidth * pixelHeight <= 16_000_000 else { throw ScreenshotScrollStitcher.Failure.dimensions }
-                while !Task.isCancelled {
-                    guard NSScreen.screens.contains(screen), screen.frame == screenFrame, screen.backingScaleFactor == screenScale,
-                          CGPreflightScreenCaptureAccess() else { throw ScreenshotError.unavailable }
-                    let update = try await captureNextFrame()
+                let frames = AsyncThrowingStream<(image: CGImage, capturedAt: ContinuousClock.Instant), Error>.makeStream(bufferingPolicy: .bufferingOldest(2))
+                let producer = Task { @MainActor in
+                    do {
+                        let clock = ContinuousClock()
+                        var previousCapture: ContinuousClock.Instant?
+                        while !Task.isCancelled {
+                            let started = clock.now
+                            guard NSScreen.screens.contains(screen), screen.frame == screenFrame,
+                                  screen.backingScaleFactor == screenScale, CGPreflightScreenCaptureAccess() else {
+                                throw ScreenshotError.unavailable
+                            }
+                            let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area, alignToPixels: true)
+                            try Task.checkCancellation()
+                            let capturedAt = clock.now
+                            if let previousCapture {
+                                logger.info("Capture interval=\(String(describing: previousCapture.duration(to: capturedAt)), privacy: .public), duration=\(String(describing: started.duration(to: capturedAt)), privacy: .public)")
+                            }
+                            previousCapture = capturedAt
+                            switch frames.continuation.yield((image, capturedAt)) {
+                            case .dropped: throw CaptureFailure.backlog
+                            case .terminated: return
+                            case .enqueued(let remaining): logger.debug("Queued frames=\(2 - remaining)")
+                            @unknown default: return
+                            }
+                            try await clock.sleep(until: started.advanced(by: .milliseconds(100)))
+                        }
+                        frames.continuation.finish()
+                    } catch is CancellationError { frames.continuation.finish() }
+                    catch { frames.continuation.finish(throwing: error) }
+                }
+                captureTask = producer
+                defer { producer.cancel(); captureTask = nil }
+                for try await frame in frames.stream {
+                    try Task.checkCancellation()
+                    let started = ContinuousClock.now
+                    let update = try await stitcher.append(frame.image, capturedAt: frame.capturedAt)
+                    logger.info("Matching duration=\(String(describing: started.duration(to: .now)), privacy: .public)")
                     guard active, !Task.isCancelled else { return }
                     if let update { preview = update.preview; height = update.height }
-                    try await Task.sleep(for: .milliseconds(200))
                 }
             } catch {
                 guard active, !Task.isCancelled else { return }
+                logger.error("Paused: acceptedHeight=\(self.height), errorType=\(String(reflecting: type(of: error)), privacy: .public), code=\((error as NSError).code)")
                 paused = true
                 switch error {
                 case ScreenshotScrollStitcher.Failure.alignment:
                     message = String(localized: "Alignment lost. Scroll back to the last preview, then retry; or finish with the captured content.")
+                case CaptureFailure.backlog:
+                    message = String(localized: "Capture processing could not keep up. Finish with the captured content or retry.")
                 case ScreenshotScrollStitcher.Failure.dimensions:
                     canResume = false
                     message = String(localized: "Choose an area at least 64 pixels wide and high, up to 16 million pixels. Cancel and select a new area.")
@@ -93,17 +134,13 @@ final class ScreenshotScrollSession {
         }
     }
 
-    private func captureNextFrame() async throws -> ScreenshotScrollStitcher.Update? {
-        let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area)
-        try Task.checkCancellation()
-        // End the full-resolution frame's lifetime before the sampling delay.
-        return try await stitcher.append(image)
-    }
+    private enum CaptureFailure: Error { case backlog }
 
     func finish() {
         guard active, height > 0, !finishing else { return }
+        logger.info("Finishing: acceptedHeight=\(self.height)")
         finishing = true
-        task?.cancel()
+        captureTask?.cancel()
         let pending = task
         task = Task { [weak self] in
             await pending?.value
@@ -121,10 +158,11 @@ final class ScreenshotScrollSession {
         }
     }
 
-    func cancel() { close(); cancelled() }
+    func cancel() { logger.info("Cancelled"); close(); cancelled() }
 
     func close() {
         active = false
+        captureTask?.cancel(); captureTask = nil
         task?.cancel(); task = nil
         panel?.orderOut(nil); panel?.contentView = nil; panel?.close(); panel = nil
         border?.orderOut(nil); border?.close(); border = nil
