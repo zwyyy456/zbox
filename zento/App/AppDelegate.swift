@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let environment = AppEnvironment()
+    private var isPreparingToTerminate = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -19,9 +20,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard environment.scriptCommandsPlugin.isRunning || environment.extensionManager.hasRunningTasks else { return .terminateNow }
-        environment.stop()
+        if isPreparingToTerminate { return .terminateLater }
+        guard environment.screenshotPlugin.hasRecordingSession || environment.scriptCommandsPlugin.isRunning
+                || environment.extensionManager.hasRunningTasks else { return .terminateNow }
+        isPreparingToTerminate = true
         Task {
+            guard await environment.screenshotPlugin.prepareForShutdown() else {
+                isPreparingToTerminate = false
+                sender.reply(toApplicationShouldTerminate: false)
+                return
+            }
+            environment.stop()
             await environment.scriptCommandsPlugin.waitForStop()
             await environment.extensionManager.waitForStop()
             sender.reply(toApplicationShouldTerminate: true)

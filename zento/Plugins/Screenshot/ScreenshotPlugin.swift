@@ -27,10 +27,19 @@ final class ScreenshotPlugin {
     private let textWindow = ScreenshotTextWindow()
     private let pins = ScreenshotPinController()
 
+    static let stopRecordingID = CommandID("screenshot.record.stop")
+    private static var stopRecordingTitle: String { String(localized: "Stop Recording") }
+    private var recording: RecordingSession?
+    @ObservationIgnored private var recordingCleanup: Task<Void, Error>?
+    var hasRecordingSession: Bool { recording != nil }
+    var canStopRecording: Bool { recording?.canStop == true }
+
     static var shortcutTargets: [CommandShortcutTarget] {
         ScreenshotMode.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
         + [CommandShortcutTarget(id: textCommandID, title: String(localized: "Capture Text"))]
         + PinCommand.allCases.map { CommandShortcutTarget(id: $0.id, title: $0.title) }
+        + RecordingKind.allCases.map { CommandShortcutTarget(id: $0.commandID, title: $0.title) }
+        + [CommandShortcutTarget(id: stopRecordingID, title: stopRecordingTitle)]
     }
     let hosting: ScreenshotHostingSettings
     private let defaults: UserDefaults
@@ -122,6 +131,47 @@ final class ScreenshotPlugin {
                 }
             }
         }
+        for kind in RecordingKind.allCases {
+            try registry.register(CommandDescriptor(systemImage: kind == .video ? "record.circle" : "film",
+                id: kind.commandID, title: kind.title, category: String(localized: "Screenshot & Recording"),
+                subtitle: nil, keywords: ["record", "screen", "video", "gif", "录屏", "录制"])) { [weak self] _ in
+                guard let self else { return }
+                guard isEnabled else { try openSettings(); return }
+                try await beginRecording(kind)
+            }
+        }
+        try registry.register(CommandDescriptor(systemImage: "stop.circle", id: Self.stopRecordingID,
+            title: Self.stopRecordingTitle, category: String(localized: "Screenshot & Recording"),
+            subtitle: nil, keywords: ["stop", "recording", "停止", "录制"])) { [weak self] _ in
+            guard let self else { return }
+            guard isEnabled else { try openSettings(); return }
+            recording?.stopRecording()
+        }
+    }
+
+    func start() {
+        recordingCleanup = Task { try await RecordingFiles.removeAbandonedSessions() }
+    }
+
+    func prepareForShutdown() async -> Bool {
+        guard let recording else { return true }
+        return await recording.prepareToClose()
+    }
+
+    private func beginRecording(_ kind: RecordingKind) async throws {
+        try await recordingCleanup?.value
+        try Task.checkCancellation()
+        guard isEnabled else { return }
+        if let recording {
+            recording.present()
+            return
+        }
+        guard captureID == nil else { throw RecordingError.captureInProgress }
+        let session = RecordingSession(kind: kind, defaults: defaults) { [weak self] in
+            self?.recording = nil
+        }
+        recording = session
+        session.present()
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -332,6 +382,10 @@ final class ScreenshotPlugin {
     }
 
     private func capture(_ mode: ScreenshotMode, purpose: CapturePurpose = .edit) {
+        if let recording, recording.blocksCapture {
+            recording.showCaptureBlocked()
+            return
+        }
         cancelCapture()
         upload.discardUpload()
         cancelExport()
@@ -358,6 +412,7 @@ final class ScreenshotPlugin {
                 }
             } catch {
                 guard !Task.isCancelled, self?.captureID == id else { return }
+                self?.cancelCapture()
                 self?.report(error)
             }
         }
@@ -396,10 +451,12 @@ final class ScreenshotPlugin {
                 case .text:
                     textWindow.show(image: image) { [weak self] in self?.copyText($0) }
                 }
+                captureID = nil
+                captureTask = nil
             } catch {
-                guard !Task.isCancelled, self?.captureID == id else { return }
-                self?.selection.close()
-                self?.report(error)
+                guard !Task.isCancelled, let self, captureID == id else { return }
+                cancelCapture()
+                report(error)
             }
         }
     }

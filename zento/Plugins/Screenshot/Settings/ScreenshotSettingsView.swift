@@ -6,8 +6,8 @@ struct ScreenshotSettingsView: View {
     let shortcutError: String?
     var body: some View {
         Form {
-            Toggle("Enable Screenshot", isOn: Binding(get: { plugin.isEnabled }, set: onEnabledChanged))
-            Text("Captures only when you run a screenshot command. Screen Recording permission is required.")
+            Toggle("Enable Screenshot & Recording", isOn: Binding(get: { plugin.isEnabled }, set: onEnabledChanged))
+            Text("Captures only when you run a screenshot or recording command. Screen Recording permission is required.")
                 .foregroundStyle(.secondary)
             LabeledContent("Screen Recording") {
                 Text(plugin.isScreenRecordingAuthorized ? String(localized: "Authorized") : String(localized: "Not Authorized"))

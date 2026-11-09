@@ -50,6 +50,7 @@ nonisolated struct CommandDescriptor: Identifiable, Sendable {
 nonisolated enum CommandSource: Sendable {
     case rootSearch
     case directHotkey
+    case menuBar
 }
 
 nonisolated struct CommandContext: Sendable {

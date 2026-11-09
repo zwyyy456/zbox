@@ -4,6 +4,10 @@
 <dict>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Read the file you explicitly selected in Finder to open, preview, or copy it.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Include system audio when you enable it for a screen recording.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Capture the screen, window, or area you choose for a screenshot or recording.</string>
 	<key>FlashDictIntegrationAppGroupIdentifier</key>
 	<string>group.tech.hyperseek.flashdict.integration</string>
 </dict>

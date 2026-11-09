@@ -10,6 +10,10 @@ struct MenuBarView: View {
         }
         .keyboardShortcut(HotkeyFormatter.keyboardShortcut(for: environment.hotkeys.rootSearchHotkey))
 
+        if environment.screenshotPlugin.canStopRecording {
+            Button("Stop Recording", action: environment.stopRecordingFromMenu)
+        }
+
         ApplicationMenuItems(environment: environment)
     }
 }

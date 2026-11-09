@@ -91,7 +91,7 @@ final class AppEnvironment {
             (String(localized: "Quicklinks"), quicklinksPlugin.shortcutTargets),
             (String(localized: "Display"), displayPlugin.shortcutTargets),
             (String(localized: "Workspace"), workspacePlugin.shortcutTargets),
-            (String(localized: "Screenshot"), ScreenshotPlugin.shortcutTargets),
+            (String(localized: "Screenshot & Recording"), ScreenshotPlugin.shortcutTargets),
             (String(localized: "Window Management"), WindowCommands.shortcutTargets),
             (String(localized: "Clipboard History"),
              [CommandShortcutTarget(id: ClipboardHistoryPlugin.commandID, title: String(localized: "Clipboard History"))]),
@@ -239,6 +239,7 @@ final class AppEnvironment {
         if displayPlugin.isEnabled { displayPlugin.start() }
         fileSearchPlugin.start()
         clipboardHistoryPlugin.start()
+        screenshotPlugin.start()
         reloadApplications()
         isLaunchAtLoginEnabled = launchAtLoginController.isEnabled
 
@@ -727,6 +728,22 @@ final class AppEnvironment {
     }
 
     func setScreenshotEnabled(_ enabled: Bool) {
+        if !enabled, screenshotPlugin.hasRecordingSession {
+            Task {
+                guard await screenshotPlugin.prepareForShutdown() else { return }
+                updateScreenshotEnabled(false)
+            }
+        } else {
+            updateScreenshotEnabled(enabled)
+        }
+    }
+
+    func stopRecordingFromMenu() {
+        let context = CommandContext(source: .menuBar, frontmostApplicationPID: nil)
+        execute(ScreenshotPlugin.stopRecordingID, context: context, hidePanelOnSuccess: false)
+    }
+
+    private func updateScreenshotEnabled(_ enabled: Bool) {
         screenshotPlugin.setEnabled(enabled)
         if !enabled {
             for target in ScreenshotPlugin.shortcutTargets { hotkeyRegistrar.unregister(id: target.id.rawValue) }

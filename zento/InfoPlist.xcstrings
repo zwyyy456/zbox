@@ -42,6 +42,23 @@
         }
       }
     },
+    "NSAudioCaptureUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include system audio when you enable it for a screen recording."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启录制系统声音时，将其加入视频。"
+          }
+        }
+      }
+    },
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
       "extractionState" : "extracted_with_value",
@@ -50,6 +67,23 @@
           "stringUnit" : {
             "state" : "new",
             "value" : ""
+          }
+        }
+      }
+    },
+    "NSScreenCaptureUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture the screen, window, or area you choose for a screenshot or recording."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕获你选择的屏幕、窗口或区域，用于截图或录制。"
           }
         }
       }

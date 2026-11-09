@@ -65,6 +65,10 @@
 
 - OCR 使用 Apple Vision 处理截图最终合成像素，贴图保存独立合成快照；两者不读取未合成的裁剪外或遮挡前内容，不自行上传。复制 OCR 文字和贴图图片时通过 ClipboardAccessCoordinator 登记。
 
+- 录制行为由 `docs/product/recording.md` 定义。录制会话拥有目标、计时、状态与临时文件；ScreenshotPlugin 协调命令、截图互斥和停用，App 退出等待会话解决后再停止其他插件。
+- 录制使用 macOS 15 的 ScreenCaptureKit，先注册写入输出，再启动流；预览和转换只消费写入完成的文件。每次选择和录制都有独立回调生命周期；取消等待写入或转换退出后才删除临时文件。
+- 录制 UI 与会话状态在 Main Actor；GIF 顺序解码并逐帧编码写入，文件保存与清理在后台处理。
+
 ## Display 边界
 
 - 产品行为由 `docs/product/display.md` 定义。插件拥有显示器枚举、切换确认、预设及原生 HiDPI 配置；App 只组合命令、设置和快捷键。

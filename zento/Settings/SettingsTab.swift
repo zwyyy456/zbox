@@ -32,7 +32,7 @@ nonisolated enum SettingsTab: Hashable {
         case .shortcuts: String(localized: "Commands")
         case .windowManagement: String(localized: "Window Management")
         case .textLookup: String(localized: "Text Lookup")
-        case .screenshot: String(localized: "Screenshot")
+        case .screenshot: String(localized: "Screenshot & Recording")
         case .clipboardHistory: String(localized: "Clipboard History")
         }
     }

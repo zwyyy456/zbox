@@ -20,7 +20,7 @@ nonisolated enum ScreenshotError: LocalizedError {
         switch self {
         case .clipboardImage: String(localized: "Copy a single PNG or TIFF image first. Clipboard access must be allowed; private or transient contents cannot be pinned.")
         case .pinLimit: String(localized: "Close some pinned images before adding another (10 images / 256 MiB maximum).")
-        case .permission: String(localized: "Allow Screen Recording in System Settings, then try the screenshot again.")
+        case .permission: String(localized: "Allow Screen Recording in System Settings, then try again.")
         case .unavailable: String(localized: "The selected screen or window is no longer available.")
         case .captureFailed: String(localized: "The screenshot could not be captured. Try again.")
         case .exportFailed: String(localized: "The screenshot could not be exported.")
@@ -32,6 +32,13 @@ nonisolated enum ScreenshotGeometry {
     static func screenRect(_ cocoaRect: CGRect, primaryHeight: CGFloat) -> CGRect {
         CGRect(x: cocoaRect.minX, y: primaryHeight - cocoaRect.maxY,
                width: cocoaRect.width, height: cocoaRect.height)
+    }
+
+    static func pixelAligned(_ rect: CGRect, scale: CGFloat) -> CGRect {
+        let left = ceil(rect.minX * scale), top = ceil(rect.minY * scale)
+        return CGRect(x: left / scale, y: top / scale,
+                      width: max(0, floor(rect.maxX * scale) - left) / scale,
+                      height: max(0, floor(rect.maxY * scale) - top) / scale)
     }
 
     static func sourceRect(_ selection: CGRect, in screen: CGRect) -> CGRect {
@@ -68,11 +75,7 @@ enum ScreenshotCapture {
             filter = SCContentFilter(display: display, excludingWindows: [])
             var rect = ScreenshotGeometry.sourceRect(area ?? screen.frame, in: screen.frame)
             if alignToPixels {
-                let scale = CGFloat(filter.pointPixelScale)
-                let left = ceil(rect.minX * scale), top = ceil(rect.minY * scale)
-                rect = CGRect(x: left / scale, y: top / scale,
-                    width: (floor(rect.maxX * scale) - left) / scale,
-                    height: (floor(rect.maxY * scale) - top) / scale)
+                rect = ScreenshotGeometry.pixelAligned(rect, scale: CGFloat(filter.pointPixelScale))
             }
             config.sourceRect = rect
             config.width = Int((rect.width * CGFloat(filter.pointPixelScale)).rounded())

@@ -1,6 +1,416 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld s remaining" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩余 %lld 秒"
+          }
+        }
+      }
+    },
+    "Area on %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@上的区域"
+          }
+        }
+      }
+    },
+    "Audio can include other windows from the selected app." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可能录入所选应用的其他窗口发出的声音。"
+          }
+        }
+      }
+    },
+    "Captures only when you run a screenshot or recording command. Screen Recording permission is required." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅在执行截图或录制命令时采集。需要屏幕录制权限。"
+          }
+        }
+      }
+    },
+    "Choose Again" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新选择"
+          }
+        }
+      }
+    },
+    "Choose Area" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择区域"
+          }
+        }
+      }
+    },
+    "Choose Screen" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择屏幕"
+          }
+        }
+      }
+    },
+    "Choose what to record" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择录制目标"
+          }
+        }
+      }
+    },
+    "Choose Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择窗口"
+          }
+        }
+      }
+    },
+    "Converting GIF…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在转换 GIF…"
+          }
+        }
+      }
+    },
+    "Discard" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "丢弃"
+          }
+        }
+      }
+    },
+    "Discarding Recording…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在丢弃录制…"
+          }
+        }
+      }
+    },
+    "Enable Screenshot & Recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用截图与录制"
+          }
+        }
+      }
+    },
+    "Finish or cancel the recording session before taking a screenshot." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先结束或取消录制，再截图。"
+          }
+        }
+      }
+    },
+    "Finish or cancel the screenshot before starting a recording." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先完成或取消截图，再开始录制。"
+          }
+        }
+      }
+    },
+    "Finishing Recording…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在完成录制…"
+          }
+        }
+      }
+    },
+    "Frame rate" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帧率"
+          }
+        }
+      }
+    },
+    "GIF Preview" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIF 预览"
+          }
+        }
+      }
+    },
+    "GIF recording stops automatically after 30 seconds." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GIF 录制将在 30 秒后自动停止。"
+          }
+        }
+      }
+    },
+    "Original Size" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始尺寸"
+          }
+        }
+      }
+    },
+    "Record GIF" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制 GIF"
+          }
+        }
+      }
+    },
+    "Record System Audio" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制系统声音"
+          }
+        }
+      }
+    },
+    "Record Video" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制视频"
+          }
+        }
+      }
+    },
+    "Recording starts in %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 秒后开始录制"
+          }
+        }
+      }
+    },
+    "Save the recording before closing?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭前保存录制吗？"
+          }
+        }
+      }
+    },
+    "Scale" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缩放比例"
+          }
+        }
+      }
+    },
+    "Screen" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏幕"
+          }
+        }
+      }
+    },
+    "Screen Area" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏幕区域"
+          }
+        }
+      }
+    },
+    "Screenshot & Recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图与录制"
+          }
+        }
+      }
+    },
+    "Show Pointer" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包含鼠标指针"
+          }
+        }
+      }
+    },
+    "Start Recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始录制"
+          }
+        }
+      }
+    },
+    "Starting Recording…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在开始录制…"
+          }
+        }
+      }
+    },
+    "Stop & Save" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止并保存"
+          }
+        }
+      }
+    },
+    "Stop Recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止录制"
+          }
+        }
+      }
+    },
+    "The GIF could not be encoded." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法编码 GIF。"
+          }
+        }
+      }
+    },
+    "The recording contains no playable video." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制文件中没有可播放的视频。"
+          }
+        }
+      }
+    },
+    "The recording controls could not be excluded from the capture." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法从录制画面中排除录制控制窗。"
+          }
+        }
+      }
+    },
+    "The recording did not use the selected pixel dimensions." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制文件的像素尺寸与所选设置不符。"
+          }
+        }
+      }
+    },
+    "The selected recording target is no longer available." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选录制目标已不可用。"
+          }
+        }
+      }
+    },
+    "Video Preview" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "视频预览"
+          }
+        }
+      }
+    },
+    "Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口"
+          }
+        }
+      }
+    },
     "—" : {
 
     },
@@ -796,12 +1206,12 @@
         }
       }
     },
-    "Allow Screen Recording in System Settings, then try the screenshot again." : {
+    "Allow Screen Recording in System Settings, then try again." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请在系统设置中授予屏幕录制权限，然后重新截图。"
+            "value" : "请在系统设置中授予屏幕录制权限，然后重试。"
           }
         }
       }
