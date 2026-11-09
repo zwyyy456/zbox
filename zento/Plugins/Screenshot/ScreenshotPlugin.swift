@@ -63,6 +63,25 @@ final class ScreenshotPlugin {
     var opensEditorAfterCapture: Bool {
         didSet { defaults.set(opensEditorAfterCapture, forKey: "plugin.screenshot.opens-editor") }
     }
+    var gifStartDelay: RecordingStartDelay {
+        get {
+            access(keyPath: \.gifStartDelay)
+            if let recording, recording.kind == .gif { return recording.options.selectedStartDelay }
+            return RecordingOptions(kind: .gif, saved: defaults.data(forKey: RecordingKind.gif.optionsKey)).selectedStartDelay
+        }
+        set {
+            withMutation(keyPath: \.gifStartDelay) {
+                if let recording, recording.kind == .gif {
+                    recording.options.selectedStartDelay = newValue
+                } else {
+                    var options = RecordingOptions(kind: .gif, saved: defaults.data(forKey: RecordingKind.gif.optionsKey))
+                    options.selectedStartDelay = newValue
+                    defaults.set(try? JSONEncoder().encode(options), forKey: RecordingKind.gif.optionsKey)
+                }
+            }
+        }
+    }
+
     var automaticallyCopy: Bool {
         didSet { defaults.set(automaticallyCopy, forKey: "plugin.screenshot.auto-copy") }
     }
@@ -167,7 +186,9 @@ final class ScreenshotPlugin {
             return
         }
         guard captureID == nil else { throw RecordingError.captureInProgress }
-        let session = RecordingSession(kind: kind, defaults: defaults) { [weak self] in
+        let session = RecordingSession(kind: kind, defaults: defaults, canBeginCapture: { [weak self] in
+            self?.captureID == nil
+        }) { [weak self] in
             self?.recording = nil
         }
         recording = session
@@ -386,6 +407,7 @@ final class ScreenshotPlugin {
             recording.showCaptureBlocked()
             return
         }
+        recording?.prepareForScreenshot()
         cancelCapture()
         upload.discardUpload()
         cancelExport()
@@ -563,15 +585,12 @@ final class ScreenshotPlugin {
             let frame = screen.visibleFrame
             if let document, window.fittedDocument !== document {
                 let chrome = window.frame.height - window.contentLayoutRect.height
-                let available = CGSize(width: frame.width * 0.85, height: frame.height * 0.85)
-                let zoom = min(1 / screen.backingScaleFactor,
-                               (available.width - 24) / document.edit.crop.width,
-                               (available.height - chrome - 52) / document.edit.crop.height)
-                document.zoom = zoom
-                let content = CGSize(width: max(480, document.edit.crop.width * zoom + 24),
-                                     height: max(180, document.edit.crop.height * zoom + 52))
-                window.setFrame(CGRect(origin: window.frame.origin,
-                                       size: CGSize(width: content.width, height: content.height + chrome)), display: false)
+                let layout = ScreenshotWindowLayout.fit(pixels: document.edit.crop.size,
+                                                        screenScale: screen.backingScaleFactor,
+                                                        visibleSize: frame.size, chromeHeight: chrome,
+                                                        contentInsets: CGSize(width: 24, height: 52))
+                document.zoom = layout.zoom
+                window.setFrame(CGRect(origin: window.frame.origin, size: layout.frameSize), display: false)
                 window.fittedDocument = document
             }
             window.setFrameOrigin(CGPoint(x: frame.midX - window.frame.width / 2,

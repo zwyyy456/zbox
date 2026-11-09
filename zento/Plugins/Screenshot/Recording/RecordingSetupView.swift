@@ -4,51 +4,49 @@ struct RecordingWindowView: View {
     @Bindable var session: RecordingSession
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if session.isConfirmingClose {
-                closeConfirmation
-            } else {
-                content
-                if let status = session.status {
-                    Text(status)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .accessibilityAddTraits(.updatesFrequently)
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            content
+            if let status = session.status {
+                Text(status)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 320, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.updatesFrequently)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onExitCommand {
-            if session.isConfirmingClose { session.decideClose(.cancel) }
-            else { session.requestClose() }
+        .padding(10)
+        .fixedSize()
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { session.updateControlSize($0) }
+        .background {
+            RoundedRectangle(cornerRadius: 12).fill(.regularMaterial)
+                .gesture(WindowDragGesture())
         }
+        .onExitCommand { session.requestClose() }
     }
 
     @ViewBuilder private var content: some View {
         switch session.state {
         case .selecting:
-            Text("Choose what to record").font(.headline)
-            HStack {
-                ForEach(RecordingTargetKind.allCases, id: \.self) { kind in
-                    Button(kind.title) { session.choose(kind) }
+            RecordingSetupView(session: session)
+        case .countdown(let seconds):
+            HStack(spacing: 16) {
+                Text("Recording starts in \(seconds)").monospacedDigit()
+                Button("Cancel", action: session.discard)
+                if session.kind == .gif {
+                    Button("Start Now", action: session.startImmediately)
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.defaultAction)
                 }
             }
-        case .ready(let target):
-            RecordingSetupView(kind: session.kind, target: target, options: $session.options,
-                               reselect: session.chooseAgain, start: session.start)
-        case .countdown(let seconds):
-            HStack {
-                Text("Recording starts in \(seconds)").monospacedDigit()
-                Spacer()
-                Button("Cancel", action: session.discard)
-            }
-        case .starting, .recording, .finishing, .converting, .discarding:
+            .frame(minHeight: 32)
+        case .starting, .recording, .finishing, .discarding:
             RecordingControlPanel(session: session)
-        case .preview(let url, let saved):
-            RecordingPreviewView(kind: session.kind, url: url, saved: saved, session: session)
+        case .preview:
+            Text("Recording Complete").frame(minHeight: 32)
         case .failed(let reason):
-            Text(reason)
+            Text(reason).frame(width: 320, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             Button("Close", action: session.discard)
                 .keyboardShortcut(.defaultAction)
         case .closed:
@@ -56,76 +54,102 @@ struct RecordingWindowView: View {
         }
     }
 
-    private var closeConfirmation: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Save the recording before closing?").font(.headline)
-            HStack {
-                Button("Cancel") { session.decideClose(.cancel) }.keyboardShortcut(.cancelAction)
-                Button("Discard", role: .destructive) { session.decideClose(.discard) }
-                Spacer()
-                Button(saveTitle) { session.decideClose(.save) }.keyboardShortcut(.defaultAction)
-            }
-        }
-    }
-
-    private var saveTitle: String {
-        switch session.state {
-        case .starting, .recording: String(localized: "Stop & Save")
-        default: String(localized: "Save…")
-        }
-    }
 }
 
 private struct RecordingSetupView: View {
-    let kind: RecordingKind
-    let target: RecordingTarget
-    @Binding var options: RecordingOptions
-    let reselect: () -> Void
-    let start: () -> Void
+    @Bindable var session: RecordingSession
 
     var body: some View {
-        let size = options.outputSize(for: target.pixelSize)
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(target.name).font(.headline).lineLimit(1).help(target.name)
-                Text("\(Int(size.width)) × \(Int(size.height)) px · \(options.frameRate) fps · \(kind.format)")
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Button(action: session.requestClose) {
+                    Image(systemName: "xmark.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .frame(width: 24, height: 32)
+                .help("Close")
+                .accessibilityLabel(Text("Close"))
 
-            Form {
-                Picker("Frame rate", selection: $options.frameRate) {
-                    ForEach(kind.frameRates, id: \.self) { rate in
-                        Text("\(rate) fps").tag(rate)
+                Divider().frame(height: 24)
+                ForEach(RecordingTargetKind.allCases, id: \.self) { kind in
+                    Button { session.targetKind = kind } label: {
+                        Image(systemName: symbol(for: kind))
+                            .font(.system(size: 20))
+                            .frame(width: 40, height: 32)
+                            .contentShape(Rectangle())
+                            .background {
+                                if session.targetKind == kind {
+                                    RoundedRectangle(cornerRadius: 6).fill(.primary.opacity(0.12))
+                                }
+                            }
                     }
+                    .buttonStyle(.plain)
+                    .help(kind.title)
+                    .accessibilityLabel(kind.title)
+                    .accessibilityAddTraits(session.targetKind == kind ? .isSelected : [])
                 }
-                Picker("Scale", selection: $options.scale) {
-                    ForEach(RecordingOptions.scales, id: \.self) { scale in
-                        if scale == 100 { Text("Original Size").tag(scale) }
-                        else { Text(Double(scale) / 100, format: .percent).tag(scale) }
+                Divider().frame(height: 24)
+                Button { session.choose(session.targetKind) } label: {
+                    Text("Record")
+                        .padding(.horizontal, 14)
+                        .frame(height: 32)
+                        .background(Color.accentColor,
+                                    in: RoundedRectangle(cornerRadius: 6))
+                        .foregroundStyle(Color.white)
+                }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.defaultAction)
+                Menu("Options") {
+                    if session.kind == .gif {
+                        Picker("Recording Start", selection: $session.options.selectedStartDelay) {
+                            ForEach(RecordingStartDelay.allCases, id: \.self) { delay in
+                                Text(delay.title).tag(delay)
+                            }
+                        }
                     }
-                }
-                Toggle("Show Pointer", isOn: $options.showsCursor)
-                if kind == .video {
-                    Toggle("Record System Audio", isOn: $options.capturesAudio)
-                    if target.kind == .window {
+                    if session.kind == .video {
+                        Picker("Video Codec", selection: $session.options.selectedVideoCodec) {
+                            ForEach(RecordingVideoCodec.allCases, id: \.self) { codec in
+                                Text(codec.title).tag(codec)
+                            }
+                        }
+                    }
+                    Picker("Frame rate", selection: $session.options.frameRate) {
+                        ForEach(session.kind.frameRates, id: \.self) { rate in
+                            Text("\(rate) fps").tag(rate)
+                        }
+                    }
+                    Picker("Scale", selection: $session.options.scale) {
+                        ForEach(RecordingOptions.scales, id: \.self) { scale in
+                            if scale == 100 { Text("Original Size").tag(scale) }
+                            else { Text(Double(scale) / 100, format: .percent).tag(scale) }
+                        }
+                    }
+                    if session.kind == .video && session.targetKind == .window && session.options.capturesAudio {
                         Text("Audio can include other windows from the selected app.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
-                } else {
-                    Text("GIF recording stops automatically after 30 seconds.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Divider()
+                    Toggle("Show Pointer", isOn: $session.options.showsCursor)
+                    if session.kind == .video {
+                        Toggle("Record System Audio", isOn: $session.options.capturesAudio)
+                    }
                 }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .frame(height: 32)
             }
-            .formStyle(.columns)
-            Spacer(minLength: 0)
-            HStack {
-                Button("Choose Again", action: reselect)
-                Spacer()
-                Button("Start Recording", action: start).keyboardShortcut(.defaultAction)
-            }
+            .fixedSize()
+
+
+        }
+        .font(.callout)
+    }
+
+    private func symbol(for kind: RecordingTargetKind) -> String {
+        switch kind {
+        case .display: "display"
+        case .window: "macwindow"
+        case .region: "rectangle.dashed"
         }
     }
 }

@@ -45,6 +45,13 @@ struct ScreenshotSettingsView: View {
                 Text("Automatic copying and saving use the original capture. Export later edits explicitly.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section("Record GIF") {
+                Picker("Recording Start", selection: $plugin.gifStartDelay) {
+                    ForEach(RecordingStartDelay.allCases, id: \.self) { delay in
+                        Text(delay.title).tag(delay)
+                    }
+                }
+            }
             ScreenshotHostingView(settings: plugin.hosting, plugin: plugin)
             if let status = plugin.statusMessage { Text(status).foregroundStyle(.secondary) }
             if let shortcutError { SettingsErrorView(message: shortcutError) }

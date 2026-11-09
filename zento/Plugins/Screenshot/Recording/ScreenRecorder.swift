@@ -5,21 +5,23 @@ import ScreenCaptureKit
 @MainActor
 final class ScreenRecorder {
     private let stream: SCStream
-    private let output: SCRecordingOutput
+    private let output: SCRecordingOutput?
+    private let gifOutput: GIFRecordingOutput?
     private let delegate: RecordingEvents
     private let events: AsyncStream<RecordingEvents.Event>
     private var streamStarted = false
     private var stopRequested = false
     private var stopTask: Task<Void, Never>?
 
-    init(target: RecordingTarget, filter: SCContentFilter, options: RecordingOptions, url: URL) throws {
+    init(target: RecordingTarget, filter: SCContentFilter, options: RecordingOptions, kind: RecordingKind, url: URL) throws {
         let config = SCStreamConfiguration()
-        let size = options.outputSize(for: target.pixelSize)
+        let size = options.outputSize(for: target.pixelSize, kind: kind)
         config.width = Int(size.width)
         config.height = Int(size.height)
         config.minimumFrameInterval = CMTime(value: 1, timescale: Int32(options.frameRate))
         config.showsCursor = options.showsCursor
-        config.capturesAudio = options.capturesAudio
+        config.capturesAudio = kind == .video && options.capturesAudio
+        config.queueDepth = 3
         config.captureDynamicRange = .SDR
         config.captureResolution = .best
         config.ignoreShadowsSingleWindow = true
@@ -32,12 +34,26 @@ final class ScreenRecorder {
         self.events = events
         self.delegate = delegate
         stream = SCStream(filter: filter, configuration: config, delegate: delegate)
-        let recording = SCRecordingOutputConfiguration()
-        recording.outputURL = url
-        recording.outputFileType = .mp4
-        recording.videoCodecType = .h264
-        output = SCRecordingOutput(configuration: recording, delegate: delegate)
-        try stream.addRecordingOutput(output)
+        switch kind {
+        case .video:
+            gifOutput = nil
+            let recording = SCRecordingOutputConfiguration()
+            guard recording.availableVideoCodecTypes.contains(options.selectedVideoCodec.avCodec) else {
+                throw RecordingError.unsupportedCodec
+            }
+            recording.outputURL = url
+            recording.outputFileType = .mp4
+            recording.videoCodecType = options.selectedVideoCodec.avCodec
+            let output = SCRecordingOutput(configuration: recording, delegate: delegate)
+            self.output = output
+            try stream.addRecordingOutput(output)
+        case .gif:
+            output = nil
+            let gif = try GIFRecordingOutput(url: url, size: size, frameRate: options.frameRate,
+                                             events: delegate.continuation)
+            gifOutput = gif
+            try stream.addStreamOutput(gif, type: .screen, sampleHandlerQueue: gif.queue)
+        }
     }
 
     func record(started: () -> Void, stoppedBySystemMenu: () -> Void) async throws {
@@ -53,6 +69,10 @@ final class ScreenRecorder {
             case .stoppedByUser:
                 streamStarted = false
                 stoppedBySystemMenu()
+                if let gifOutput {
+                    try await gifOutput.finish(at: .now)
+                    return
+                }
             case .finished:
                 requestStop()
                 await stopTask?.value
@@ -68,12 +88,18 @@ final class ScreenRecorder {
         throw CancellationError()
     }
 
-    func requestStop() {
+    func requestStop(discard: Bool = false) {
+        if discard { gifOutput?.cancel() }
         stopRequested = true
         guard streamStarted, stopTask == nil else { return }
+        let stoppedAt = ContinuousClock.now
         stopTask = Task {
             do {
                 try await stream.stopCapture()
+                if let gifOutput {
+                    try await gifOutput.finish(at: stoppedAt)
+                    delegate.continuation.yield(.finished)
+                }
             } catch {
                 if streamStarted { delegate.continuation.yield(.failed(error)) }
             }
@@ -81,7 +107,7 @@ final class ScreenRecorder {
     }
 }
 
-private nonisolated final class RecordingEvents: NSObject, SCStreamDelegate, SCRecordingOutputDelegate {
+nonisolated final class RecordingEvents: NSObject, SCStreamDelegate, SCRecordingOutputDelegate {
     enum Event: Sendable {
         case started, stoppedByUser, finished, failed(Error)
     }

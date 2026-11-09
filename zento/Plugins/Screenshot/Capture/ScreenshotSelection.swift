@@ -34,7 +34,7 @@ final class ScreenshotSelection {
                 selected(screen, rect?.offsetBy(dx: screen.frame.minX, dy: screen.frame.minY), window)
             }
             panel.contentView = view
-            view.updateHoveredWindow(at: view.convert(panel.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil))
+            view.updateHoveredTarget(at: view.convert(panel.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil))
             panels.append(panel)
             panel.orderFrontRegardless()
             if screen.frame.contains(NSEvent.mouseLocation) { panel.makeKey(); panel.makeFirstResponder(view) }
@@ -105,7 +105,7 @@ final class ScreenshotSelectionView: NSView {
         mouseTracking = area
     }
 
-    private var selectionCursor: NSCursor { mode == .window ? Self.cameraCursor : .crosshair }
+    private var selectionCursor: NSCursor { (mode == .window || mode == .screen) ? Self.cameraCursor : .crosshair }
     override func resetCursorRects() { addCursorRect(bounds, cursor: selectionCursor) }
     override func cursorUpdate(with event: NSEvent) { selectionCursor.set() }
     override func keyDown(with event: NSEvent) {
@@ -114,16 +114,21 @@ final class ScreenshotSelectionView: NSView {
     override func rightMouseDown(with event: NSEvent) { cancel?() }
     override func mouseMoved(with event: NSEvent) {
         selectionCursor.set()
-        updateHoveredWindow(at: convert(event.locationInWindow, from: nil))
+        updateHoveredTarget(at: convert(event.locationInWindow, from: nil))
     }
     override func mouseEntered(with event: NSEvent) { mouseMoved(with: event) }
     override func mouseExited(with event: NSEvent) {
-        guard mode == .window else { return }
+        guard mode == .window || mode == .screen else { return }
         hoveredWindow = nil
         selection = nil
         needsDisplay = true
     }
-    func updateHoveredWindow(at point: CGPoint) {
+    func updateHoveredTarget(at point: CGPoint) {
+        if mode == .screen {
+            selection = bounds.contains(point) ? bounds : nil
+            needsDisplay = true
+            return
+        }
         guard mode == .window else { return }
         let match = bounds.contains(point) ? windowFrames.first { $0.1.contains(point) } : nil
         hoveredWindow = match?.0
@@ -131,6 +136,7 @@ final class ScreenshotSelectionView: NSView {
         needsDisplay = true
     }
     override func mouseDown(with event: NSEvent) {
+        if mode == .screen { return }
         if mode == .window {
             mouseMoved(with: event)
             Self.logger.info("window-mouse-down matched=\(self.hoveredWindow != nil) accepting=\(self.selected != nil)")
@@ -146,8 +152,10 @@ final class ScreenshotSelectionView: NSView {
         needsDisplay = true
     }
     override func mouseUp(with event: NSEvent) {
-        if mode == .window {
-            updateHoveredWindow(at: convert(event.locationInWindow, from: nil))
+        if mode == .screen {
+            if bounds.contains(convert(event.locationInWindow, from: nil)) { selected?(nil, nil) }
+        } else if mode == .window {
+            updateHoveredTarget(at: convert(event.locationInWindow, from: nil))
             Self.logger.info("window-click matched=\(self.hoveredWindow != nil) candidates=\(self.windowFrames.count) accepting=\(self.selected != nil)")
             if let hoveredWindow { selected?(nil, hoveredWindow) }
         } else {
@@ -165,7 +173,7 @@ final class ScreenshotSelectionView: NSView {
         // selection stroke would otherwise become fixed content in every frame.
         if mode == .scrolling && !isChoosing { return }
         if let selection {
-            if mode == .window {
+            if mode == .window || mode == .screen {
                 NSColor.controlAccentColor.withAlphaComponent(0.22).setFill()
                 NSBezierPath(rect: selection).fill()
             }
@@ -174,8 +182,11 @@ final class ScreenshotSelectionView: NSView {
             border.lineWidth = 2
             border.stroke()
         }
-        let hint = mode == .window ? String(localized: "Click a window · Esc to cancel")
-            : String(localized: "Drag to select an area · Esc to cancel")
+        let hint: String = switch mode {
+        case .window: String(localized: "Click a window · Esc to cancel")
+        case .screen: String(localized: "Click a screen · Esc to cancel")
+        case .area, .scrolling: String(localized: "Drag to select an area · Esc to cancel")
+        }
         (hint as NSString).draw(at: CGPoint(x: 24, y: bounds.height - 48), withAttributes: [
             .font: NSFont.systemFont(ofSize: 16, weight: .medium), .foregroundColor: NSColor.white,
         ])
