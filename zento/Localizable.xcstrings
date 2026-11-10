@@ -629,6 +629,16 @@
         }
       }
     },
+    "Add search folders in Settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在设置中添加搜索目录。"
+          }
+        }
+      }
+    },
     "Add Snippet" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3150,12 +3160,12 @@
         }
       }
     },
-    "Enter a file name or choose a filter. Add search folders in Settings." : {
+    "Enter a file name or choose a filter." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "输入文件名或选择筛选条件，可在设置中添加搜索目录。"
+            "value" : "输入文件名或选择筛选条件。"
           }
         }
       }
@@ -4182,6 +4192,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已索引应用"
+          }
+        }
+      }
+    },
+    "Indexing search folders…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在为搜索目录建立或更新索引…"
           }
         }
       }
@@ -7311,6 +7331,16 @@
         }
       }
     },
+    "Search File Names" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索文件名"
+          }
+        }
+      }
+    },
     "Search file names — ext:pdf, type:folder, path:project" : {
       "localizations" : {
         "zh-Hans" : {
@@ -7381,6 +7411,16 @@
         }
       }
     },
+    "Search results may be incomplete. Check search folders in Settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索结果可能不完整，请在设置中检查搜索目录。"
+          }
+        }
+      }
+    },
     "Search Snippets" : {
       "localizations" : {
         "zh-Hans" : {
@@ -7397,6 +7437,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "搜索内容"
+          }
+        }
+      }
+    },
+    "Searching…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在搜索…"
           }
         }
       }

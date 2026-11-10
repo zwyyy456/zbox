@@ -5,37 +5,13 @@ struct FileSearchView: View {
     @State private var searchFocused = false
     @FocusState private var resultsFocused: Bool
 
+    private let horizontalInset: CGFloat = 16
+
     var body: some View {
         let hasSelection = plugin.selectedFile != nil
+        let indexStatus = indexSummary
         VStack(spacing: 0) {
-            ToolSearchBar {
-                NativeSearchField(title: String(localized: "Search file names — ext:pdf, type:folder, path:project"),
-                                  text: $plugin.query, isFocused: $searchFocused)
-            } accessory: {
-                TextField("Extension", text: $plugin.extensionFilter)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                filterMenu
-            }
-            if hasActiveFilters {
-                HStack(alignment: .top, spacing: 12) {
-                    Text(filterSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Button("Clear Filters") {
-                        plugin.scope = ""
-                        plugin.typeFilter = ""
-                        plugin.extensionFilter = ""
-                        plugin.sort = .relevance
-                    }
-                    .controlSize(.small)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                Divider()
-            }
+            searchControls
             List(plugin.page.files, selection: $plugin.selectedID) { file in
                 HStack(spacing: 12) {
                     Image(systemName: file.isDirectory ? "folder" : "doc").frame(width: 24)
@@ -61,44 +37,133 @@ struct FileSearchView: View {
             }
             .focused($resultsFocused)
             .overlay {
-                if plugin.query.isEmpty && plugin.typeFilter.isEmpty && plugin.extensionFilter.isEmpty {
+                if !hasSearchInput {
                     ContentUnavailableView("Search Files", systemImage: "doc.text.magnifyingglass",
-                                           description: Text("Enter a file name or choose a filter. Add search folders in Settings."))
-                } else if !plugin.isSearching, plugin.searchError == nil, plugin.page.files.isEmpty {
+                                           description: plugin.settings.roots.isEmpty
+                                               ? Text("Add search folders in Settings.")
+                                               : Text("Enter a file name or choose a filter."))
+                } else if !plugin.isSearching, plugin.searchError == nil, plugin.page.files.isEmpty,
+                          !indexStatus.isIndexing {
                     ContentUnavailableView.search(text: plugin.query)
                 }
             }
-            if isSelectionInCloud {
-                Text("Opening or previewing cloud files may download them.")
-                    .font(.caption).foregroundStyle(.secondary).padding(.top, 6)
-            }
-            ToolActionBar(primaryTitle: String(localized: "Open"), isPrimaryEnabled: hasSelection,
-                          primary: { plugin.perform(.open) }) {
-                HStack(spacing: 6) {
-                    if plugin.isSearching { ProgressView().controlSize(.small) }
-                    if let error = plugin.searchError {
-                        SettingsErrorView(message: error)
-                    } else {
-                        Text(statusText)
-                    }
-                }
-            } secondary: {
-                Button("Quick Look") { plugin.perform(.preview) }
-                    .disabled(!hasSelection)
-                Menu("Actions") {
-                    Button("Show in Finder") { plugin.perform(.reveal) }
-                    Button("Quick Look") { plugin.perform(.preview) }
-                    Divider()
-                    Button("Copy File") { plugin.perform(.copyFile) }
-                    Button("Copy Path") { plugin.perform(.copyPath) }
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .disabled(!hasSelection)
+            if hasSelection || plugin.isSearching || plugin.searchError != nil
+                || indexStatus.isIndexing || indexStatus.hasIssue {
+                footer(hasSelection: hasSelection, indexStatus: indexStatus)
             }
         }
         .onAppear { searchFocused = true }
         .onChange(of: resultsFocused) { plugin.resultsFocused = resultsFocused }
+    }
+
+    private var searchControls: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                NativeSearchField(title: String(localized: "Search File Names"), text: $plugin.query,
+                                  isFocused: $searchFocused)
+                    .help("Search file names — ext:pdf, type:folder, path:project")
+                HStack(spacing: 10) {
+                    TextField("Extension", text: $plugin.extensionFilter)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                    filterMenu
+                }
+                .controlSize(.small)
+            }
+            if hasActiveFilters {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(filterSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Clear Filters") {
+                        plugin.scope = ""
+                        plugin.typeFilter = ""
+                        plugin.extensionFilter = ""
+                        plugin.sort = .relevance
+                    }
+                    .controlSize(.small)
+                }
+            }
+        }
+        .padding(.horizontal, horizontalInset)
+        .padding(.vertical, 12)
+    }
+
+    private func footer(hasSelection: Bool, indexStatus: (isIndexing: Bool, hasIssue: Bool)) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                if let error = plugin.searchError {
+                    SettingsErrorView(message: error)
+                } else if plugin.isSearching {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small).accessibilityHidden(true)
+                        Text("Searching…")
+                    }
+                } else if !plugin.page.files.isEmpty {
+                    Text(plugin.page.hasMore
+                         ? String(localized: "Showing the best 200 matches. Narrow your search for more.")
+                         : String(localized: "\(plugin.page.files.count) matches"))
+                }
+                if indexStatus.isIndexing {
+                    Text("Indexing search folders…")
+                }
+                if indexStatus.hasIssue {
+                    Label("Search results may be incomplete. Check search folders in Settings.",
+                          systemImage: "exclamationmark.triangle")
+                }
+                if isSelectionInCloud {
+                    Text("Opening or previewing cloud files may download them.")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if hasSelection {
+                HStack(spacing: 10) {
+                    Button("Quick Look") { plugin.perform(.preview) }
+                    Menu("Actions") {
+                        Button("Show in Finder") { plugin.perform(.reveal) }
+                        Divider()
+                        Button("Copy File") { plugin.perform(.copyFile) }
+                        Button("Copy Path") { plugin.perform(.copyPath) }
+                    }
+                    .menuStyle(.borderlessButton)
+                    Button { plugin.perform(.open) } label: {
+                        HStack(spacing: 6) {
+                            Text("Open")
+                            Text("↩").foregroundStyle(.white.opacity(0.75)).accessibilityHidden(true)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .fixedSize()
+            }
+        }
+        .padding(.horizontal, horizontalInset)
+        .padding(.vertical, 10)
+    }
+
+    private var hasSearchInput: Bool {
+        !plugin.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !plugin.extensionFilter.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !plugin.typeFilter.isEmpty
+    }
+
+    private var indexSummary: (isIndexing: Bool, hasIssue: Bool) {
+        var isIndexing = false
+        var hasIssue = false
+        for root in plugin.scopedRoots {
+            switch plugin.rootStatus[root.id] {
+            case .building, .updating: isIndexing = true
+            case .failed: hasIssue = true
+            case .ready, nil: break
+            }
+        }
+        return (isIndexing, hasIssue)
     }
 
     private var filterMenu: some View {
@@ -147,14 +212,6 @@ struct FileSearchView: View {
                 ? String(localized: "Name") : String(localized: "Modified")))
         }
         return parts.joined(separator: " · ")
-    }
-
-    private var statusText: String {
-        let count = plugin.page.hasMore
-            ? String(localized: "Showing the best 200 matches. Narrow your search for more.")
-            : String(localized: "\(plugin.page.files.count) matches")
-        let index = plugin.rootStatus.values.sorted().joined(separator: " · ")
-        return index.isEmpty ? count : count + " · " + index
     }
 
     private var isSelectionInCloud: Bool {

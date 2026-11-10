@@ -2,6 +2,20 @@ import SwiftUI
 import Observation
 import CoreServices
 
+enum FileSearchIndexStatus {
+    case building, updating, ready(initialCount: Int? = nil), failed(FileSearchError)
+
+    var title: String {
+        switch self {
+        case .building: String(localized: "Building index…")
+        case .updating: String(localized: "Updating index…")
+        case .ready(let count?): String(localized: "Index ready (initial scan: \(count) items)")
+        case .ready(nil): String(localized: "Index ready")
+        case .failed(let error): error.localizedDescription
+        }
+    }
+}
+
 @MainActor @Observable
 final class FileSearchPlugin {
     static let selectionCommandID = CommandID("filesearch.finder-selection")
@@ -15,9 +29,12 @@ final class FileSearchPlugin {
     let settings = FileSearchSettings()
     private(set) var isEnabled: Bool
     var statusMessage: String?
-    var rootStatus: [UUID: String] = [:]
+    private(set) var rootStatus: [UUID: FileSearchIndexStatus] = [:]
     var query = "" { didSet { search() } }
     var scope = "" { didSet { search() } }
+    var scopedRoots: [FileSearchRoot] {
+        settings.roots.filter { scope.isEmpty || $0.id.uuidString == scope }
+    }
     var typeFilter = "" { didSet { search() } }
     var extensionFilter = "" { didSet { search() } }
     var sort = FileSearchSort.relevance { didSet { search() } }
@@ -106,7 +123,7 @@ final class FileSearchPlugin {
         pending[root.id] = nil
         let runID = UUID()
         runIDs[root.id] = runID
-        rootStatus[root.id] = String(localized: "Building index…")
+        rootStatus[root.id] = .building
         scanTasks[root.id] = Task { [weak self] in
             await cleanup?.value
             await previous?.value
@@ -125,21 +142,21 @@ final class FileSearchPlugin {
                 }
                 watchers[root.id] = watcher
                 if replay {
-                    rootStatus[root.id] = String(localized: "Updating index…")
+                    rootStatus[root.id] = .updating
                     // HistoryDone is the barrier: an empty pending batch before it is not proof
                     // that the on-disk snapshot is current. Dropped history enqueues a full scan.
                     try await watcher.waitForHistory()
                     try await drainChanges(for: root)
                     let updated = try await index.cursor(root: root.id) ?? baseline
                     try await index.setCursor(max(updated, baseline), root: root.id)
-                    rootStatus[root.id] = String(localized: "Index ready")
+                    rootStatus[root.id] = .ready()
                 } else {
                     let count = try await scanner.scan(root, store: index)
                     try await watcher.waitForHistory()
                     try Task.checkCancellation()
                     try await index.setCursor(baseline, root: root.id, persist: true)
                     try await drainChanges(for: root)
-                    rootStatus[root.id] = String(localized: "Index ready (initial scan: \(count) items)")
+                    rootStatus[root.id] = .ready(initialCount: count)
                 }
                 try Task.checkCancellation()
                 search()
@@ -159,10 +176,10 @@ final class FileSearchPlugin {
             defer { if runIDs[root.id] == runID { scanTasks[root.id] = nil } }
             do {
                 try await Task.sleep(for: .milliseconds(200))
-                rootStatus[root.id] = String(localized: "Updating index…")
+                rootStatus[root.id] = .updating
                 try await drainChanges(for: root)
                 try Task.checkCancellation()
-                rootStatus[root.id] = String(localized: "Index ready")
+                rootStatus[root.id] = .ready()
                 search()
             } catch is CancellationError { return }
             catch { reportScanError(error, root: root) }
@@ -177,7 +194,7 @@ final class FileSearchPlugin {
 
     private func reportScanError(_ error: any Error, root: FileSearchRoot) {
         guard !Task.isCancelled else { return }
-        rootStatus[root.id] = (error as? FileSearchError)?.localizedDescription ?? FileSearchError.scanIncomplete.localizedDescription
+        rootStatus[root.id] = .failed(error as? FileSearchError ?? .scanIncomplete)
         // A failed reconciliation is retried as a full scan on the next event or manual rescan.
         pending[root.id, default: FileIndexChange()].directories = [""]
         search()
@@ -287,7 +304,7 @@ final class FileSearchPlugin {
         isSearching = false
         guard isEnabled, isVisible, finderSelection == nil else { return }
         let input = query, ext = extensionFilter, type = typeFilter, ordering = sort
-        let roots = settings.roots.filter { scope.isEmpty || $0.id.uuidString == scope }
+        let roots = scopedRoots
         queryTask = Task { [weak self] in
             guard let self, !Task.isCancelled else { return }
             do {

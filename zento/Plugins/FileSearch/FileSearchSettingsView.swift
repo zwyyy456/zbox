@@ -34,8 +34,8 @@ struct FileSearchSettingsView: View {
                         }
                         Spacer()
                         if let status = plugin.rootStatus[root.id] {
-                            Text(status).font(.caption).foregroundStyle(.secondary)
-                                .lineLimit(2).help(status)
+                            Text(status.title).font(.caption).foregroundStyle(.secondary)
+                                .lineLimit(2).help(status.title)
                         }
                         Menu {
                             Button("Rescan") { plugin.rescan(root) }.disabled(!plugin.isEnabled)
