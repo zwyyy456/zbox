@@ -1,3 +1,4 @@
+import AppKit
 import AVFoundation
 import CoreGraphics
 import CoreMedia
@@ -150,7 +151,7 @@ struct ScreenshotRecordingTests {
             try encoder.append(last, at: 1, isCancelled: { false })
             try encoder.finish(at: 31, isCancelled: { false })
             let result = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
-            #expect(CGImageSourceGetCount(result) == 30 * rate)
+            #expect(CGImageSourceGetCount(result) == 2)
             let properties = try #require(CGImageSourceCopyProperties(result, nil) as? [CFString: Any])
             let loop = properties[kCGImagePropertyGIFDictionary] as? [CFString: Any]
             #expect(loop?[kCGImagePropertyGIFLoopCount] as? Int == 0)
@@ -164,10 +165,91 @@ struct ScreenshotRecordingTests {
             }
             #expect(abs(duration - 30) < 0.0001)
             let beginning = try #require(CGImageSourceCreateImageAtIndex(result, 0, nil))
-            let ending = try #require(CGImageSourceCreateImageAtIndex(result, 30 * rate - 1, nil))
+            let ending = try #require(CGImageSourceCreateImageAtIndex(result, 1, nil))
             #expect(beginning.dataProvider?.data != ending.dataProvider?.data)
         }
         #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).allSatisfy { $0.hasSuffix(".gif") })
+    }
+
+    @Test func gifMergesIdenticalCapturesWithoutShorteningPlayback() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let size = CGSize(width: 65, height: 49)
+        let url = folder.appending(path: "static.gif")
+        let encoder = try GIFEncoder(url: url, size: size, frameRate: 20)
+        for time in [0.0, 0.05, 0.20, 2.0] {
+            // Separate image allocations must still count as the same visual frame.
+            try encoder.append(makeImage(size: size, shade: 0.5), at: time, isCancelled: { false })
+        }
+        try encoder.finish(at: 30, isCancelled: { false })
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        #expect(CGImageSourceGetCount(source) == 1)
+        #expect(try gifDelays(source) == [30])
+        #expect(try gifRectangles(Data(contentsOf: url)) == [CGRect(origin: .zero, size: size)])
+    }
+
+    @Test func gifMergingPreservesFifteenFPSBoundaries() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let size = CGSize(width: 65, height: 49)
+        let url = folder.appending(path: "timing.gif")
+        let encoder = try GIFEncoder(url: url, size: size, frameRate: 15)
+        for (time, shade) in [(0.0, 0.1), (0.07, 0.5), (0.13, 0.5), (0.20, 0.9)] {
+            try encoder.append(makeImage(size: size, shade: shade), at: time, isCancelled: { false })
+        }
+        try encoder.finish(at: 0.27, isCancelled: { false })
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        #expect(CGImageSourceGetCount(source) == 3)
+        #expect(try gifDelays(source) == [0.07, 0.13, 0.07])
+    }
+
+    @Test func gifEncodesChangedRectanglesAndErasesPreviousPositions() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let size = CGSize(width: 65, height: 49)
+        let firstPatch = CGRect(x: 5, y: 7, width: 4, height: 3)
+        let secondPatch = CGRect(x: 40, y: 33, width: 4, height: 3)
+        let edge = CGRect(x: 64, y: 48, width: 1, height: 1)
+        let frames = try [nil, firstPatch, secondPatch, nil, edge].map { try makePatchImage(size: size, rect: $0) }
+        let url = folder.appending(path: "patches.gif")
+        let encoder = try GIFEncoder(url: url, size: size, frameRate: 10)
+        for (index, frame) in frames.enumerated() {
+            try encoder.append(frame, at: Double(index) / 10, isCancelled: { false })
+        }
+        try encoder.finish(at: 0.5, isCancelled: { false })
+        let rectangles = try gifRectangles(Data(contentsOf: url))
+        #expect(rectangles == [CGRect(origin: .zero, size: size), firstPatch, firstPatch.union(secondPatch), secondPatch, edge])
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        let native = try #require(NSBitmapImageRep(data: Data(contentsOf: url)))
+        #expect(CGImageSourceGetCount(source) == frames.count)
+        #expect(try gifDelays(source) == Array(repeating: 0.1, count: frames.count))
+        for index in frames.indices {
+            let decoded = try #require(CGImageSourceCreateImageAtIndex(source, index, nil))
+            #expect(decoded.width == 65 && decoded.height == 49)
+            #expect(try rgbaBytes(decoded) == rgbaBytes(frames[index]))
+            native.setProperty(.currentFrame, withValue: index)
+            #expect(try rgbaBytes(#require(native.cgImage)) == rgbaBytes(frames[index]))
+        }
+        native.setProperty(.currentFrame, withValue: 0)
+        #expect(try rgbaBytes(#require(native.cgImage)) == rgbaBytes(frames[0]))
+    }
+
+    @Test func gifFlattensTransparencySoPatchesCanEraseOpaquePixels() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let size = CGSize(width: 65, height: 49)
+        let rect = CGRect(x: 10, y: 20, width: 5, height: 4)
+        let opaque = try makePatchImage(size: size, rect: rect)
+        let transparent = try makePatchImage(size: size, rect: rect, color: [0, 0, 0, 0])
+        let black = try makePatchImage(size: size, rect: rect, color: [0, 0, 0, 255])
+        let url = folder.appending(path: "transparency.gif")
+        let encoder = try GIFEncoder(url: url, size: size, frameRate: 10)
+        try encoder.append(opaque, at: 0, isCancelled: { false })
+        try encoder.append(transparent, at: 0.1, isCancelled: { false })
+        try encoder.finish(at: 0.2, isCancelled: { false })
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        let decoded = try #require(CGImageSourceCreateImageAtIndex(source, 1, nil))
+        #expect(try rgbaBytes(decoded) == rgbaBytes(black))
     }
 
     @Test func gifCancellationAndEmptyRecordingDoNotFinalize() throws {
@@ -236,6 +318,75 @@ struct ScreenshotRecordingTests {
         let large = CGSize(width: 2000, height: 1000)
         #expect(RecordingPreviewLayout.initialContentSize(natural: large, footer: footer, available: available)
                 == CGSize(width: 1000, height: 552))
+    }
+
+    private func gifDelays(_ source: CGImageSource) throws -> [Double] {
+        try (0..<CGImageSourceGetCount(source)).map { index in
+            let properties = try #require(CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any])
+            let gif = try #require(properties[kCGImagePropertyGIFDictionary] as? [CFString: Any])
+            return try #require(gif[kCGImagePropertyGIFUnclampedDelayTime] as? Double)
+        }
+    }
+
+    private func gifRectangles(_ bytes: Data) throws -> [CGRect] {
+        var cursor = 13 + (bytes[10] & 0x80 != 0 ? 3 * (2 << Int(bytes[10] & 7)) : 0)
+        var rectangles: [CGRect] = []
+        func word(_ offset: Int) -> Int { Int(bytes[offset]) | (Int(bytes[offset + 1]) << 8) }
+        func skipBlocks() {
+            while bytes[cursor] != 0 { cursor += Int(bytes[cursor]) + 1 }
+            cursor += 1
+        }
+        while cursor < bytes.count {
+            switch bytes[cursor] {
+            case 0x21:
+                cursor += 2
+                skipBlocks()
+            case 0x2c:
+                rectangles.append(CGRect(x: word(cursor + 1), y: word(cursor + 3),
+                                         width: word(cursor + 5), height: word(cursor + 7)))
+                let packed = bytes[cursor + 9]
+                cursor += 10 + (packed & 0x80 != 0 ? 3 * (2 << Int(packed & 7)) : 0)
+                cursor += 1 // LZW minimum code size.
+                skipBlocks()
+            case 0x3b:
+                return rectangles
+            default:
+                throw CocoaError(.fileReadCorruptFile)
+            }
+        }
+        throw CocoaError(.fileReadCorruptFile)
+    }
+
+    private func makePatchImage(size: CGSize, rect: CGRect?, color: [UInt8] = [255, 0, 0, 255]) throws -> CGImage {
+        let width = Int(size.width), height = Int(size.height)
+        var pixels = [UInt8](repeating: 255, count: width * height * 4)
+        if let rect {
+            for y in Int(rect.minY)..<Int(rect.maxY) {
+                for x in Int(rect.minX)..<Int(rect.maxX) {
+                    let offset = (y * width + x) * 4
+                    pixels.replaceSubrange(offset..<(offset + 4), with: color)
+                }
+            }
+        }
+        let provider = try #require(CGDataProvider(data: Data(pixels) as CFData))
+        return try #require(CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+                                    bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                    bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
+                                        | CGBitmapInfo.byteOrder32Big.rawValue),
+                                    provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+    }
+
+    private func rgbaBytes(_ image: CGImage) throws -> Data {
+        var pixels = Data(count: image.width * image.height * 4)
+        try pixels.withUnsafeMutableBytes { bytes in
+            let context = try #require(CGContext(data: bytes.baseAddress, width: image.width, height: image.height,
+                                                bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                                                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                                                    | CGBitmapInfo.byteOrder32Big.rawValue))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        }
+        return pixels
     }
 
     private func makeImage(size: CGSize, shade: CGFloat) throws -> CGImage {
