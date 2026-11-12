@@ -18,7 +18,7 @@ nonisolated enum RecordingKind: String, CaseIterable, Sendable {
     var commandID: CommandID { CommandID("screenshot.record.\(rawValue)") }
     var fileType: UTType { self == .video ? .mpeg4Movie : .gif }
     var format: String { self == .video ? "MP4" : "GIF" }
-    var frameRates: [Int] { self == .video ? [60, 30] : [10, 15, 20] }
+    var frameRates: [Int] { self == .video ? [60, 30] : [5, 10, 15, 20] }
 }
 
 nonisolated enum RecordingVideoCodec: String, Codable, CaseIterable, Sendable {

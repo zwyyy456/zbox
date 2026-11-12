@@ -10,7 +10,7 @@ import Testing
 @testable import zento
 
 struct ScreenshotRecordingTests {
-    @Test func regionPixelsAndRecordingDefaults() {
+    @Test func regionPixelsAndRecordingDefaults() throws {
         let display = CGRect(x: -1440, y: 100, width: 1440, height: 900)
         let selection = CGRect(x: -1359.75, y: 200.2, width: 501, height: 301)
         let region = ScreenshotGeometry.pixelAligned(ScreenshotGeometry.sourceRect(selection, in: display), scale: 2)
@@ -25,9 +25,15 @@ struct ScreenshotRecordingTests {
         #expect(video.outputSize(for: pixels, kind: .video) == CGSize(width: 750, height: 450))
 
         let gif = RecordingOptions(kind: .gif, saved: nil)
-        #expect(gif.frameRate == 10)
+        #expect(gif.frameRate == 5)
         #expect(gif.showsCursor && !gif.capturesAudio)
         #expect(gif.outputSize(for: pixels, kind: .gif) == pixels)
+        for rate in [5, 10, 15, 20] {
+            var saved = gif
+            saved.frameRate = rate
+            let data = try JSONEncoder().encode(saved)
+            #expect(RecordingOptions(kind: .gif, saved: data).frameRate == rate)
+        }
     }
 
     @MainActor
@@ -144,7 +150,7 @@ struct ScreenshotRecordingTests {
         let size = CGSize(width: 65, height: 49)
         let first = try makeImage(size: size, shade: 0.1)
         let last = try makeImage(size: size, shade: 0.9)
-        for rate in [10, 15, 20] {
+        for rate in [5, 10, 15, 20] {
             let url = folder.appending(path: "direct-\(rate).gif")
             let encoder = try GIFEncoder(url: url, size: size, frameRate: rate)
             try encoder.append(first, at: 0, isCancelled: { false })
@@ -232,6 +238,79 @@ struct ScreenshotRecordingTests {
         }
         native.setProperty(.currentFrame, withValue: 0)
         #expect(try rgbaBytes(#require(native.cgImage)) == rgbaBytes(frames[0]))
+    }
+
+    @Test func gifKeepsEveryFrameAtExactCentisecondBoundaries() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let size = CGSize(width: 65, height: 49)
+        for rate in [5, 10, 15, 20] {
+            let url = folder.appending(path: "boundaries-\(rate).gif")
+            let encoder = try GIFEncoder(url: url, size: size, frameRate: rate)
+            let boundaries = (0...50).map { ($0 * 100 + rate / 2) / rate }
+            for index in 0..<50 {
+                let frame = try makePatchImage(size: size, rect: CGRect(x: index, y: 7, width: 1, height: 1))
+                try encoder.append(frame, at: Double(boundaries[index]) / 100, isCancelled: { false })
+            }
+            try encoder.finish(at: Double(boundaries[50]) / 100, isCancelled: { false })
+            let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+            #expect(CGImageSourceGetCount(source) == 50)
+            let expectedDelays = (0..<50).map { Double(boundaries[$0 + 1] - boundaries[$0]) / 100 }
+            #expect(try gifDelays(source) == expectedDelays)
+        }
+    }
+
+    @Test func gifQuantizationKeepsUnchangedPixelsStableAcrossPaletteChanges() throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let width = 65, height = 49
+        var pixels = [UInt8](repeating: 255, count: width * height * 4)
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = (y * width + x) * 4
+                pixels[offset] = UInt8(x * 255 / (width - 1))
+                pixels[offset + 1] = UInt8(y * 255 / (height - 1))
+                pixels[offset + 2] = UInt8((x * 7 + y * 11) % 256)
+            }
+        }
+        func image(_ pixels: [UInt8]) throws -> CGImage {
+            let provider = try #require(CGDataProvider(data: Data(pixels) as CFData))
+            return try #require(CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+                                        bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                        bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
+                                            | CGBitmapInfo.byteOrder32Big.rawValue), provider: provider,
+                                        decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        }
+        let first = try image(pixels)
+        // Separate changes force a wide patch with a large unchanged interior.
+        for offset in [4 * (width + 1), 4 * ((height - 2) * width + width - 2)] {
+            pixels.replaceSubrange(offset..<(offset + 4), with: [0, 255, 0, 255])
+        }
+        let second = try image(pixels)
+        let url = folder.appending(path: "quantized.gif")
+        let encoder = try GIFEncoder(url: url, size: CGSize(width: width, height: height), frameRate: 10)
+        for (time, frame) in [(0.0, first), (0.1, second), (0.2, second), (0.3, first)] {
+            try encoder.append(frame, at: time, isCancelled: { false })
+        }
+        try encoder.finish(at: 0.4, isCancelled: { false })
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        #expect(CGImageSourceGetCount(source) == 3)
+        #expect(try gifDelays(source) == [0.1, 0.2, 0.1])
+        let decoded = try (0..<3).map { try rgbaBytes(#require(CGImageSourceCreateImageAtIndex(source, $0, nil))) }
+        let originals = try [first, second, first].map { try rgbaBytes($0) }
+        for index in 0..<3 {
+            var squaredError = 0.0
+            for offset in stride(from: 0, to: originals[index].count, by: 4) {
+                for channel in 0..<3 {
+                    let error = Int(originals[index][offset + channel]) - Int(decoded[index][offset + channel])
+                    squaredError += Double(error * error)
+                }
+                if originals[0][offset..<(offset + 4)] == originals[index][offset..<(offset + 4)] {
+                    #expect(decoded[0][offset..<(offset + 4)] == decoded[index][offset..<(offset + 4)])
+                }
+            }
+            #expect(sqrt(squaredError / Double(width * height * 3)) < 12)
+        }
     }
 
     @Test func gifFlattensTransparencySoPatchesCanEraseOpaquePixels() throws {

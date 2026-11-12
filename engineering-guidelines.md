@@ -68,6 +68,7 @@
 - 录制行为由 `docs/product/recording.md` 定义。录制会话拥有目标、计时、状态与临时文件；ScreenshotPlugin 协调命令、截图互斥和停用，App 退出等待会话解决后再停止其他插件。
 - 录制使用 macOS 15 的 ScreenCaptureKit，先注册输出再启动流；视频使用 SCRecordingOutput，GIF 使用 SCStreamOutput 画面帧直接编码，不创建中间视频。预览只消费写入完成的文件。每次选择和录制都有独立回调生命周期；取消等待采集与写入退出后才删除临时文件。
 - 录制 UI 与会话状态在 Main Actor；GIF 在串行采集回调队列逐帧编码写入，缓冲保持有界，停止后的最终写入、文件保存与清理均在后台处理。
+- GIF 编码通过本地 `Packages/CGIF` 静态链接 cgif；`GIFEncoder` 隔离 C 实例与像素指针，沿用时间网格、重复帧合并和黑色画布合成。cgif 负责颜色量化、透明差分、变化区域与 LZW，不启用误差扩散抖动。
 
 ## Display 边界
 

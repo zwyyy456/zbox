@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000030000000000000003 /* FlashDictIntegrationKit */; };
 		E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZentoExtensionProtocol */; };
+		C61000010000000000000001 /* CGIF in Frameworks */ = {isa = PBXBuildFile; productRef = C61000030000000000000003 /* CGIF */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 			files = (
 				A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */,
 				E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */,
+				C61000010000000000000001 /* CGIF in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +114,7 @@
 			packageProductDependencies = (
 				A10000030000000000000003 /* FlashDictIntegrationKit */,
 				E10000030000000000000003 /* ZentoExtensionProtocol */,
+				C61000030000000000000003 /* CGIF */,
 			);
 			productName = zento;
 			productReference = 36529F65302CCB25006E45F7 /* zento.app */;
@@ -171,6 +174,7 @@
 			packageReferences = (
 				A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */,
 				E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZentoExtensionKit" */,
+				C61000020000000000000002 /* XCLocalSwiftPackageReference "Packages/CGIF" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 36529F66302CCB25006E45F7 /* Products */;
@@ -509,6 +513,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ZentoExtensionKit;
 		};
+		C61000020000000000000002 /* XCLocalSwiftPackageReference "Packages/CGIF" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CGIF;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -520,6 +528,10 @@
 		E10000030000000000000003 /* ZentoExtensionProtocol */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ZentoExtensionProtocol;
+		};
+		C61000030000000000000003 /* CGIF */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CGIF;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
