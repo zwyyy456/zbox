@@ -28,6 +28,7 @@ final class ClipboardHistoryPlugin {
     var selectedID: UUID? { didSet { updatePreview() } }
     var filter = ClipboardHistoryFilter.all { didSet { reloadSearch() } }
     private(set) var isPresented = false
+    private(set) var isLoadingPreview = false
     private(set) var previewImage: NSImage?
     private(set) var previewDimensions: String?
     private var previewTask: Task<Void, Never>?
@@ -218,6 +219,7 @@ final class ClipboardHistoryPlugin {
 
     private func updatePreview() {
         previewTask?.cancel()
+        isLoadingPreview = false
         previewImage = nil
         previewDimensions = nil
         guard let id = selectedID, let entry = entries.first(where: { $0.id == id }),
@@ -226,7 +228,11 @@ final class ClipboardHistoryPlugin {
             guard let payload = try store?.payload(for: id) else { return }
             let (width, height) = try ClipboardImage.dimensions(of: payload.data)
             previewDimensions = "\(width) × \(height)"
+            isLoadingPreview = true
             previewTask = Task { [weak self] in
+                defer {
+                    if !Task.isCancelled, self?.selectedID == id { self?.isLoadingPreview = false }
+                }
                 do {
                     let thumbnail = try await ClipboardImage.thumbnail(payload.data)
                     try Task.checkCancellation()
@@ -361,6 +367,7 @@ final class ClipboardHistoryPlugin {
         pasteTask?.cancel()
         pasteTask = nil
         previewTask?.cancel()
+        isLoadingPreview = false
         previewImage = nil
         previewDimensions = nil
         let target = targetApplication

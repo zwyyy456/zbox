@@ -71,14 +71,10 @@ struct ClipboardHistoryView: View {
                             if let entry = plugin.entries.first(where: { $0.id == plugin.selectedID }) {
                                 VStack(alignment: .leading, spacing: 20) {
                                     if ["png", "tiff"].contains(entry.kind) {
-                                        if let image = plugin.previewImage {
-                                            Image(nsImage: image).resizable().scaledToFit()
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                                .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.58)
-                                                .accessibilityLabel(entry.text)
-                                        } else {
-                                            Text("Image preview unavailable").foregroundStyle(.secondary)
-                                        }
+                                        ClipboardImagePreview(image: plugin.previewImage,
+                                            isLoading: plugin.isLoadingPreview,
+                                            height: geometry.size.height * 0.58,
+                                            imageDescription: entry.text)
                                     } else if entry.kind == "files" {
                                         LazyVStack(alignment: .leading, spacing: 16) {
                                             if entry.fileURLs.count > 1 {
@@ -160,6 +156,30 @@ struct ClipboardHistoryView: View {
     }
 }
 
+// The canvas owns height in every loading state; image decoding must not move the information below it.
+private struct ClipboardImagePreview: View {
+    let image: NSImage?
+    let isLoading: Bool
+    let height: CGFloat
+    let imageDescription: String
+
+    var body: some View {
+        ZStack {
+            if let image {
+                Image(nsImage: image).resizable().scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityLabel(imageDescription)
+            } else if isLoading {
+                ProgressView().controlSize(.small)
+            } else {
+                Text("Image preview unavailable").foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+    }
+}
+
 private struct ClipboardFileReferencePreview: View {
     let url: URL
     let isPresented: Bool
@@ -170,17 +190,8 @@ private struct ClipboardFileReferencePreview: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if ClipboardImage.canPreviewFile(url) {
-                if let image {
-                    Image(nsImage: image).resizable().scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .frame(maxWidth: .infinity, maxHeight: maximumHeight)
-                        .accessibilityLabel(url.lastPathComponent)
-                } else if previewUnavailable {
-                    Text("Image preview unavailable").foregroundStyle(.secondary)
-                } else {
-                    ProgressView().controlSize(.small)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
+                ClipboardImagePreview(image: image, isLoading: !previewUnavailable && image == nil,
+                                      height: maximumHeight, imageDescription: url.lastPathComponent)
             }
             Text(url.lastPathComponent).fontWeight(.medium).textSelection(.enabled)
             Text(url.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
