@@ -424,10 +424,21 @@ final class ScreenshotPlugin {
                 guard let self, captureID == id else { return }
                 if mode == .screen {
                     guard let screen else { throw ScreenshotError.unavailable }
-                    finishCapture(content: content, screen: screen, area: nil, selectedWindow: nil, id: id, purpose: purpose, pinGeneration: generation)
+                    finishCapture(content: content, screen: screen, area: nil, id: id, purpose: purpose, pinGeneration: generation)
                 } else {
-                    selection.show(mode: mode, windows: content.windows) { [weak self] screen, area, selectedWindow in
-                        self?.finishCapture(content: content, screen: screen, area: area, selectedWindow: selectedWindow, id: id, purpose: mode == .scrolling ? .scroll : purpose, pinGeneration: generation)
+                    let freezesScreen = mode == .area || mode == .window
+                    let frozenTargets = mode == .window ? ScreenshotSelection.freezeWindowTargets(content.windows) : nil
+                    let snapshots = freezesScreen ? try await ScreenshotCapture.snapshots(content: content, screens: NSScreen.screens) : [:]
+                    try Task.checkCancellation()
+                    guard captureID == id else { return }
+                    selection.show(mode: mode, windows: content.windows, snapshots: snapshots, frozenWindowTargets: frozenTargets) { [weak self] screen, area, _ in
+                        let snapshot = ScreenshotCapture.displayID(for: screen).flatMap { snapshots[$0] }
+                        if freezesScreen && snapshot == nil {
+                            self?.cancelCapture()
+                            self?.report(ScreenshotError.unavailable)
+                            return
+                        }
+                        self?.finishCapture(content: content, screen: screen, area: area, id: id, purpose: mode == .scrolling ? .scroll : purpose, pinGeneration: generation, snapshot: snapshot)
                     } cancelled: { [weak self] in
                         self?.cancelCapture()
                     }
@@ -440,7 +451,7 @@ final class ScreenshotPlugin {
         }
     }
 
-    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, selectedWindow: SCWindow?, id: UUID, purpose: CapturePurpose, pinGeneration generation: Int) {
+    private func finishCapture(content: SCShareableContent, screen: NSScreen, area: CGRect?, id: UUID, purpose: CapturePurpose, pinGeneration generation: Int, snapshot: CGImage? = nil) {
         selection.finishChoosing()
         captureTask = Task { [weak self] in
             do {
@@ -461,7 +472,13 @@ final class ScreenshotPlugin {
                     session.start()
                     return
                 }
-                let image = try await ScreenshotCapture.image(content: content, screen: screen, area: area, window: selectedWindow)
+                let image: CGImage
+                if let snapshot {
+                    guard let area else { throw ScreenshotError.unavailable }
+                    image = try ScreenshotCapture.crop(snapshot, area: area, screenFrame: screen.frame)
+                } else {
+                    image = try await ScreenshotCapture.image(content: content, screen: screen, area: area)
+                }
                 try Task.checkCancellation()
                 guard captureID == id, isEnabled else { return }
                 selection.close()

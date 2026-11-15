@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Drag to select · Option for precision · Esc to cancel": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动选择 · Option 精确定位 · Esc 取消"
+          }
+        }
+      }
+    },
     "Recording Start": {
       "localizations": {
         "zh-Hans": {
