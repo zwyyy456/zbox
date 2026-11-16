@@ -21,9 +21,9 @@ enum TextLookupScreenCapture {
             throw TextCaptureError.noTextAtPointer
         }
         let screenFrame = screen.frame
-        var crop = CGRect(x: point.x - 360, y: point.y - 120, width: 720, height: 240).intersection(screenFrame)
-        if let window = target.windowBounds { crop = crop.intersection(window) }
-        guard !crop.isNull, crop.width > 1, crop.height > 1 else { throw TextCaptureError.noTextAtPointer }
+        guard let crop = TextLookupOCRText.captureRect(point: point, window: target.windowBounds, screen: screenFrame) else {
+            throw TextCaptureError.noTextAtPointer
+        }
         let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         try Task.checkCancellation()
         _ = try TextLookupTargetAccess.validate(request, at: point)
@@ -67,29 +67,41 @@ nonisolated struct TextLookupOCRMatch: Sendable {
 
 /// Values are in Cocoa screen points, independently of the display's pixel scale.
 nonisolated enum TextLookupOCRText {
+    static func captureRect(point: CGPoint, window: CGRect?, screen: CGRect) -> CGRect? {
+        guard let window else { return nil }
+        let visible = window.intersection(screen)
+        guard !visible.isNull, visible.contains(point) else { return nil }
+        let crop = CGRect(x: visible.minX, y: point.y - 160, width: visible.width, height: 320)
+            .intersection(visible)
+        return crop.width > 1 && crop.height > 1 ? crop : nil
+    }
+
     static func screenRect(_ normalized: CGRect, crop: CGRect) -> CGRect {
         CGRect(x: crop.minX + normalized.minX * crop.width,
                y: crop.minY + normalized.minY * crop.height,
                width: normalized.width * crop.width, height: normalized.height * crop.height)
     }
 
-    static func match(lines: [TextLookupOCRLine], anchor: CGRect, expectedTerm: String?) -> TextLookupOCRMatch? {
+    static func match(lines: [TextLookupOCRLine], anchor: CGRect, expectedTerm: String?, cropBounds: CGRect? = nil) -> TextLookupOCRMatch? {
         let point = CGPoint(x: anchor.midX, y: anchor.midY)
         let ordered = lines.sorted { $0.bounds.midY > $1.bounds.midY }
-        for (index, line) in ordered.enumerated() {
+        for line in ordered {
             for word in line.words where word.bounds.contains(point) {
                 let text = line.text as NSString
                 guard word.range.location >= 0, NSMaxRange(word.range) <= text.length else { continue }
                 let term = text.substring(with: word.range)
                 if let expectedTerm, term.compare(expectedTerm, options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame { continue }
                 guard (try? TextLookupTextProcessor.cleanSelection(term)) != nil else { continue }
-                // Only adjacent, aligned lines belong to this context. Never join another column.
+                // Filter the target column before walking adjacent rows: interleaved sidebar
+                // observations must neither enter the sentence nor interrupt its wrapped lines.
+                let column = ordered.filter { sameColumn($0, line) }
+                guard let index = column.firstIndex(where: { $0.bounds == line.bounds && $0.text == line.text }) else { continue }
                 var lower = index
                 var upper = index
-                while lower > 0 && index - lower < 3 && adjacent(ordered[lower - 1], ordered[lower]) { lower -= 1 }
-                while upper + 1 < ordered.count && upper - index < 3 && adjacent(ordered[upper], ordered[upper + 1]) { upper += 1 }
-                let prefix = ordered[lower..<index].map(\.text).joined(separator: " ")
-                let combined = ordered[lower...upper].map(\.text).joined(separator: " ")
+                while lower > 0 && adjacent(column[lower - 1], column[lower]) { lower -= 1 }
+                while upper + 1 < column.count && adjacent(column[upper], column[upper + 1]) { upper += 1 }
+                let prefix = column[lower..<index].map(\.text).joined(separator: " ")
+                let combined = column[lower...upper].map(\.text).joined(separator: " ")
                 let offset = prefix.utf16.count + (prefix.isEmpty ? 0 : 1) + word.range.location
                 let target = NSRange(location: offset, length: word.range.length)
                 let sentence = TextLookupTextProcessor.sentence(in: combined, containingUTF16Range: target)
@@ -97,7 +109,13 @@ nonisolated enum TextLookupOCRText {
                 // a terminal punctuation mark can be claimed as complete.
                 let sentenceRange = sentence.map { (combined as NSString).range(of: $0, options: [],
                     range: NSRange(location: 0, length: combined.utf16.count)) }
-                let complete = sentenceRange.map { $0.location > 0 && $0.location != NSNotFound } == true
+                let touchesCropEdge = cropBounds.map { crop in
+                    column[lower...upper].contains {
+                        $0.bounds.minX <= crop.minX + 2 || $0.bounds.maxX >= crop.maxX - 2
+                            || $0.bounds.minY <= crop.minY + 2 || $0.bounds.maxY >= crop.maxY - 2
+                    }
+                } ?? false
+                let complete = !touchesCropEdge && sentenceRange.map { $0.location > 0 && $0.location != NSNotFound } == true
                     && sentence?.last.map { ".!?。！？".contains($0) } == true
                 return TextLookupOCRMatch(term: expectedTerm ?? term, context: sentence,
                                           isFragment: !complete, bounds: word.bounds)
@@ -106,13 +124,17 @@ nonisolated enum TextLookupOCRText {
         return nil
     }
 
+    private static func sameColumn(_ lhs: TextLookupOCRLine, _ rhs: TextLookupOCRLine) -> Bool {
+        let height = max(lhs.bounds.height, rhs.bounds.height)
+        let overlap = min(lhs.bounds.maxX, rhs.bounds.maxX) - max(lhs.bounds.minX, rhs.bounds.minX)
+        return overlap > min(lhs.bounds.width, rhs.bounds.width) * 0.5
+            && abs(lhs.bounds.minX - rhs.bounds.minX) <= height * 2
+    }
+
     private static func adjacent(_ top: TextLookupOCRLine, _ bottom: TextLookupOCRLine) -> Bool {
         let height = max(top.bounds.height, bottom.bounds.height)
         let gap = top.bounds.minY - bottom.bounds.maxY
-        let overlap = min(top.bounds.maxX, bottom.bounds.maxX) - max(top.bounds.minX, bottom.bounds.minX)
-        return gap >= -height * 0.3 && gap <= height * 1.5
-            && overlap > min(top.bounds.width, bottom.bounds.width) * 0.5
-            && abs(top.bounds.minX - bottom.bounds.minX) <= height * 2
+        return gap >= -height * 0.3 && gap <= height * 1.5 && sameColumn(top, bottom)
     }
 }
 
@@ -155,7 +177,7 @@ actor TextLookupOCR {
             return TextLookupOCRLine(text: text,
                 bounds: TextLookupOCRText.screenRect(observation.boundingBox.cgRect, crop: snapshot.bounds), words: words)
         }
-        guard let match = TextLookupOCRText.match(lines: lines, anchor: snapshot.anchor, expectedTerm: expectedTerm) else {
+        guard let match = TextLookupOCRText.match(lines: lines, anchor: snapshot.anchor, expectedTerm: expectedTerm, cropBounds: snapshot.bounds) else {
             throw TextCaptureError.noTextAtPointer
         }
         return match

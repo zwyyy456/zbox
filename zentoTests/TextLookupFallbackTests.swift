@@ -27,6 +27,33 @@ struct TextLookupFallbackTests {
             bounds: nil, point: CGPoint(x: 110, y: 110)))
     }
 
+    @Test func ocrCropUsesVisibleWindowWidthAndClampsVerticalBand() {
+        let screen = CGRect(x: -1600, y: 0, width: 1600, height: 1000)
+        let window = CGRect(x: -1700, y: 100, width: 1400, height: 800)
+        #expect(TextLookupOCRText.captureRect(point: CGPoint(x: -800, y: 500), window: window, screen: screen)
+            == CGRect(x: -1600, y: 340, width: 1300, height: 320))
+        #expect(TextLookupOCRText.captureRect(point: CGPoint(x: -800, y: 850), window: window, screen: screen)
+            == CGRect(x: -1600, y: 690, width: 1300, height: 210))
+        #expect(TextLookupOCRText.captureRect(point: CGPoint(x: -800, y: 500), window: nil, screen: screen) == nil)
+    }
+
+    @Test func ocrKeepsLongWrappedSentenceDespiteInterleavedSidebar() throws {
+        let texts = ["Previous sentence.", "This is a long", "sentence that spans", "several lines before", "reaching the target", "word at the end."]
+        var lines = texts.enumerated().map { index, text in
+            TextLookupOCRLine(text: text, bounds: CGRect(x: 200, y: 250 - index * 30, width: 180, height: 20),
+                words: index == 5 ? [TextLookupOCRWord(range: NSRange(location: 0, length: 4),
+                    bounds: CGRect(x: 200, y: 100, width: 40, height: 20))] : [])
+        }
+        lines.append(TextLookupOCRLine(text: "Sidebar item", bounds: CGRect(x: 0, y: 205, width: 120, height: 20), words: []))
+        let anchor = CGRect(x: 210, y: 110, width: 1, height: 1)
+        let match = try #require(TextLookupOCRText.match(lines: lines, anchor: anchor, expectedTerm: nil))
+        #expect(match.context == "This is a long sentence that spans several lines before reaching the target word at the end.")
+        #expect(!match.isFragment)
+        let clipped = try #require(TextLookupOCRText.match(lines: lines, anchor: anchor, expectedTerm: nil,
+            cropBounds: CGRect(x: 200, y: 0, width: 600, height: 320)))
+        #expect(clipped.isFragment)
+    }
+
     @Test func ocrCoordinatesUseScreenPointsIncludingNegativeDisplayOrigins() {
         let crop = CGRect(x: -900, y: 300, width: 720, height: 240)
         let bounds = TextLookupOCRText.screenRect(CGRect(x: 0.25, y: 0.5, width: 0.1, height: 0.1), crop: crop)
