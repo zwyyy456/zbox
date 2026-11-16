@@ -35,6 +35,10 @@ nonisolated enum TextLookupTextProcessor {
         )
     }
 
+    static func wordRanges(in text: String) -> [NSRange] {
+        tokenRanges(in: text, unit: .word)
+    }
+
     static func wordRange(in text: String, containingUTF16Offset offset: Int) -> NSRange? {
         tokenRanges(in: text, unit: .word).first {
             offset >= $0.location && offset < NSMaxRange($0)

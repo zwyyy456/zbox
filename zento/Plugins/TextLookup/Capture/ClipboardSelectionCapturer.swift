@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import Carbon
 
 @MainActor
 final class ClipboardSelectionCapturer {
@@ -12,6 +13,10 @@ final class ClipboardSelectionCapturer {
     }
 
     func capture(_ request: TextCaptureRequest) async throws -> TextLookupCapture {
+        try Task.checkCancellation()
+        guard !IsSecureEventInputEnabled() else { throw TextCaptureError.secureText }
+        guard !request.excludedApplicationPIDs.contains(request.targetApplicationPID) else { throw TextCaptureError.excludedApplication }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == request.targetApplicationPID else { throw CancellationError() }
         coordinator.beginTemporaryAccess()
         defer { coordinator.endTemporaryAccess() }
         let pasteboard = NSPasteboard.general
@@ -73,6 +78,8 @@ final class ClipboardSelectionCapturer {
         let keyCode: CGKeyCode = 8
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
+        keyDown?.setIntegerValueField(.eventSourceUserData, value: TextLookupTargetAccess.syntheticEventTag)
+        keyUp?.setIntegerValueField(.eventSourceUserData, value: TextLookupTargetAccess.syntheticEventTag)
         keyDown?.flags = commandFlag
         keyUp?.flags = commandFlag
         keyDown?.post(tap: .cghidEventTap)

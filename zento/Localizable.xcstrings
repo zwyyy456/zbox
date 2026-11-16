@@ -1,6 +1,136 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Press Esc to cancel." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按 Esc 取消。"
+          }
+        }
+      }
+    },
+    "Recognizing nearby text…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在识别附近的文字…"
+          }
+        }
+      }
+    },
+    "Allow Simulated Double-click" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许模拟双击"
+          }
+        }
+      }
+    },
+    "If pointer lookup fails, double-click readable text to select a word. This changes the selection in the source app." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标取词失败时，双击可读取的文本来选词。这会改变来源应用中的选区。"
+          }
+        }
+      }
+    },
+    "Use Local OCR" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用本地 OCR"
+          }
+        }
+      }
+    },
+    "Recognize a small area around the word on this Mac to supplement context or read text when other methods fail. Screenshots are not saved." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在本机识别词语附近的小块区域，用于补充上下文或在其他方式失败时取词。不保存截图。"
+          }
+        }
+      }
+    },
+    "When Accessibility cannot read a selection, Zento may briefly simulate Copy and restore the clipboard if it has not changed. This also applies to selections created by simulated double-click." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "辅助功能无法读取选区时，可短暂模拟复制，并在剪贴板未被其他操作改变时恢复它。模拟双击产生的选区也适用。"
+          }
+        }
+      }
+    },
+    "Text Lookup reads text only when triggered. Optional local OCR uses Screen Recording permission. Text and images stay in the current session unless you create a FlashDict card; no lookup history is kept." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取词只在触发时读取文本。可选的本地 OCR 使用屏幕录制权限。文字和图像仅用于当前会话，除非你创建 FlashDict 闪卡；不保留取词历史。"
+          }
+        }
+      }
+    },
+    "Local OCR requires Screen Recording permission. Enable it in Text Lookup settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地 OCR 需要屏幕录制权限，请在取词设置中授权。"
+          }
+        }
+      }
+    },
+    "The word was read, but local OCR could not capture its context." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已读取词语，但本地 OCR 未能获取附近的上下文。"
+          }
+        }
+      }
+    },
+    "No matching context was found near this word." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未在此词附近找到匹配的上下文。"
+          }
+        }
+      }
+    },
+    "Reading nearby context…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在读取附近的上下文…"
+          }
+        }
+      }
+    },
+    "Context fragment" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上下文片段"
+          }
+        }
+      }
+    },
     "Drag to select · Option for precision · Esc to cancel": {
       "localizations": {
         "zh-Hans": {
@@ -9136,12 +9266,12 @@
         }
       }
     },
-    "This application does not expose text at this location." : {
+    "Unable to locate a readable word at this position using Accessibility." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此应用未公开该位置的文本。"
+            "value" : "未能通过辅助功能接口定位此处可读取的词语。"
           }
         }
       }

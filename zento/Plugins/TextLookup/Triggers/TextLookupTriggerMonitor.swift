@@ -115,6 +115,7 @@ final class TextLookupTriggerMonitor {
     }
 
     private func handleKeyboard(type: CGEventType, event: CGEvent) -> Bool {
+        if event.getIntegerValueField(.eventSourceUserData) == TextLookupTargetAccess.syntheticEventTag { return false }
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             reset()
             if let keyboardTap { CGEvent.tapEnable(tap: keyboardTap, enable: true) }
@@ -141,7 +142,7 @@ final class TextLookupTriggerMonitor {
     }
 
     private func handle(_ event: NSEvent) {
-        guard !isSuspended else { return }
+        guard !isSuspended, event.cgEvent?.getIntegerValueField(.eventSourceUserData) != TextLookupTargetAccess.syntheticEventTag else { return }
         let flags = event.modifierFlags
         state.modifiers = (flags.contains(.command) ? HotkeyModifiers.command : 0)
             | (flags.contains(.option) ? HotkeyModifiers.option : 0)

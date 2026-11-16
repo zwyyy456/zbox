@@ -49,6 +49,8 @@ final class TextLookupSettingsStore {
     private enum Key {
         static let enabled = "plugin.text-lookup.enabled"
         static let triggers = "plugin.text-lookup.triggers"
+        static let doubleClickFallback = "plugin.text-lookup.double-click-fallback"
+        static let localOCR = "plugin.text-lookup.local-ocr"
         static let clipboardFallback = "plugin.text-lookup.clipboard-fallback"
         static let targetLanguage = "plugin.text-lookup.target-language"
         static let excludedApplications = "plugin.text-lookup.excluded-applications"
@@ -58,6 +60,8 @@ final class TextLookupSettingsStore {
 
     private(set) var isEnabled: Bool
     private(set) var triggers: TextLookupTriggers
+    private(set) var isDoubleClickFallbackEnabled: Bool
+    private(set) var isLocalOCREnabled: Bool
     private(set) var isClipboardFallbackEnabled: Bool
     private(set) var targetLanguageIdentifier: String
     private(set) var excludedApplicationBundleIdentifiers: Set<String>
@@ -76,7 +80,9 @@ final class TextLookupSettingsStore {
             if let legacyMode { migrated.dragRequiresShortcut = legacyMode == "shortcutRequired" }
             triggers = migrated
         }
-        isClipboardFallbackEnabled = defaults.bool(forKey: Key.clipboardFallback)
+        isDoubleClickFallbackEnabled = (defaults.object(forKey: Key.doubleClickFallback) as? Bool) ?? true
+        isLocalOCREnabled = (defaults.object(forKey: Key.localOCR) as? Bool) ?? true
+        isClipboardFallbackEnabled = (defaults.object(forKey: Key.clipboardFallback) as? Bool) ?? true
         targetLanguageIdentifier = defaults.string(forKey: Key.targetLanguage)
             ?? Locale.preferredLanguages.first
             ?? "en"
@@ -101,6 +107,16 @@ final class TextLookupSettingsStore {
     func setTriggers(_ value: TextLookupTriggers) {
         triggers = value
         defaults.set(try? JSONEncoder().encode(value), forKey: Key.triggers)
+    }
+
+    func setDoubleClickFallbackEnabled(_ value: Bool) {
+        isDoubleClickFallbackEnabled = value
+        defaults.set(value, forKey: Key.doubleClickFallback)
+    }
+
+    func setLocalOCREnabled(_ value: Bool) {
+        isLocalOCREnabled = value
+        defaults.set(value, forKey: Key.localOCR)
     }
 
     func setClipboardFallbackEnabled(_ value: Bool) {

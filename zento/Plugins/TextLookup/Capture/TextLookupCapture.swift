@@ -7,6 +7,12 @@ nonisolated struct TextLookupCapture: Sendable {
     let sentence: String?
     let sourceURL: URL?
     let anchorRect: CGRect?
+    var isContextFragment = false
+
+    var needsContext: Bool {
+        guard let sentence else { return true }
+        return sentence.trimmingCharacters(in: .whitespacesAndNewlines) == term
+    }
 }
 
 nonisolated enum TextCaptureIntent: Sendable {
@@ -45,6 +51,14 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
     case selectionTooLong
     case unableToReadText
     case clipboardFallbackFailed
+    case screenCapturePermissionRequired
+
+    var allowsCompatibilityFallback: Bool {
+        switch self {
+        case .noSelection, .noTextAtPointer, .unsupportedElement, .unableToReadText, .clipboardFallbackFailed: true
+        default: false
+        }
+    }
 
     var allowsClipboardFallback: Bool {
         switch self {
@@ -57,6 +71,8 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         switch self {
+        case .screenCapturePermissionRequired:
+            String(localized: "Local OCR requires Screen Recording permission. Enable it in Text Lookup settings.")
         case .permissionRequired:
             String(localized: "Accessibility permission is required to read text in other apps.")
         case .excludedApplication:
@@ -68,7 +84,7 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
         case .noTextAtPointer:
             String(localized: "Move the pointer over a readable word.")
         case .unsupportedElement:
-            String(localized: "This application does not expose text at this location.")
+            String(localized: "Unable to locate a readable word at this position using Accessibility.")
         case .selectionTooLong:
             String(localized: "Select no more than 80 characters and 8 words.")
         case .unableToReadText:

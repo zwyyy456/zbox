@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct TextLookupSettingsView: View {
     let environment: AppEnvironment
+    @State private var isScreenCaptureAuthorized = CGPreflightScreenCaptureAccess()
     @State private var recordingError: String?
     @State private var applicationSelectionError: String?
 
@@ -55,6 +56,36 @@ struct TextLookupSettingsView: View {
                     }
                 }
 
+                Toggle("Allow Simulated Double-click", isOn: Binding(
+                    get: { settings.isDoubleClickFallbackEnabled },
+                    set: { settings.setDoubleClickFallbackEnabled($0) }
+                ))
+                Text("If pointer lookup fails, double-click readable text to select a word. This changes the selection in the source app.")
+                    .font(.caption).foregroundStyle(.secondary)
+
+                Toggle("Use Local OCR", isOn: Binding(
+                    get: { settings.isLocalOCREnabled },
+                    set: { settings.setLocalOCREnabled($0) }
+                ))
+                Text("Recognize a small area around the word on this Mac to supplement context or read text when other methods fail. Screenshots are not saved.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if settings.isLocalOCREnabled {
+                    LabeledContent("Screen Recording", value: isScreenCaptureAuthorized ? String(localized: "Authorized") : String(localized: "Not Authorized"))
+                    HStack {
+                        if !isScreenCaptureAuthorized {
+                            Button("Request Permission") {
+                                _ = CGRequestScreenCaptureAccess()
+                                isScreenCaptureAuthorized = CGPreflightScreenCaptureAccess()
+                            }
+                        }
+                        Button("Open Screen Recording Settings") {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                    }
+                }
+
                 Toggle(
                 "Clipboard Compatibility Mode",
                 isOn: Binding(
@@ -62,7 +93,7 @@ struct TextLookupSettingsView: View {
                     set: { settings.setClipboardFallbackEnabled($0) }
                 )
                 )
-                Text("When Accessibility cannot read an existing selection, Zento may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard.")
+                Text("When Accessibility cannot read a selection, Zento may briefly simulate Copy and restore the clipboard if it has not changed. This also applies to selections created by simulated double-click.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -81,7 +112,7 @@ struct TextLookupSettingsView: View {
                 AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
                                            request: environment.requestAccessibilityPermission,
                                            openSettings: environment.openAccessibilitySettings)
-                Text("Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history.")
+                Text("Text Lookup reads text only when triggered. Optional local OCR uses Screen Recording permission. Text and images stay in the current session unless you create a FlashDict card; no lookup history is kept.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -117,6 +148,10 @@ struct TextLookupSettingsView: View {
                 }
             }
             .disabled(!settings.isEnabled)
+        }
+        .onAppear { isScreenCaptureAuthorized = CGPreflightScreenCaptureAccess() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            isScreenCaptureAuthorized = CGPreflightScreenCaptureAccess()
         }
     }
 

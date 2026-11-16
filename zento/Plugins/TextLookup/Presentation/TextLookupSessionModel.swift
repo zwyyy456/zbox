@@ -98,6 +98,9 @@ final class TextLookupSessionModel {
     private var cardTasks: [String: Task<Void, Never>] = [:]
 
     private(set) var capture: TextLookupCapture?
+    private(set) var isRecognizingWord = false
+    private(set) var isLoadingContext = false
+    private(set) var contextMessage: String?
     private(set) var captureError: TextCaptureError?
     private(set) var dictionaryState: TextLookupDictionaryState = .idle
     private(set) var selectionStates: [String: SenseSelectionState] = [:]
@@ -113,6 +116,9 @@ final class TextLookupSessionModel {
 
     func beginLookup(with capture: TextLookupCapture, targetLanguageIdentifier: String) {
         cancelWork()
+        isRecognizingWord = false
+        isLoadingContext = false
+        contextMessage = nil
         self.capture = capture
         captureError = nil
         selectionStates = [:]
@@ -121,8 +127,33 @@ final class TextLookupSessionModel {
         requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier)
     }
 
+    func beginOCR() {
+        clear()
+        isRecognizingWord = true
+    }
+
+    func setContextStatus(id: UUID, loading: Bool, message: String?) {
+        guard capture?.id == id, activeDictionaryTerm == capture?.term else { return }
+        isLoadingContext = loading
+        contextMessage = message
+    }
+
+    func supplementContext(id: UUID, term: String, text: String?, isFragment: Bool, targetLanguageIdentifier: String) {
+        guard let current = capture, current.id == id, current.term == term,
+              activeDictionaryTerm == term, current.needsContext else { return }
+        isLoadingContext = false
+        guard let text, !text.isEmpty else { return }
+        capture = TextLookupCapture(id: current.id, term: current.term, sentence: text,
+            sourceURL: current.sourceURL, anchorRect: current.anchorRect, isContextFragment: isFragment)
+        contextMessage = nil
+        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier)
+    }
+
     func present(_ error: TextCaptureError) {
         cancelWork()
+        isRecognizingWord = false
+        isLoadingContext = false
+        contextMessage = nil
         capture = nil
         captureError = error
         dictionaryState = .idle
@@ -140,6 +171,8 @@ final class TextLookupSessionModel {
         case .senseSelected(let selection):
             createFlashcard(from: selection, capture: capture)
         case .entryRequested(let term, _):
+            isLoadingContext = false
+            contextMessage = nil
             cancelCardWork()
             selectionStates = [:]
             startDictionaryLookup(term: term, sessionID: capture.id)
@@ -194,6 +227,9 @@ final class TextLookupSessionModel {
 
     func clear() {
         cancelWork()
+        isRecognizingWord = false
+        isLoadingContext = false
+        contextMessage = nil
         capture = nil
         captureError = nil
         dictionaryState = .idle

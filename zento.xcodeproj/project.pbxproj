@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000030000000000000003 /* FlashDictIntegrationKit */; };
-		E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZentoExtensionProtocol */; };
 		C61000010000000000000001 /* CGIF in Frameworks */ = {isa = PBXBuildFile; productRef = C61000030000000000000003 /* CGIF */; };
+		E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZentoExtensionProtocol */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -509,13 +509,13 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../zdict/Packages/FlashDictIntegrationKit;
 		};
-		E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZentoExtensionKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/ZentoExtensionKit;
-		};
 		C61000020000000000000002 /* XCLocalSwiftPackageReference "Packages/CGIF" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/CGIF;
+		};
+		E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZentoExtensionKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ZentoExtensionKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -525,13 +525,13 @@
 			package = A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */;
 			productName = FlashDictIntegrationKit;
 		};
-		E10000030000000000000003 /* ZentoExtensionProtocol */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ZentoExtensionProtocol;
-		};
 		C61000030000000000000003 /* CGIF */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CGIF;
+		};
+		E10000030000000000000003 /* ZentoExtensionProtocol */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ZentoExtensionProtocol;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

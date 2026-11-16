@@ -1,3 +1,4 @@
+import AppKit
 import FlashDictIntegrationKit
 import SwiftUI
 @preconcurrency import Translation
@@ -16,7 +17,19 @@ struct TextLookupPanelView: View {
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
 
+                if model.isLoadingContext {
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("Reading nearby context…").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if let message = model.contextMessage {
+                    Text(message).font(.caption).foregroundStyle(.secondary)
+                }
                 if let sentence = capture.sentence {
+                    if capture.isContextFragment {
+                        Text("Context fragment").font(.caption).foregroundStyle(.secondary)
+                    }
                     ScrollView(.vertical) {
                         Text(sentence)
                             .foregroundStyle(.secondary)
@@ -30,12 +43,26 @@ struct TextLookupPanelView: View {
                 translationContent
                 Divider()
                 dictionaryContent
+            } else if model.isRecognizingWord {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Recognizing nearby text…")
+                    Text("Press Esc to cancel.").font(.caption).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = model.captureError {
                 ContentUnavailableView(
                     "Unable to Look Up Text",
                     systemImage: "text.magnifyingglass",
                     description: Text(error.localizedDescription)
                 )
+                if error == .screenCapturePermissionRequired {
+                    Button("Open Screen Recording Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                }
             }
         }
         .padding(18)
