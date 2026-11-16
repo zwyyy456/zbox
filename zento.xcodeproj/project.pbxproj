@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000030000000000000003 /* FlashDictIntegrationKit */; };
+		A71000000000000000000012 /* LookupPresentation in Frameworks */ = {isa = PBXBuildFile; productRef = A71000000000000000000002 /* LookupPresentation */; };
+		A71000000000000000000013 /* TranslationServices in Frameworks */ = {isa = PBXBuildFile; productRef = A71000000000000000000003 /* TranslationServices */; };
+		A72000000000000000000012 /* SystemDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = A72000000000000000000002 /* SystemDictionary */; };
 		C61000010000000000000001 /* CGIF in Frameworks */ = {isa = PBXBuildFile; productRef = C61000030000000000000003 /* CGIF */; };
 		E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = E10000030000000000000003 /* ZentoExtensionProtocol */; };
 /* End PBXBuildFile section */
@@ -58,6 +61,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A72000000000000000000012 /* SystemDictionary in Frameworks */,
+				A71000000000000000000013 /* TranslationServices in Frameworks */,
+				A71000000000000000000012 /* LookupPresentation in Frameworks */,
 				A10000010000000000000001 /* FlashDictIntegrationKit in Frameworks */,
 				E10000010000000000000001 /* ZentoExtensionProtocol in Frameworks */,
 				C61000010000000000000001 /* CGIF in Frameworks */,
@@ -112,6 +118,9 @@
 			);
 			name = zento;
 			packageProductDependencies = (
+				A72000000000000000000002 /* SystemDictionary */,
+				A71000000000000000000003 /* TranslationServices */,
+				A71000000000000000000002 /* LookupPresentation */,
 				A10000030000000000000003 /* FlashDictIntegrationKit */,
 				E10000030000000000000003 /* ZentoExtensionProtocol */,
 				C61000030000000000000003 /* CGIF */,
@@ -172,6 +181,8 @@
 			mainGroup = 36529F5C302CCB25006E45F7;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				A72000000000000000000001 /* XCLocalSwiftPackageReference "Packages/SystemDictionary" */,
+				A71000000000000000000001 /* XCLocalSwiftPackageReference "../zdict/Packages/LookupPresentation" */,
 				A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */,
 				E10000020000000000000002 /* XCLocalSwiftPackageReference "Packages/ZentoExtensionKit" */,
 				C61000020000000000000002 /* XCLocalSwiftPackageReference "Packages/CGIF" */,
@@ -509,6 +520,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../zdict/Packages/FlashDictIntegrationKit;
 		};
+		A71000000000000000000001 /* XCLocalSwiftPackageReference "../zdict/Packages/LookupPresentation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../zdict/Packages/LookupPresentation;
+		};
+		A72000000000000000000001 /* XCLocalSwiftPackageReference "Packages/SystemDictionary" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SystemDictionary;
+		};
 		C61000020000000000000002 /* XCLocalSwiftPackageReference "Packages/CGIF" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/CGIF;
@@ -524,6 +543,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000020000000000000002 /* XCLocalSwiftPackageReference "../zdict/Packages/FlashDictIntegrationKit" */;
 			productName = FlashDictIntegrationKit;
+		};
+		A71000000000000000000002 /* LookupPresentation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A71000000000000000000001 /* XCLocalSwiftPackageReference "../zdict/Packages/LookupPresentation" */;
+			productName = LookupPresentation;
+		};
+		A71000000000000000000003 /* TranslationServices */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A71000000000000000000001 /* XCLocalSwiftPackageReference "../zdict/Packages/LookupPresentation" */;
+			productName = TranslationServices;
+		};
+		A72000000000000000000002 /* SystemDictionary */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A72000000000000000000001 /* XCLocalSwiftPackageReference "Packages/SystemDictionary" */;
+			productName = SystemDictionary;
 		};
 		C61000030000000000000003 /* CGIF */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -39,7 +39,7 @@
 - Text Lookup 是随主 App 静态编译、拥有独立启停生命周期、状态和设置边界的内置独立扩展；它保留私有触发流，并通过现有 App composition 共享平台能力。Text Lookup 不接入外部扩展协议；可安装扩展的边界见 `docs/product/extensions.md`。
 - Calculator 是随主 App 静态编译、由 Command Registry 打开的内置独立扩展；它不增加后台监听、权限或动态插件边界。
 - UI、AppKit 和共享运行状态保持 Main Actor 隔离；纯搜索、窗口几何和文本定位规则保持值语义。
-- Window Management 不读取窗口内容。Text Lookup 只在用户启用并触发时读取完成查询所需的有限文本和来源，不建立取词历史、不上传捕获内容，只有用户显式建卡时才把约定内容交给 FlashDict。
+- Window Management 不读取窗口内容。Text Lookup 只在用户启用并触发时读取完成查询所需的有限文本和来源，不建立取词历史；系统词典在本机查询，FlashDict 来源把当前查询交给其窗口，远程翻译仅向用户明确选择的服务发送原句，建卡仅由 FlashDict 处理。
 
 ## 验证
 

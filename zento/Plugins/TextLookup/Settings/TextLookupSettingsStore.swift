@@ -43,6 +43,11 @@ nonisolated struct TextLookupTriggers: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated enum TextLookupDictionarySource: String, Codable, CaseIterable, Identifiable, Sendable {
+    case system, flashDict
+    var id: String { rawValue }
+}
+
 @MainActor
 @Observable
 final class TextLookupSettingsStore {
@@ -52,22 +57,35 @@ final class TextLookupSettingsStore {
         static let doubleClickFallback = "plugin.text-lookup.double-click-fallback"
         static let localOCR = "plugin.text-lookup.local-ocr"
         static let clipboardFallback = "plugin.text-lookup.clipboard-fallback"
+        static let sourceLanguage = "plugin.text-lookup.source-language"
         static let targetLanguage = "plugin.text-lookup.target-language"
         static let excludedApplications = "plugin.text-lookup.excluded-applications"
     }
 
     private let defaults: UserDefaults
+    let translation: TextLookupTranslationSettings
+    private(set) var dictionarySource: TextLookupDictionarySource
 
     private(set) var isEnabled: Bool
     private(set) var triggers: TextLookupTriggers
     private(set) var isDoubleClickFallbackEnabled: Bool
     private(set) var isLocalOCREnabled: Bool
     private(set) var isClipboardFallbackEnabled: Bool
+    private(set) var sourceLanguageIdentifier: String
     private(set) var targetLanguageIdentifier: String
     private(set) var excludedApplicationBundleIdentifiers: Set<String>
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        translation = TextLookupTranslationSettings(defaults: defaults)
+        let sourceKey = "plugin.text-lookup.dictionary-source"
+        if let raw = defaults.string(forKey: sourceKey), let source = TextLookupDictionarySource(rawValue: raw) {
+            dictionarySource = source
+        } else {
+            let initialSource: TextLookupDictionarySource = defaults.object(forKey: Key.enabled) != nil || defaults.object(forKey: Key.triggers) != nil ? .flashDict : .system
+            dictionarySource = initialSource
+            defaults.set(initialSource.rawValue, forKey: sourceKey)
+        }
         isEnabled = defaults.bool(forKey: Key.enabled)
         if let data = defaults.data(forKey: Key.triggers),
            let saved = try? JSONDecoder().decode(TextLookupTriggers.self, from: data) {
@@ -83,6 +101,7 @@ final class TextLookupSettingsStore {
         isDoubleClickFallbackEnabled = (defaults.object(forKey: Key.doubleClickFallback) as? Bool) ?? true
         isLocalOCREnabled = (defaults.object(forKey: Key.localOCR) as? Bool) ?? true
         isClipboardFallbackEnabled = (defaults.object(forKey: Key.clipboardFallback) as? Bool) ?? true
+        sourceLanguageIdentifier = defaults.string(forKey: Key.sourceLanguage) ?? ""
         targetLanguageIdentifier = defaults.string(forKey: Key.targetLanguage)
             ?? Locale.preferredLanguages.first
             ?? "en"
@@ -97,6 +116,11 @@ final class TextLookupSettingsStore {
             defaults.set(excludedApplicationBundleIdentifiers.sorted(), forKey: Key.excludedApplications)
             defaults.set(true, forKey: "plugin.text-lookup.removed-default-exclusions")
         }
+    }
+
+    func setDictionarySource(_ source: TextLookupDictionarySource) {
+        dictionarySource = source
+        defaults.set(source.rawValue, forKey: "plugin.text-lookup.dictionary-source")
     }
 
     func setEnabled(_ value: Bool) {
@@ -122,6 +146,11 @@ final class TextLookupSettingsStore {
     func setClipboardFallbackEnabled(_ value: Bool) {
         isClipboardFallbackEnabled = value
         defaults.set(value, forKey: Key.clipboardFallback)
+    }
+
+    func setSourceLanguageIdentifier(_ value: String) {
+        sourceLanguageIdentifier = value
+        defaults.set(value, forKey: Key.sourceLanguage)
     }
 
     func setTargetLanguageIdentifier(_ value: String) {

@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if isPreparingToTerminate { return .terminateLater }
         guard environment.screenshotPlugin.hasRecordingSession || environment.scriptCommandsPlugin.isRunning
-                || environment.extensionManager.hasRunningTasks else { return .terminateNow }
+                || environment.extensionManager.hasRunningTasks || environment.textLookupPlugin.hasRemoteLookup else { return .terminateNow }
         isPreparingToTerminate = true
         Task {
             guard await environment.screenshotPlugin.prepareForShutdown() else {
@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             environment.stop()
             await environment.scriptCommandsPlugin.waitForStop()
             await environment.extensionManager.waitForStop()
+            await environment.textLookupPlugin.waitForStop()
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater

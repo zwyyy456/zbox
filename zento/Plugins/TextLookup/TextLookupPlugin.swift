@@ -6,53 +6,69 @@ import Observation
 @Observable
 final class TextLookupPlugin {
     let settings: TextLookupSettingsStore
-    private let hotkeyRegistrar: any HotkeyRegistering
     private let capturer: any TextCapturing
     private let isAccessibilityTrusted: @MainActor () -> Bool
     private let clipboardCapturer: ClipboardSelectionCapturer
     private let ocr = TextLookupOCR()
     private let triggerMonitor = TextLookupTriggerMonitor()
     private let session: TextLookupSessionModel
+    private let flashDictWindow: FlashDictWindowSession
 
     @ObservationIgnored
     private lazy var panelController = TextLookupPanelController(
         model: session,
         settings: settings,
-        hotkeyRegistrar: hotkeyRegistrar,
         onDismiss: { [weak self] in self?.dismissSession() }
     )
 
     private var captureTask: Task<Void, Never>?
     private var captureAttemptID: UUID?
 
+    var hasRemoteLookup: Bool { flashDictWindow.hasActiveWindowOrRequests }
+    func waitForStop() async { await flashDictWindow.waitForStop() }
     private(set) var isRunning = false
     private(set) var statusMessage: String?
 
     init(
         settings: TextLookupSettingsStore,
         clipboardCoordinator: ClipboardAccessCoordinator,
-        hotkeyRegistrar: any HotkeyRegistering,
         capturer: any TextCapturing = AccessibilityTextCapturer(),
         session: TextLookupSessionModel? = nil,
         isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {
         clipboardCapturer = ClipboardSelectionCapturer(coordinator: clipboardCoordinator)
         self.settings = settings
-        self.hotkeyRegistrar = hotkeyRegistrar
         self.capturer = capturer
         self.isAccessibilityTrusted = isAccessibilityTrusted
-        self.session = session ?? TextLookupSessionModel(
-            flashDict: try? FlashDictBridgeClient.production()
-        )
+        self.session = session ?? TextLookupSessionModel()
+        self.session.translationSettings = settings.translation
+        self.flashDictWindow = FlashDictWindowSession(client: try? FlashDictBridgeClient.production())
+        self.flashDictWindow.onFailure = { [weak self] message, capture in
+            guard let self, self.settings.dictionarySource == .flashDict else { return }
+            self.flashDictWindow.dismiss()
+            self.session.clear()
+            self.session.integrationMessage = message
+            self.session.retryIntegration = { [weak self] in self?.publish(capture) }
+            do { try self.panelController.show(anchor: capture.anchorRect) }
+            catch { self.statusMessage = error.localizedDescription }
+        }
+        self.flashDictWindow.onControlFailure = { [weak self] message in
+            guard let self, self.isRunning, self.settings.dictionarySource == .flashDict else { return }
+            self.statusMessage = message
+        }
         triggerMonitor.onMouseDown = { [weak self] in
             self?.cancelCapture()
-            self?.panelController.hide()
+            self?.panelController.dismissForOutsideClick()
         }
         triggerMonitor.onSelection = { [weak self] point, explicit in
             self?.lookupSelection(at: point, explicit: explicit)
         }
         triggerMonitor.onPointer = { [weak self] point in self?.lookupPointer(at: point) }
-        triggerMonitor.ignoresWindow = { [weak self] window in self?.panelController.contains(window) == true }
+        triggerMonitor.ignoresWindow = { [weak self] window in
+            guard let self else { return false }
+            if self.panelController.contains(window) { return true }
+            return self.settings.dictionarySource == .flashDict && FlashDictLookupWindowAccess.containsMouse()
+        }
 
     }
 
@@ -77,9 +93,35 @@ final class TextLookupPlugin {
         captureTask = nil
         captureAttemptID = nil
         panelController.hide()
+        flashDictWindow.dismiss()
         triggerMonitor.stop()
         isRunning = false
         statusMessage = nil
+    }
+
+    func setDictionarySource(_ source: TextLookupDictionarySource) {
+        guard settings.dictionarySource != source else { return }
+        cancelCapture()
+        panelController.hide()
+        flashDictWindow.dismiss()
+        settings.setDictionarySource(source)
+    }
+
+    static func openFlashDict(onFailure: @escaping @MainActor @Sendable (String) -> Void) {
+#if DEBUG
+        let bundleID = "tech.hyperseek.flashdict.dev"
+#else
+        let bundleID = "tech.hyperseek.flashdict"
+#endif
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
+            onFailure(String(localized: "The matching FlashDict build is not installed."))
+            return
+        }
+        NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
+            if error != nil {
+                Task { @MainActor in onFailure(String(localized: "The matching FlashDict build could not be started.")) }
+            }
+        }
     }
 
     func reloadConfiguration() throws {
@@ -146,13 +188,18 @@ final class TextLookupPlugin {
         completion: @escaping (TextLookupCapture) -> Void
     ) {
         cancelCapture()
-        panelController.hide()
+        flashDictWindow.dismiss()
+        panelController.dismissForOutsideClick()
         session.clear()
         captureAttemptID = request.id
         captureTask = Task { [weak self] in
             guard let self else { return }
             do {
                 if let delay { try await Task.sleep(for: delay) }
+                // Release the previous remote window (and its temporary Escape key)
+                // before any local OCR progress window is presented.
+                await flashDictWindow.waitForStop()
+                try Task.checkCancellation()
                 let capture = try await captureWithCompatibility(request)
                 try Task.checkCancellation()
                 guard self.captureAttemptID == request.id else { return }
@@ -174,7 +221,9 @@ final class TextLookupPlugin {
                 }
                 try Task.checkCancellation()
                 guard self.captureAttemptID == request.id else { return }
-                guard NSWorkspace.shared.frontmostApplication?.processIdentifier == request.targetApplicationPID else { return }
+                guard NSWorkspace.shared.frontmostApplication?.processIdentifier == request.targetApplicationPID else {
+                    throw CancellationError()
+                }
                 completion(capture)
                 session.setContextStatus(id: capture.id, loading: contextSnapshot != nil, message: contextMessage)
                 if let contextSnapshot {
@@ -186,8 +235,13 @@ final class TextLookupPlugin {
                             session.setContextStatus(id: capture.id, loading: false, message: nil)
                             return
                         }
-                        session.supplementContext(id: capture.id, term: capture.term, text: result.context,
-                            isFragment: result.isFragment, targetLanguageIdentifier: settings.targetLanguageIdentifier)
+                        if settings.dictionarySource == .flashDict {
+                            flashDictWindow.supplement(capture, sentence: result.context, isFragment: result.isFragment)
+                        } else {
+                            session.supplementContext(id: capture.id, term: capture.term, text: result.context,
+                                isFragment: result.isFragment, targetLanguageIdentifier: settings.targetLanguageIdentifier,
+                                sourceLanguageIdentifier: settings.sourceLanguageIdentifier)
+                        }
                     } catch is CancellationError { return }
                     catch {
                         guard self.captureAttemptID == request.id else { return }
@@ -196,7 +250,10 @@ final class TextLookupPlugin {
                     }
                 }
             } catch is CancellationError {
-                if self.captureAttemptID == request.id { self.panelController.hide() }
+                if self.captureAttemptID == request.id {
+                    self.session.clear()
+                    self.panelController.dismissForOutsideClick()
+                }
                 return
             } catch let error as TextCaptureError {
                 guard self.captureAttemptID == request.id else { return }
@@ -252,11 +309,19 @@ final class TextLookupPlugin {
     }
 
     private func publish(_ capture: TextLookupCapture) {
+        if settings.dictionarySource == .flashDict {
+            panelController.hide(notify: false)
+            session.clear()
+            flashDictWindow.present(capture)
+            statusMessage = nil
+            return
+        }
         do {
             try panelController.show(anchor: capture.anchorRect)
             session.beginLookup(
                 with: capture,
-                targetLanguageIdentifier: settings.targetLanguageIdentifier
+                targetLanguageIdentifier: settings.targetLanguageIdentifier,
+                sourceLanguageIdentifier: settings.sourceLanguageIdentifier
             )
             statusMessage = nil
         } catch {
@@ -281,13 +346,15 @@ final class TextLookupPlugin {
         captureTask = nil
         captureAttemptID = nil
         if session.isRecognizingWord {
-            panelController.hide()
+            session.clear()
+            panelController.dismissForOutsideClick()
         } else if let id = session.capture?.id {
             session.setContextStatus(id: id, loading: false, message: nil)
         }
     }
 
     private func dismissSession() {
+        flashDictWindow.dismiss()
         captureTask?.cancel()
         captureTask = nil
         captureAttemptID = nil

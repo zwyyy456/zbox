@@ -1,80 +1,61 @@
 import AppKit
-import FlashDictIntegrationKit
+import LookupPresentation
+import SystemDictionary
 import SwiftUI
 @preconcurrency import Translation
 
 struct TextLookupPanelView: View {
     let model: TextLookupSessionModel
     let settings: TextLookupSettingsStore
+    let onClose: () -> Void
     @State private var translationConfiguration: TranslationSession.Configuration?
 
-    private let languageIdentifiers = ["en", "zh-Hans", "ja", "ko", "fr", "de", "es"]
+    @State private var languageIdentifiers = ["en", "zh-Hans", "ja", "ko", "fr", "de", "es", "pl"]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        LookupPanelContent(title: model.activeDictionaryTerm ?? model.capture?.term ?? String(localized: "Text Lookup"),
+                           state: model.windowState, onClose: onClose) {
             if let capture = model.capture {
-                Text(capture.term)
-                    .font(.title2.weight(.semibold))
-                    .textSelection(.enabled)
-
-                if model.isLoadingContext {
-                    HStack {
-                        ProgressView().controlSize(.small)
-                        Text("Reading nearby context…").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                if let message = model.contextMessage {
-                    Text(message).font(.caption).foregroundStyle(.secondary)
-                }
+                if model.isLoadingContext { ProgressView("Reading nearby context…").controlSize(.small) }
+                if let message = model.contextMessage { Text(message).font(.caption).foregroundStyle(.secondary) }
                 if let sentence = capture.sentence {
-                    if capture.isContextFragment {
-                        Text("Context fragment").font(.caption).foregroundStyle(.secondary)
-                    }
-                    ScrollView(.vertical) {
-                        Text(sentence)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxHeight: 88)
+                    if capture.isContextFragment { Text("Context fragment").font(.caption).foregroundStyle(.secondary) }
+                    LookupSentenceView(sentence: sentence, selectedWord: model.activeDictionaryTerm, onSelectWord: model.selectWord)
                 }
-
                 Divider()
                 translationContent
                 Divider()
                 dictionaryContent
             } else if model.isRecognizingWord {
-                VStack(spacing: 12) {
-                    ProgressView()
-                    Text("Recognizing nearby text…")
-                    Text("Press Esc to cancel.").font(.caption).foregroundStyle(.secondary)
+                ProgressView("Recognizing nearby text…")
+                Text("Press Esc to cancel.").font(.caption).foregroundStyle(.secondary)
+            } else if let message = model.integrationMessage {
+                Label("FlashDict unavailable", systemImage: "exclamationmark.triangle").font(.headline)
+                Text(message)
+                HStack {
+                    Button("Open FlashDict") { TextLookupPlugin.openFlashDict(onFailure: { message in
+                        guard settings.dictionarySource == .flashDict, model.integrationMessage != nil else { return }
+                        model.integrationMessage = message
+                    }) }
+                    Button("Retry") { model.retryIntegration?() }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = model.captureError {
-                ContentUnavailableView(
-                    "Unable to Look Up Text",
-                    systemImage: "text.magnifyingglass",
-                    description: Text(error.localizedDescription)
-                )
+                ContentUnavailableView("Unable to Look Up Text", systemImage: "text.magnifyingglass", description: Text(error.localizedDescription))
                 if error == .screenCapturePermissionRequired {
                     Button("Open Screen Recording Settings") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                            NSWorkspace.shared.open(url)
-                        }
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") { NSWorkspace.shared.open(url) }
                     }
                 }
             }
         }
-        .padding(18)
-        .frame(
-            minWidth: 300,
-            maxWidth: .infinity,
-            minHeight: 180,
-            maxHeight: .infinity,
-            alignment: .topLeading
-        )
-        .background(.regularMaterial)
-        .clipShape(.rect(cornerRadius: 12))
+        .task {
+            let languages = await TextLookupTranslationLanguages.supportedIdentifiers()
+            guard !Task.isCancelled else { return }
+            languageIdentifiers = languages
+        }
+        .onChange(of: settings.translation.snapshot, requestTranslationUsingSettings)
+        .onChange(of: settings.sourceLanguageIdentifier, requestTranslationUsingSettings)
+        .onChange(of: settings.targetLanguageIdentifier, requestTranslationUsingSettings)
         .onAppear(perform: refreshTranslationConfiguration)
         .onChange(of: model.translationRequest?.id) {
             refreshTranslationConfiguration()
@@ -86,33 +67,53 @@ struct TextLookupPanelView: View {
                 model.completeTranslation(result)
             case .failure(let failure):
                 model.failTranslation(failure, requestID: request.id)
+            case .downloadRequired:
+                model.requireLanguageDownload(requestID: request.id)
             case .cancelled:
-                model.failTranslation(.modelDownloadCancelled, requestID: request.id)
+                model.failTranslation(.cancelled, requestID: request.id)
             }
         }
     }
 
-    private var languageMenu: some View {
+    private func languageMenu(source: Bool) -> some View {
         Menu {
+            if source {
+                Button("Detect Automatically") { changeLanguage("", source: true) }
+                Divider()
+            }
             ForEach(languageChoices, id: \.0) { identifier, name in
-                Button {
-                    settings.setTargetLanguageIdentifier(identifier)
-                    model.requestTranslation(targetLanguageIdentifier: identifier)
-                } label: {
-                    if settings.targetLanguageIdentifier == identifier {
+                Button { changeLanguage(identifier, source: source) } label: {
+                    if identifier == (source ? settings.sourceLanguageIdentifier : settings.targetLanguageIdentifier) {
                         Label(name, systemImage: "checkmark")
-                    } else {
-                        Text(name)
-                    }
+                    } else { Text(name) }
                 }
             }
         } label: {
-            Label(languageName, systemImage: "globe")
-                .labelStyle(.titleAndIcon)
+            Text(source ? sourceLanguageName : languageName(settings.targetLanguageIdentifier))
+                .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Translation target language")
+        .help(source ? String(localized: "Translation source language") : String(localized: "Translation target language"))
+        .accessibilityLabel(source ? String(localized: "Translation source language") : String(localized: "Translation target language"))
+    }
+
+    private func changeLanguage(_ identifier: String, source: Bool) {
+        if source { settings.setSourceLanguageIdentifier(identifier) }
+        else { settings.setTargetLanguageIdentifier(identifier) }
+    }
+
+    private func requestTranslationUsingSettings() {
+        model.requestTranslation(targetLanguageIdentifier: settings.targetLanguageIdentifier,
+                                 sourceLanguageIdentifier: settings.sourceLanguageIdentifier)
+    }
+
+    private var sourceLanguageName: String {
+        if !settings.sourceLanguageIdentifier.isEmpty { return languageName(settings.sourceLanguageIdentifier) }
+        if let detected = model.translationRequest?.sourceLanguage {
+            return String(localized: "Auto (\(languageName(detected.minimalIdentifier)))")
+        }
+        return String(localized: "Detect Automatically")
     }
 
     @ViewBuilder
@@ -121,19 +122,32 @@ struct TextLookupPanelView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("Translation")
                     .font(.headline)
-                Spacer(minLength: 16)
-                languageMenu
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    languageMenu(source: true)
+                    Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                    languageMenu(source: false)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    languageMenu(source: true)
+                    languageMenu(source: false)
+                }
             }
             switch model.translationState {
             case .sentenceUnavailable:
                 Text("No sentence is available to translate.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+            case .languageDownloadRequired:
+                Text("The selected languages need to be downloaded. Check the source and target languages before continuing.")
+                    .font(.callout).foregroundStyle(.secondary)
+                Button("Download Languages…") { model.retryTranslation(allowLanguageDownload: true) }
             case .loading:
                 HStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Preparing Apple Translation…")
+                    Text(model.usesAppleTranslation ? String(localized: "Translating with Apple Translation…") : String(localized: "Translating…"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -155,18 +169,18 @@ struct TextLookupPanelView: View {
     }
 
     private func refreshTranslationConfiguration() {
-        guard let request = model.translationRequest else {
+        guard model.usesAppleTranslation, let request = model.translationRequest else {
             translationConfiguration = nil
             return
         }
         if var configuration = translationConfiguration {
-            configuration.source = nil
+            configuration.source = request.sourceLanguage
             configuration.target = request.targetLanguage
             configuration.invalidate()
             translationConfiguration = configuration
         } else {
             translationConfiguration = .init(
-                source: nil,
+                source: request.sourceLanguage,
                 target: request.targetLanguage
             )
         }
@@ -178,19 +192,24 @@ struct TextLookupPanelView: View {
     ) async -> AppleTranslationOutcome {
         let status: LanguageAvailability.Status
         do {
-            status = try await LanguageAvailability().status(
-                for: request.text,
-                to: request.targetLanguage
-            )
+            if let source = request.sourceLanguage {
+                status = await LanguageAvailability().status(from: source, to: request.targetLanguage)
+            } else {
+                status = try await LanguageAvailability().status(for: request.text, to: request.targetLanguage)
+            }
         } catch {
             return .failure(.unableToIdentifyLanguage)
         }
         guard status != .unsupported else {
             return .failure(.unsupportedLanguagePair)
         }
+        if status == .supported, !request.allowsLanguageDownload { return .downloadRequired }
         do {
-            try await session.prepareTranslation()
+            // translate supplies the sample text for automatic source-language
+            // detection and presents any required language download UI itself.
+            try Task.checkCancellation()
             let response = try await session.translate(request.text)
+            try Task.checkCancellation()
             return .success(
                 TranslationResult(
                     requestID: request.id,
@@ -199,66 +218,42 @@ struct TextLookupPanelView: View {
             )
         } catch is CancellationError {
             return .cancelled
+        } catch TranslationError.unableToIdentifyLanguage {
+            return .failure(.unableToIdentifyLanguage)
+        } catch TranslationError.unsupportedSourceLanguage,
+                TranslationError.unsupportedTargetLanguage,
+                TranslationError.unsupportedLanguagePairing {
+            return .failure(.unsupportedLanguagePair)
         } catch {
             return .failure(.internalFailure)
         }
     }
 
-    private var languageName: String {
-        languageChoices.first { $0.0 == settings.targetLanguageIdentifier }?.1
-            ?? settings.targetLanguageIdentifier
+    private func languageName(_ identifier: String) -> String {
+        Locale.current.localizedString(forIdentifier: identifier) ?? identifier
     }
 
     private var languageChoices: [(String, String)] {
-        languageIdentifiers.map { identifier in
-            (
-                identifier,
-                Locale.current.localizedString(forIdentifier: identifier) ?? identifier
-            )
-        }
+        let selected = [settings.sourceLanguageIdentifier, settings.targetLanguageIdentifier].filter { !$0.isEmpty }
+        return Set(languageIdentifiers + selected).map { ($0, languageName($0)) }
+            .sorted { $0.1.localizedStandardCompare($1.1) == .orderedAscending }
     }
 
     @ViewBuilder
     private var dictionaryContent: some View {
         switch model.dictionaryState {
         case .idle, .loading:
-            pendingRow("Definition", detail: "Looking up in FlashDict…")
-        case .loaded(let document):
-            if let resourceProvider = model.resourceProvider {
-                FlashDictLookupSurface(
-                    document: document,
-                    resourceProvider: resourceProvider,
-                    selectionStates: model.selectionStates,
-                    onEvent: model.handle
-                )
-                .frame(maxWidth: .infinity, minHeight: 260, maxHeight: .infinity)
+            pendingRow("Definition", detail: "Looking up in system dictionaries…")
+        case .loaded(let entries):
+            SystemDictionaryContentView(entries: entries, onLookup: model.selectWord)
+                .id(model.activeDictionaryTerm)
+        case .failed(let message):
+            Label("Definition unavailable", systemImage: "exclamationmark.triangle").font(.headline)
+            Text(message).foregroundStyle(.secondary)
+            HStack {
+                Button("Open Dictionary") { if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Dictionary") { NSWorkspace.shared.openApplication(at: url, configuration: .init()) } }
+                Button("Retry") { model.retryDictionaryLookup() }
             }
-            if let surfaceMessage = model.surfaceMessage {
-                Text(surfaceMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        case .failed(let failure):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Definition unavailable", systemImage: "exclamationmark.triangle")
-                    .font(.headline)
-                Text(failure.message)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                if failure.canRetry {
-                    HStack {
-                        if failure == .flashDictNotRunning {
-                            Button("Open FlashDict") {
-                                model.openFlashDict()
-                            }
-                        }
-                        Button("Retry") {
-                            model.retryDictionaryLookup()
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -286,4 +281,5 @@ private nonisolated enum AppleTranslationOutcome: Sendable {
     case success(TranslationResult)
     case failure(TextLookupTranslationFailure)
     case cancelled
+    case downloadRequired
 }

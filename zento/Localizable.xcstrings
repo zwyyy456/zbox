@@ -131,52 +131,52 @@
         }
       }
     },
-    "Drag to select · Option for precision · Esc to cancel": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拖动选择 · Option 精确定位 · Esc 取消"
+    "Drag to select · Option for precision · Esc to cancel" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拖动选择 · Option 精确定位 · Esc 取消"
           }
         }
       }
     },
-    "Recording Start": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始录制"
+    "Recording Start" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始录制"
           }
         }
       }
     },
-    "Start Now": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "立即开始"
+    "Start Now" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "立即开始"
           }
         }
       }
     },
-    "Wait 3 Seconds": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "等待 3 秒"
+    "Wait 3 Seconds" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待 3 秒"
           }
         }
       }
     },
-    "Start Immediately": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "立即开始"
+    "Start Immediately" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "立即开始"
           }
         }
       }
@@ -6043,6 +6043,7 @@
       }
     },
     "Preparing Apple Translation…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -6300,13 +6301,34 @@
       }
     },
     "Recording Complete" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "录制完成" } } }
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制完成"
+          }
+        }
+      }
     },
     "If you don’t save, this recording will be discarded." : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "如果不保存，此录制将被丢弃。" } } }
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果不保存，此录制将被丢弃。"
+          }
+        }
+      }
     },
     "Don’t Save" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不保存" } } }
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不保存"
+          }
+        }
+      }
     },
     "Record" : {
       "localizations" : {
@@ -8466,6 +8488,7 @@
       }
     },
     "Text Lookup reads selected text or text under the pointer only when triggered. Captured text stays in the current popup unless you create a FlashDict card. It does not use Screen Recording or keep lookup history." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -8776,6 +8799,7 @@
       }
     },
     "The language download was cancelled." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -9507,6 +9531,7 @@
       }
     },
     "Translation Language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -10122,6 +10147,7 @@
       }
     },
     "When Accessibility cannot read an existing selection, Zento may briefly simulate Copy and restore the clipboard if it has not changed. Pointer lookup never uses the clipboard." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -10420,6 +10446,704 @@
     },
     "zsh" : {
       "shouldTranslate" : false
+    },
+    "A system dictionary resource could not be loaded." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加载部分系统词典资源。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入部分系統詞典資源。"
+          }
+        }
+      }
+    },
+    "API Key — leave empty to keep the saved key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API 密钥（留空保留已有密钥）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API 金鑰（留空保留已有金鑰）"
+          }
+        }
+      }
+    },
+    "Apple Translation" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统翻译"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系統翻譯"
+          }
+        }
+      }
+    },
+    "Auto (%@)" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动（%@）"
+          }
+        }
+      }
+    },
+    "Built-in System Dictionaries" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内置系统词典"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "內建系統詞典"
+          }
+        }
+      }
+    },
+    "Chat Completions URL" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat Completions 接口地址"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat Completions 介面位址"
+          }
+        }
+      }
+    },
+    "Check the translation service address and model in Text Lookup settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在取词设置中检查翻译服务地址和模型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在取詞設定中檢查翻譯服務位址和模型。"
+          }
+        }
+      }
+    },
+    "Could not connect to the selected translation service." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接所选翻译服务。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法連線所選翻譯服務。"
+          }
+        }
+      }
+    },
+    "Delete Saved API Key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除已保存的密钥"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除已儲存的金鑰"
+          }
+        }
+      }
+    },
+    "Detect Automatically" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动检测"
+          }
+        }
+      }
+    },
+    "Dictionary Source" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "词典来源"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詞典來源"
+          }
+        }
+      }
+    },
+    "Download Languages…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载语言…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下載語言…"
+          }
+        }
+      }
+    },
+    "Enable and download dictionaries in the macOS Dictionary app, then restart Zento." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在 macOS“词典”中启用并下载词典，然后重新启动 zento。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在 macOS「詞典」中啟用並下載詞典，然後重新啟動 zento。"
+          }
+        }
+      }
+    },
+    "Enter an API key in Text Lookup settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在取词设置中填写 API 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在取詞設定中填寫 API 金鑰。"
+          }
+        }
+      }
+    },
+    "FlashDict Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 窗口"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 視窗"
+          }
+        }
+      }
+    },
+    "FlashDict could not complete this request." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 未能完成此次请求。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 未能完成此次請求。"
+          }
+        }
+      }
+    },
+    "FlashDict could not open the lookup window." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 未能打开查词窗口。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlashDict 未能開啟查詞視窗。"
+          }
+        }
+      }
+    },
+    "FlashDict unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接 FlashDict"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法連線 FlashDict"
+          }
+        }
+      }
+    },
+    "Looking up in system dictionaries…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在查询系统词典…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在查詢系統詞典…"
+          }
+        }
+      }
+    },
+    "Model" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模型"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模型"
+          }
+        }
+      }
+    },
+    "Not pinned" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未固定"
+          }
+        }
+      }
+    },
+    "Open Dictionary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开系统词典"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟系統詞典"
+          }
+        }
+      }
+    },
+    "Open the matching Debug or Release build of FlashDict, then retry." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请打开与 zento 匹配的 FlashDict 开发版或正式版后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請開啟與 zento 相符的 FlashDict 開發版或正式版後重試。"
+          }
+        }
+      }
+    },
+    "OpenAI-compatible API" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OpenAI 兼容 API"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OpenAI 相容 API"
+          }
+        }
+      }
+    },
+    "Opens FlashDict’s lookup window. Translation and flashcards use FlashDict’s settings and require its matching build to be running." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直接打开 FlashDict 查词窗口，翻译和建卡使用 FlashDict 的设置；需要运行匹配的开发版或正式版。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直接開啟 FlashDict 查詞視窗，翻譯和建卡使用 FlashDict 的設定；需要執行相符的開發版或正式版。"
+          }
+        }
+      }
+    },
+    "Pin Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "固定窗口"
+          }
+        }
+      }
+    },
+    "Save Translation Settings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存翻译设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "儲存翻譯設定"
+          }
+        }
+      }
+    },
+    "Saved" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已儲存"
+          }
+        }
+      }
+    },
+    "Select text to look up." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择文字以查询。"
+          }
+        }
+      }
+    },
+    "Text Lookup reads text only when triggered and keeps no lookup history. OCR is local. A remote translation service receives the original sentence only when you select it. Flashcard creation is handled only in FlashDict." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取词仅在触发时读取文本，不保存查询历史。OCR 在本机完成；只有选择远程翻译服务后，才向该服务发送原句。建卡仅在 FlashDict 中进行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取詞僅在觸發時讀取文字，不儲存查詢歷史。OCR 在本機完成；只有選擇遠端翻譯服務後，才向該服務傳送原句。建卡僅在 FlashDict 中進行。"
+          }
+        }
+      }
+    },
+    "The enabled system dictionaries have no result for this word." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已启用的系统词典中未找到此词。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已啟用的系統詞典中未找到此詞。"
+          }
+        }
+      }
+    },
+    "The original sentence is sent to the selected service when you look up text. API keys are stored only in Zento’s Keychain." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取词时会将原句发送给所选服务。API 密钥只保存在 zento 的钥匙串中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取詞時會將原句傳送給所選服務。API 金鑰只儲存在 zento 的鑰匙圈中。"
+          }
+        }
+      }
+    },
+    "The selected languages need to be downloaded. Check the source and target languages before continuing." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要下载所选语言。请先检查源语言和目标语言，再继续下载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要下載所選語言。請先檢查來源語言和目標語言，再繼續下載。"
+          }
+        }
+      }
+    },
+    "The selected translation service returned an invalid response." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选翻译服务返回了无效响应。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選翻譯服務傳回了無效回應。"
+          }
+        }
+      }
+    },
+    "The system dictionary could not complete this lookup." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统词典未能完成此次查询。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系統詞典未能完成此次查詢。"
+          }
+        }
+      }
+    },
+    "The translation credential could not be accessed in Keychain." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问钥匙串中的翻译密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法存取鑰匙圈中的翻譯金鑰。"
+          }
+        }
+      }
+    },
+    "The translation service rejected the API key." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译服务拒绝了此 API 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻譯服務拒絕了此 API 金鑰。"
+          }
+        }
+      }
+    },
+    "The translation service returned HTTP %lld." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译服务返回 HTTP %lld。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻譯服務傳回 HTTP %lld。"
+          }
+        }
+      }
+    },
+    "Translating with Apple Translation…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在使用系统翻译…"
+          }
+        }
+      }
+    },
+    "Translating…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在翻译…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在翻譯…"
+          }
+        }
+      }
+    },
+    "Translation Service" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译来源"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻譯來源"
+          }
+        }
+      }
+    },
+    "Translation source language" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译源语言"
+          }
+        }
+      }
+    },
+    "Translation was cancelled." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译已取消。"
+          }
+        }
+      }
+    },
+    "Unpin Window" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消固定窗口"
+          }
+        }
+      }
+    },
+    "Uses dictionaries enabled in the macOS Dictionary app. FlashDict is not required; flashcard creation is not available." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 macOS“词典”中已启用的词典，无需运行 FlashDict，不提供建卡功能。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 macOS「詞典」中已啟用的詞典，無需執行 FlashDict，不提供建卡功能。"
+          }
+        }
+      }
+    },
+    "The matching FlashDict build is not installed." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未安装与 zento 匹配的 FlashDict 版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未安裝與 zento 相符的 FlashDict 版本。"
+          }
+        }
+      }
+    },
+    "The matching FlashDict build could not be started." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动与 zento 匹配的 FlashDict 版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法啟動與 zento 相符的 FlashDict 版本。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

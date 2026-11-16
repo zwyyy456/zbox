@@ -71,4 +71,27 @@ struct TextLookupCaptureTests {
         )
     }
 
+    @Test
+    func sentenceIncludesInlineLinkPrefixAndCompleteQuotedSpeech() throws {
+        let prefix = "CISA’s "
+        let link = "Mobile Communications Best Practice Guidance"
+        let suffix = " bluntly recommended: “Do not use SMS as a second factor for authentication. SMS messages are not encrypted–a threat actor with access to a telecommunication provider’s network who intercepts these messages can read them.”"
+        let previous = "In December 2024, Americans were advised against SMS authentication. "
+        let paragraph = previous + prefix + link + suffix
+        let target = (paragraph as NSString).range(of: "bluntly")
+        #expect(TextLookupTextProcessor.sentence(in: paragraph, containingUTF16Range: target) == prefix + link + suffix)
+        let insideQuote = (paragraph as NSString).range(of: "messages")
+        #expect(TextLookupTextProcessor.sentence(in: paragraph, containingUTF16Range: insideQuote) == prefix + link + suffix)
+        let after = paragraph + " A separate sentence follows."
+        #expect(TextLookupTextProcessor.sentence(in: after, containingUTF16Range: target) == prefix + link + suffix)
+    }
+
+    @Test
+    func unmatchedQuoteDoesNotConsumeFollowingSentences() {
+        let text = "A target introduces an unfinished “quotation. A separate sentence follows."
+        let target = (text as NSString).range(of: "target")
+        #expect(TextLookupTextProcessor.sentence(in: text, containingUTF16Range: target)
+                == "A target introduces an unfinished “quotation.")
+    }
+
 }

@@ -1,65 +1,26 @@
 import AppKit
-import FlashDictIntegrationContracts
-import FlashDictIntegrationKit
 import Observation
+import NaturalLanguage
+import LookupPresentation
+import SystemDictionary
+import TranslationServices
 
-nonisolated protocol TextLookupFlashDictServicing:
-    FlashDictResourceProviding
-{
-    func lookup(term: String, requestID: UUID) async throws -> LookupDocument
-
-    func createFlashcard(
-        seed: FlashcardSeed,
-        context: FlashcardCreationContext
-    ) async throws -> FlashcardCreationResult
+nonisolated protocol SystemDictionaryReading: Sendable {
+    func lookup(_ term: String) async throws -> [SystemDictionaryEntry]
 }
-
-extension FlashDictBridgeClient: TextLookupFlashDictServicing {}
-
-nonisolated enum TextLookupDictionaryFailure: Equatable, Sendable {
-    case integrationUnavailable
-    case flashDictNotRunning
-    case primaryDictionaryUnavailable
-    case noResult
-    case incompatibleProtocol
-    case requestFailed(String?)
-
-    var message: String {
-        switch self {
-        case .integrationUnavailable:
-            String(localized: "FlashDict integration is unavailable in this build.")
-        case .flashDictNotRunning:
-            String(localized: "Open FlashDict, then try again.")
-        case .primaryDictionaryUnavailable:
-            String(localized: "Choose a primary dictionary in FlashDict first.")
-        case .noResult:
-            String(localized: "The primary dictionary has no result for this term.")
-        case .incompatibleProtocol:
-            String(localized: "Update Zento and FlashDict to compatible versions.")
-        case .requestFailed(let message):
-            message ?? String(localized: "FlashDict could not complete the lookup.")
-        }
-    }
-
-    var canRetry: Bool {
-        switch self {
-        case .flashDictNotRunning, .requestFailed: true
-        default: false
-        }
-    }
-}
+extension SystemDictionaryReader: SystemDictionaryReading {}
 
 enum TextLookupDictionaryState {
-    case idle
-    case loading
-    case loaded(LookupDocument)
-    case failed(TextLookupDictionaryFailure)
+    case idle, loading
+    case loaded([SystemDictionaryEntry])
+    case failed(String)
 }
 
 nonisolated enum TextLookupTranslationFailure: Equatable, Sendable {
     case unableToIdentifyLanguage
     case unsupportedLanguagePair
-    case modelDownloadCancelled
+    case cancelled
+    case remoteFailure(String)
     case internalFailure
 
     var message: String {
@@ -68,8 +29,9 @@ nonisolated enum TextLookupTranslationFailure: Equatable, Sendable {
             String(localized: "The sentence language could not be identified.")
         case .unsupportedLanguagePair:
             String(localized: "Apple Translation does not support this language pair.")
-        case .modelDownloadCancelled:
-            String(localized: "The language download was cancelled.")
+        case .cancelled:
+            String(localized: "Translation was cancelled.")
+        case .remoteFailure(let message): message
         case .internalFailure:
             String(localized: "The sentence could not be translated.")
         }
@@ -79,66 +41,51 @@ nonisolated enum TextLookupTranslationFailure: Equatable, Sendable {
 enum TextLookupTranslationState {
     case sentenceUnavailable
     case loading
+    case languageDownloadRequired
     case translated(TranslationResult)
     case failed(TextLookupTranslationFailure)
 }
 
-@MainActor
-@Observable
+@MainActor @Observable
 final class TextLookupSessionModel {
-    @ObservationIgnored
-    private let flashDict: (any TextLookupFlashDictServicing)?
-    @ObservationIgnored
-    private var lookupTask: Task<Void, Never>?
-    @ObservationIgnored
-    private var activeDictionaryRequestID: UUID?
-    @ObservationIgnored
-    private var activeDictionaryTerm: String?
-    @ObservationIgnored
-    private var cardTasks: [String: Task<Void, Never>] = [:]
-
+    let windowState = LookupWindowState()
+    var isPinned: Bool {
+        get { windowState.isPinned }
+        set { windowState.isPinned = newValue }
+    }
+    @ObservationIgnored private let dictionary: any SystemDictionaryReading
+    @ObservationIgnored private var lookupTask: Task<Void, Never>?
+    @ObservationIgnored private var lookupID: UUID?
+    @ObservationIgnored private var remoteTranslationTask: Task<Void, Never>?
+    @ObservationIgnored var translationSettings: TextLookupTranslationSettings?
+    private(set) var activeDictionaryTerm: String?
     private(set) var capture: TextLookupCapture?
     private(set) var isRecognizingWord = false
     private(set) var isLoadingContext = false
     private(set) var contextMessage: String?
     private(set) var captureError: TextCaptureError?
     private(set) var dictionaryState: TextLookupDictionaryState = .idle
-    private(set) var selectionStates: [String: SenseSelectionState] = [:]
-    private(set) var surfaceMessage: String?
+    private var explicitSourceLanguage: String?
     private(set) var translationRequest: TranslationRequest?
     private(set) var translationState: TextLookupTranslationState = .sentenceUnavailable
+    var integrationMessage: String?
+    @ObservationIgnored var retryIntegration: (() -> Void)?
+    var usesAppleTranslation: Bool { translationSettings?.provider == .apple || translationSettings == nil }
 
-    var resourceProvider: (any FlashDictResourceProviding)? { flashDict }
+    init(dictionary: any SystemDictionaryReading = SystemDictionaryReader.shared) { self.dictionary = dictionary }
 
-    init(flashDict: (any TextLookupFlashDictServicing)? = nil) {
-        self.flashDict = flashDict
-    }
-
-    func beginLookup(with capture: TextLookupCapture, targetLanguageIdentifier: String) {
-        cancelWork()
-        isRecognizingWord = false
-        isLoadingContext = false
-        contextMessage = nil
-        self.capture = capture
-        captureError = nil
-        selectionStates = [:]
-        surfaceMessage = nil
-        startDictionaryLookup(term: capture.term, sessionID: capture.id)
-        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier)
-    }
-
-    func beginOCR() {
+    func beginLookup(with capture: TextLookupCapture, targetLanguageIdentifier: String, sourceLanguageIdentifier: String = "") {
         clear()
-        isRecognizingWord = true
+        self.capture = capture
+        startDictionaryLookup(term: capture.term)
+        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier, sourceLanguageIdentifier: sourceLanguageIdentifier)
     }
-
+    func beginOCR() { clear(); isRecognizingWord = true }
     func setContextStatus(id: UUID, loading: Bool, message: String?) {
         guard capture?.id == id, activeDictionaryTerm == capture?.term else { return }
-        isLoadingContext = loading
-        contextMessage = message
+        isLoadingContext = loading; contextMessage = message
     }
-
-    func supplementContext(id: UUID, term: String, text: String?, isFragment: Bool, targetLanguageIdentifier: String) {
+    func supplementContext(id: UUID, term: String, text: String?, isFragment: Bool, targetLanguageIdentifier: String, sourceLanguageIdentifier: String = "") {
         guard let current = capture, current.id == id, current.term == term,
               activeDictionaryTerm == term, current.needsContext else { return }
         isLoadingContext = false
@@ -146,57 +93,17 @@ final class TextLookupSessionModel {
         capture = TextLookupCapture(id: current.id, term: current.term, sentence: text,
             sourceURL: current.sourceURL, anchorRect: current.anchorRect, isContextFragment: isFragment)
         contextMessage = nil
-        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier)
+        requestTranslation(targetLanguageIdentifier: targetLanguageIdentifier, sourceLanguageIdentifier: sourceLanguageIdentifier)
     }
-
-    func present(_ error: TextCaptureError) {
-        cancelWork()
-        isRecognizingWord = false
-        isLoadingContext = false
-        contextMessage = nil
-        capture = nil
-        captureError = error
-        dictionaryState = .idle
-        translationRequest = nil
-        translationState = .sentenceUnavailable
+    func present(_ error: TextCaptureError) { clear(); captureError = error }
+    func selectWord(_ term: String) {
+        isLoadingContext = false; contextMessage = nil
+        startDictionaryLookup(term: term)
     }
+    func retryDictionaryLookup() { if let activeDictionaryTerm { startDictionaryLookup(term: activeDictionaryTerm) } }
 
-    private func accepts(_ sessionID: UUID) -> Bool {
-        capture?.id == sessionID
-    }
-
-    func handle(_ event: LookupSurfaceEvent) {
-        guard let capture else { return }
-        switch event {
-        case .senseSelected(let selection):
-            createFlashcard(from: selection, capture: capture)
-        case .entryRequested(let term, _):
-            isLoadingContext = false
-            contextMessage = nil
-            cancelCardWork()
-            selectionStates = [:]
-            startDictionaryLookup(term: term, sessionID: capture.id)
-        case .flashDictNotRunning:
-            dictionaryState = .failed(.flashDictNotRunning)
-        case .resourceUnavailable:
-            surfaceMessage = String(localized: "A dictionary resource is unavailable.")
-        }
-    }
-
-    func openFlashDict() {
-        let workspace = NSWorkspace.shared
-        let url = workspace.urlForApplication(withBundleIdentifier: "tech.hyperseek.flashdict")
-            ?? workspace.urlForApplication(withBundleIdentifier: "tech.hyperseek.flashdict.dev")
-        guard let url else { return }
-        workspace.openApplication(at: url, configuration: .init())
-    }
-
-    func retryDictionaryLookup() {
-        guard let capture, let activeDictionaryTerm else { return }
-        startDictionaryLookup(term: activeDictionaryTerm, sessionID: capture.id)
-    }
-
-    func requestTranslation(targetLanguageIdentifier: String) {
+    func requestTranslation(targetLanguageIdentifier: String, sourceLanguageIdentifier: String = "") {
+        explicitSourceLanguage = sourceLanguageIdentifier.isEmpty ? nil : sourceLanguageIdentifier
         guard let sentence = capture?.sentence else {
             translationRequest = nil
             translationState = .sentenceUnavailable
@@ -205,9 +112,13 @@ final class TextLookupSessionModel {
         translationRequest = TranslationRequest(
             id: UUID(),
             text: sentence,
-            targetLanguage: Locale.Language(identifier: targetLanguageIdentifier)
+            targetLanguage: Locale.Language(identifier: targetLanguageIdentifier),
+            sourceLanguage: sourceLanguageIdentifier.isEmpty
+                ? NLLanguageRecognizer.dominantLanguage(for: sentence).map { Locale.Language(identifier: $0.rawValue) }
+                : Locale.Language(identifier: sourceLanguageIdentifier)
         )
         translationState = .loading
+        startRemoteTranslationIfNeeded()
     }
 
     func completeTranslation(_ result: TranslationResult) {
@@ -220,126 +131,72 @@ final class TextLookupSessionModel {
         translationState = .failed(failure)
     }
 
-    func retryTranslation() {
-        guard let request = translationRequest else { return }
-        requestTranslation(targetLanguageIdentifier: request.targetLanguage.maximalIdentifier)
+    func requireLanguageDownload(requestID: UUID) {
+        guard translationRequest?.id == requestID else { return }
+        translationState = .languageDownloadRequired
     }
+
+    func retryTranslation(allowLanguageDownload: Bool = false) {
+        guard let request = translationRequest else { return }
+        translationRequest = TranslationRequest(id: UUID(), text: request.text, targetLanguage: request.targetLanguage,
+                                                sourceLanguage: request.sourceLanguage,
+                                                allowsLanguageDownload: allowLanguageDownload)
+        translationState = .loading
+        startRemoteTranslationIfNeeded()
+    }
+
 
     func clear() {
-        cancelWork()
-        isRecognizingWord = false
-        isLoadingContext = false
-        contextMessage = nil
-        capture = nil
-        captureError = nil
-        dictionaryState = .idle
-        selectionStates = [:]
-        surfaceMessage = nil
-        translationRequest = nil
-        translationState = .sentenceUnavailable
-    }
-
-    private func startDictionaryLookup(term: String, sessionID: UUID) {
-        lookupTask?.cancel()
-        activeDictionaryRequestID = nil
-        activeDictionaryTerm = term
-        guard let flashDict else {
-            dictionaryState = .failed(.integrationUnavailable)
-            return
-        }
-
-        dictionaryState = .loading
-        surfaceMessage = nil
-        let requestID = UUID()
-        activeDictionaryRequestID = requestID
-        lookupTask = Task { [weak self, flashDict] in
-            do {
-                let document = try await flashDict.lookup(term: term, requestID: requestID)
-                try Task.checkCancellation()
-                guard let self,
-                      self.accepts(sessionID),
-                      self.activeDictionaryRequestID == requestID else { return }
-                dictionaryState = .loaded(document)
-            } catch is CancellationError {
-                return
-            } catch {
-                guard let self,
-                      self.accepts(sessionID),
-                      self.activeDictionaryRequestID == requestID else { return }
-                dictionaryState = .failed(Self.map(error))
-            }
-        }
-    }
-
-    private func createFlashcard(
-        from selection: SenseSelection,
-        capture: TextLookupCapture
-    ) {
-        guard let flashDict else {
-            selectionStates[selection.selectionID] = .failed(
-                message: TextLookupDictionaryFailure.integrationUnavailable.message
-            )
-            return
-        }
-
-        let selectionID = selection.selectionID
-        let sessionID = capture.id
-        cardTasks[selectionID]?.cancel()
-        selectionStates[selectionID] = .adding
-        let context = FlashcardCreationContext(
-            sentence: capture.sentence,
-            sourceURL: capture.sourceURL,
-            userNote: nil
-        )
-
-        cardTasks[selectionID] = Task { [weak self, flashDict] in
-            do {
-                let result = try await flashDict.createFlashcard(
-                    seed: selection.cardSeed,
-                    context: context
-                )
-                try Task.checkCancellation()
-                guard let self, self.accepts(sessionID) else { return }
-                selectionStates[selectionID] = switch result {
-                case .added, .existing: .added
-                case .rejectedQuota: .rejectedQuota
-                case .failed(let message): .failed(message: message)
-                }
-                cardTasks[selectionID] = nil
-            } catch is CancellationError {
-                return
-            } catch {
-                guard !Task.isCancelled, let self, self.accepts(sessionID) else { return }
-                selectionStates[selectionID] = .failed(message: Self.map(error).message)
-                cardTasks[selectionID] = nil
-            }
-        }
-    }
-
-    private func cancelWork() {
-        lookupTask?.cancel()
-        lookupTask = nil
-        activeDictionaryRequestID = nil
+        lookupTask?.cancel(); lookupTask = nil; lookupID = nil
+        remoteTranslationTask?.cancel(); remoteTranslationTask = nil
         activeDictionaryTerm = nil
-        cancelCardWork()
+        isRecognizingWord = false; isLoadingContext = false; contextMessage = nil
+        capture = nil; captureError = nil; dictionaryState = .idle
+        translationRequest = nil; translationState = .sentenceUnavailable
+        integrationMessage = nil; retryIntegration = nil
     }
 
-    private func cancelCardWork() {
-        for task in cardTasks.values { task.cancel() }
-        cardTasks = [:]
-    }
-
-    private static func map(_ error: Error) -> TextLookupDictionaryFailure {
-        guard let error = error as? FlashDictIntegrationError else {
-            return .requestFailed(nil)
+    private func startDictionaryLookup(term: String) {
+        lookupTask?.cancel()
+        let id = UUID(); lookupID = id; activeDictionaryTerm = term
+        dictionaryState = .loading
+        lookupTask = Task { [weak self, dictionary] in
+            do {
+                let entries = try await dictionary.lookup(term)
+                try Task.checkCancellation()
+                guard let self, self.lookupID == id else { return }
+                dictionaryState = .loaded(entries)
+            } catch is CancellationError { return }
+            catch {
+                guard let self, self.lookupID == id, !Task.isCancelled else { return }
+                let message: String
+                switch error {
+                case SystemDictionaryError.noActiveDictionaries:
+                    message = String(localized: "Enable and download dictionaries in the macOS Dictionary app, then restart Zento.")
+                case SystemDictionaryError.noResult:
+                    message = String(localized: "The enabled system dictionaries have no result for this word.")
+                default: message = String(localized: "The system dictionary could not complete this lookup.")
+                }
+                dictionaryState = .failed(message)
+            }
         }
-        return switch error {
-        case .flashDictNotRunning: .flashDictNotRunning
-        case .primaryDictionaryUnavailable: .primaryDictionaryUnavailable
-        case .noResult: .noResult
-        case .incompatibleProtocol: .incompatibleProtocol
-        case .requestFailed(let message): .requestFailed(message)
-        case .resourceUnavailable, .invalidRequest: .requestFailed(nil)
+    }
+
+    private func startRemoteTranslationIfNeeded() {
+        remoteTranslationTask?.cancel()
+        guard let settings = translationSettings, settings.provider != .apple, let request = translationRequest else { return }
+        let config = settings.snapshot
+        let source = explicitSourceLanguage
+        remoteTranslationTask = Task { [weak self] in
+            do {
+                let text = try await settings.translate(request.text, target: request.targetLanguage.minimalIdentifier, source: source, configuration: config)
+                try Task.checkCancellation()
+                self?.completeTranslation(TranslationResult(requestID: request.id, translatedText: text))
+            } catch is CancellationError { return }
+            catch {
+                guard !Task.isCancelled else { return }
+                self?.failTranslation(.remoteFailure(TextLookupTranslationSettings.message(for: error)), requestID: request.id)
+            }
         }
     }
 }

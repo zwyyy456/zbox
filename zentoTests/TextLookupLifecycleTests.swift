@@ -30,6 +30,36 @@ struct TextLookupLifecycleTests {
     }
 
     @Test
+    func sourceAndTargetLanguagesPersistIndependently() throws {
+        let suite = "TextLookupLifecycleTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = TextLookupSettingsStore(defaults: defaults)
+        #expect(settings.sourceLanguageIdentifier.isEmpty)
+        settings.setSourceLanguageIdentifier("en")
+        settings.setTargetLanguageIdentifier("zh-Hans")
+        let restored = TextLookupSettingsStore(defaults: defaults)
+        #expect(restored.sourceLanguageIdentifier == "en")
+        #expect(restored.targetLanguageIdentifier == "zh-Hans")
+        restored.setSourceLanguageIdentifier("")
+        #expect(TextLookupSettingsStore(defaults: defaults).sourceLanguageIdentifier.isEmpty)
+        #expect(TextLookupSettingsStore(defaults: defaults).targetLanguageIdentifier == "zh-Hans")
+    }
+
+    @Test func dictionarySourceDefaultsAndMigrationAreExplicit() throws {
+        let suite = "TextLookupSourceTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(TextLookupSettingsStore(defaults: defaults).dictionarySource == .system)
+        defaults.removeObject(forKey: "plugin.text-lookup.dictionary-source")
+        defaults.set(true, forKey: "plugin.text-lookup.enabled")
+        let existing = TextLookupSettingsStore(defaults: defaults)
+        #expect(existing.dictionarySource == .flashDict)
+        existing.setDictionarySource(.system)
+        #expect(TextLookupSettingsStore(defaults: defaults).dictionarySource == .system)
+    }
+
+    @Test
     func pointerRequiresFullHoldAndDoesNotRepeatUntilReleased() {
         var state = TextLookupTriggerState()
         let config = TextLookupTriggers()

@@ -137,7 +137,7 @@ struct TextLookupFallbackTests {
         #expect(!session.isLoadingContext)
         session.beginLookup(with: first, targetLanguageIdentifier: "zh-Hans")
         session.setContextStatus(id: first.id, loading: true, message: nil)
-        session.handle(.entryRequested(term: "linked", anchor: nil))
+        session.selectWord("linked")
         session.supplementContext(id: first.id, term: "first", text: "Late context.", isFragment: false, targetLanguageIdentifier: "zh-Hans")
         #expect(session.capture?.sentence == nil)
         #expect(!session.isLoadingContext)

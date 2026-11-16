@@ -25,7 +25,7 @@
 ## 安全与分发
 
 - 核心命令中心不上传搜索词、应用列表、窗口信息、快捷键或使用行为；日志不记录搜索词或窗口内容。
-- Window Management 只用 Accessibility 定位、移动和缩放目标窗口。Text Lookup 仅在用户启用并触发时读取有限的选区或指针文本、原句与尽力获取的来源；捕获内容只保留在当前会话，除非用户显式创建 FlashDict 闪卡。两项能力在权限缺失时都必须显示真实恢复动作。
+- Window Management 只用 Accessibility 定位、移动和缩放目标窗口。Text Lookup 仅在用户启用并触发时读取有限的选区或指针文本、原句与尽力获取的来源；捕获内容只保留在当前会话；远程翻译只向用户明确选择的服务发送原句，建卡仅在 FlashDict 窗口内执行。两项能力在权限缺失时都必须显示真实恢复动作。
 - 分发基线为 Developer ID + Hardened Runtime 且 App Sandbox 关闭；改变这一组合时重新验证快捷键、应用扫描、Accessibility、登录项、签名和公证。
 - 仓库不得包含签名、公证凭据或用户本机数据。
 
@@ -40,8 +40,9 @@
 
 - Text Lookup 的当前产品范围与用户行为由 `docs/product/text-lookup.md` 定义；本节只定义其实现 ownership、平台 seam、并发和数据生命周期。
 - Text Lookup 是随主 App 静态编译的内置独立扩展，不是 macOS App Extension 或动态插件系统。`TextLookupPlugin` 拥有取词生命周期和当前会话；`TextLookupSessionModel` 拥有悬浮窗口可观察状态。`AppEnvironment` 只负责组合、启停和共享平台能力，不吸收完整取词流程。
-- Accessibility 捕获、兼容复制、FlashDict IntegrationKit 和 Apple Translation 是独立平台边界。业务层只消费稳定值和明确结果，不持有 AX、pasteboard、跨进程或 Translation session 对象。
-- 每次捕获先建立新的 session/request identity，并取消旧捕获、查词、翻译和建卡任务；成功与失败结果都必须匹配当前 identity 后才能提交。
+- Accessibility 捕获、兼容复制、SystemDictionary、FlashDict IntegrationKit 和翻译服务是独立平台边界。业务层只消费稳定值和明确结果，不持有 AX、pasteboard、跨进程或 Translation session 对象。
+- 每次捕获先建立新的 session/request identity，并取消旧捕获、系统词典查询和翻译；成功与失败结果必须匹配当前 identity 后才能提交。FlashDict 来源只管理远程窗口身份，不在 zento 持有义项建卡或资源代理状态。远程打开、补句与关闭请求串行发送，避免延迟打开越过关闭；远程窗口自身复核当前展示身份和当前词条。
+- LookupPresentation 编译共享窗口呈现、原句布局和整体滚动，不依赖数据库、会员、MdictKit、FlashDict bridge 或应用设置。SystemDictionary 通过单个 actor 串行封装私有 DictionaryServices 调用，词典列表在进程内缓存；系统词典资源读取限制在所属 bundle，HTML 不落盘。共享 TranslationServices 只隔离 HTTP 协议，各应用继续拥有设置及 Keychain。
 - Apple `TranslationSession` 保持 View 生命周期绑定；不进入 App 级 service、Settings store 或持久化对象。
 - 剪贴板兼容路径只执行一次受控复制，并以 change count 防止恢复操作覆盖用户后续修改。
 - 捕获文本、原句、来源 URL、释义和翻译不持久化，也不进入普通日志。停用功能或关闭会话时释放相关内存状态。

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+import Translation
 
 struct TextLookupSettingsView: View {
     let environment: AppEnvironment
@@ -8,7 +9,7 @@ struct TextLookupSettingsView: View {
     @State private var recordingError: String?
     @State private var applicationSelectionError: String?
 
-    private let commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es"]
+    @State private var commonTargetLanguages = ["zh-Hans", "en", "ja", "ko", "fr", "de", "es", "pl"]
 
     var body: some View {
         @Bindable var plugin = environment.textLookupPlugin
@@ -29,6 +30,16 @@ struct TextLookupSettingsView: View {
             }
 
             Group {
+                Picker("Dictionary Source", selection: Binding(
+                    get: { settings.dictionarySource }, set: { plugin.setDictionarySource($0) }
+                )) {
+                    Text("Built-in System Dictionaries").tag(TextLookupDictionarySource.system)
+                    Text("FlashDict Window").tag(TextLookupDictionarySource.flashDict)
+                }
+                Text(settings.dictionarySource == .system
+                    ? String(localized: "Uses dictionaries enabled in the macOS Dictionary app. FlashDict is not required; flashcard creation is not available.")
+                    : String(localized: "Opens FlashDict’s lookup window. Translation and flashcards use FlashDict’s settings and require its matching build to be running."))
+                    .font(.caption).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Double-click Lookup", isOn: triggerBinding(\.doubleClickEnabled))
                     if settings.triggers.doubleClickEnabled {
@@ -97,8 +108,25 @@ struct TextLookupSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                if settings.dictionarySource == .system {
+                    TextLookupTranslationSettingsView(settings: settings.translation)
+                Picker("Translation source language", selection: Binding(
+                    get: { settings.sourceLanguageIdentifier },
+                    set: { settings.setSourceLanguageIdentifier($0) }
+                )) {
+                    Text("Detect Automatically").tag("")
+                    ForEach(targetLanguageChoices, id: \.self) { identifier in
+                        Text(languageName(identifier)).tag(identifier)
+                    }
+                }
+                .task {
+                    let languages = await TextLookupTranslationLanguages.supportedIdentifiers()
+                    guard !Task.isCancelled else { return }
+                    commonTargetLanguages = languages
+                }
+
                 Picker(
-                "Translation Language",
+                "Translation target language",
                 selection: Binding(
                     get: { settings.targetLanguageIdentifier },
                     set: { settings.setTargetLanguageIdentifier($0) }
@@ -109,10 +137,12 @@ struct TextLookupSettingsView: View {
                     }
                 }
 
+                }
+
                 AccessibilityPermissionRow(isTrusted: environment.isAccessibilityTrusted,
                                            request: environment.requestAccessibilityPermission,
                                            openSettings: environment.openAccessibilitySettings)
-                Text("Text Lookup reads text only when triggered. Optional local OCR uses Screen Recording permission. Text and images stay in the current session unless you create a FlashDict card; no lookup history is kept.")
+                Text("Text Lookup reads text only when triggered and keeps no lookup history. OCR is local. A remote translation service receives the original sentence only when you select it. Flashcard creation is handled only in FlashDict.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -195,8 +225,10 @@ struct TextLookupSettingsView: View {
     }
 
     private var targetLanguageChoices: [String] {
-        [environment.textLookupPlugin.settings.targetLanguageIdentifier] + commonTargetLanguages.filter {
-            $0 != environment.textLookupPlugin.settings.targetLanguageIdentifier
+        let selected = [environment.textLookupPlugin.settings.targetLanguageIdentifier,
+                        environment.textLookupPlugin.settings.sourceLanguageIdentifier].filter { !$0.isEmpty }
+        return Set(selected + commonTargetLanguages).sorted {
+            languageName($0).localizedStandardCompare(languageName($1)) == .orderedAscending
         }
     }
 

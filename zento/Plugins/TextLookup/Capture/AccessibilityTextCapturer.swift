@@ -174,13 +174,53 @@ actor AccessibilityTextCapturer: TextCapturing {
             trace("static-text-success")
             return TextLookupCapture(
                 id: request.id, term: (text as NSString).substring(with: word),
-                sentence: TextLookupTextProcessor.sentence(in: text, containingUTF16Range: word),
+                sentence: inlineContext(around: element, range: word).flatMap {
+                    TextLookupTextProcessor.sentence(in: $0.text, containingUTF16Range: $0.range)
+                } ?? TextLookupTextProcessor.sentence(in: text, containingUTF16Range: word),
                 sourceURL: sourceURL(from: element),
                 anchorRect: CGRect(x: bounds.minX, y: request.primaryScreenMaxY - bounds.maxY,
                                    width: bounds.width, height: bounds.height)
             )
         }
         trace("static-text-no-matching-word-bounds")
+        return nil
+    }
+
+    // A browser paragraph is commonly an AXGroup containing text/link/text.
+    // Read only that nearest inline container, never aggregate a web document.
+    private func inlineContext(around element: AXUIElement, range: NSRange) -> (text: String, range: NSRange)? {
+        var current = elementAttribute(element, "AXParent")
+        var parents: [AXUIElement] = []
+        while let parent = current {
+            guard !parents.contains(where: { CFEqual($0, parent) }) else { return nil }
+            parents.append(parent)
+            guard let role = stringAttribute(parent, "AXRole"), ["AXLink", "AXGroup"].contains(role) else { return nil }
+            if role == "AXLink" { current = elementAttribute(parent, "AXParent"); continue }
+            guard let children = rawAttribute(parent, "AXChildren") as? [AXUIElement] else { return nil }
+            var text = ""
+            var targetOffset: Int?
+            var visited: [AXUIElement] = []
+            func append(_ node: AXUIElement) -> Bool {
+                guard !visited.contains(where: { CFEqual($0, node) }) else { return false }
+                visited.append(node)
+                switch stringAttribute(node, "AXRole") {
+                case "AXStaticText":
+                    guard let value = stringAttribute(node, "AXValue"),
+                          text.utf16.count + value.utf16.count <= contextRadius * 2 else { return false }
+                    if CFEqual(node, element) { targetOffset = text.utf16.count + range.location }
+                    text += value
+                    return true
+                case "AXLink":
+                    guard let nodes = rawAttribute(node, "AXChildren") as? [AXUIElement], !nodes.isEmpty else { return false }
+                    return nodes.allSatisfy(append)
+                default:
+                    // Another block, control or input is not inline paragraph context.
+                    return false
+                }
+            }
+            guard children.allSatisfy(append), let targetOffset else { return nil }
+            return (text, NSRange(location: targetOffset, length: range.length))
+        }
         return nil
     }
 

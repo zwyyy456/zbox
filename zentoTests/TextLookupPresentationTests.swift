@@ -1,6 +1,6 @@
+import AppKit
 import CoreGraphics
-import FlashDictIntegrationContracts
-import FlashDictIntegrationKit
+import LookupPresentation
 import Foundation
 import Testing
 @testable import zento
@@ -11,19 +11,55 @@ struct TextLookupPresentationTests {
         let visibleFrame = CGRect(x: 0, y: 0, width: 1_000, height: 800)
         let size = CGSize(width: 520, height: 260)
 
-        let below = TextLookupPanelPlacement.origin(
+        let below = LookupPanelPlacement.origin(
             anchor: CGRect(x: 20, y: 600, width: 40, height: 20),
             panelSize: size,
             visibleFrame: visibleFrame
         )
         #expect(below == CGPoint(x: 12, y: 332))
 
-        let above = TextLookupPanelPlacement.origin(
+        let above = LookupPanelPlacement.origin(
             anchor: CGRect(x: 900, y: 30, width: 20, height: 20),
             panelSize: size,
             visibleFrame: visibleFrame
         )
         #expect(above == CGPoint(x: 468, y: 58))
+    }
+
+    @Test @MainActor
+    func pinnedPanelKeepsPositionAndSessionUntilExplicitlyClosed() throws {
+        let suite = "TextLookupPresentationTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = TextLookupSessionModel()
+        let controller = TextLookupPanelController(model: model, settings: TextLookupSettingsStore(defaults: defaults),
+                                                   onDismiss: { model.clear() })
+        defer { controller.hide() }
+        model.beginLookup(with: capture(id: UUID(), term: "first"), targetLanguageIdentifier: "zh-Hans")
+        try controller.show(anchor: CGRect(x: 100, y: 100, width: 10, height: 10))
+        let window = try #require(NSApp.windows.first(where: controller.contains))
+        #expect(window.isMovableByWindowBackground)
+        window.setFrameOrigin(CGPoint(x: window.frame.minX + 30, y: window.frame.minY + 20))
+        let originalFrame = window.frame
+        model.isPinned = true
+        controller.dismissForOutsideClick()
+        #expect(window.isVisible)
+        #expect(model.capture?.term == "first")
+
+        model.beginLookup(with: capture(id: UUID(), term: "second"), targetLanguageIdentifier: "zh-Hans")
+        try controller.show(anchor: CGRect(x: 700, y: 700, width: 10, height: 10))
+        #expect(window.frame == originalFrame)
+        #expect(model.isPinned)
+        window.cancelOperation(nil)
+        #expect(!window.isVisible)
+        #expect(!model.isPinned)
+        #expect(model.capture == nil)
+
+        model.beginLookup(with: capture(id: UUID(), term: "third"), targetLanguageIdentifier: "zh-Hans")
+        try controller.show(anchor: nil)
+        controller.dismissForOutsideClick()
+        #expect(!window.isVisible)
+        #expect(model.capture == nil)
     }
 
     @Test @MainActor
@@ -43,61 +79,6 @@ struct TextLookupPresentationTests {
         } else {
             Issue.record("Expected dictionary state to reset after clearing")
         }
-    }
-
-    @Test(arguments: [
-        FlashcardCreationResult.added(cardID: UUID()),
-        .existing(cardID: UUID()),
-        .rejectedQuota,
-        .failed(message: "Creation failed."),
-    ]) @MainActor
-    func createsFlashcardFromFrozenSelectionWithOriginalContext(result: FlashcardCreationResult) async throws {
-        let flashDict = FlashDictServiceSpy(creationResult: result)
-        let model = TextLookupSessionModel(flashDict: flashDict)
-        let sourceURL = try #require(URL(string: "https://example.com/article"))
-        let capture = TextLookupCapture(
-            id: UUID(),
-            term: "swift",
-            sentence: "Swift keeps the original sentence.",
-            sourceURL: sourceURL,
-            anchorRect: nil
-        )
-        model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans")
-
-        let seed = FlashcardSeed(
-            dictionaryStableID: "primary",
-            dictionaryName: "Main",
-            term: "swift",
-            headerHTML: nil,
-            subHeaderHTML: nil,
-            phraseHeaderHTML: nil,
-            senseHTML: "<p>moving quickly</p>",
-            senseIndex: 0,
-            subsenseSelector: nil,
-            resourceTagsVersion: 2,
-            cssTagsHTML: nil,
-            scriptTagsHTML: nil
-        )
-        model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
-
-        let context = try await waitForCreatedContext(in: flashDict)
-        #expect(context.sentence == capture.sentence)
-        #expect(context.sourceURL == sourceURL)
-        #expect(context.userNote == nil)
-        let sentSeed = try #require(await flashDict.createdSeed)
-        #expect(sentSeed.term == seed.term)
-        #expect(sentSeed.senseHTML == seed.senseHTML)
-        #expect(sentSeed.dictionaryStableID == seed.dictionaryStableID)
-        let expected: SenseSelectionState = switch result {
-        case .added, .existing: .added
-        case .rejectedQuota: .rejectedQuota
-        case .failed(let message): .failed(message: message)
-        }
-        for _ in 0..<100 {
-            if model.selectionStates["sense-1"] == expected { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        #expect(model.selectionStates["sense-1"] == expected)
     }
 
     @Test @MainActor
@@ -130,264 +111,37 @@ struct TextLookupPresentationTests {
         }
     }
 
-    @Test(.timeLimit(.minutes(1))) @MainActor
-    func staleDictionaryFailureDoesNotReplaceNewerEntry() async throws {
-        let (handled, completion) = AsyncStream<Void>.makeStream()
-        let flashDict = OutOfOrderFlashDictService(failureHandled: completion)
-        let model = TextLookupSessionModel(flashDict: flashDict)
-        model.beginLookup(
-            with: capture(id: UUID(), term: "old"),
-            targetLanguageIdentifier: "zh-Hans"
-        )
-        await flashDict.waitUntilOldLookupStarts()
-
-        model.handle(.entryRequested(term: "new", anchor: nil))
-        await waitUntilLoaded(term: "new", in: model)
-        await flashDict.releaseOldLookup()
-        // Error release occurs after the receiving catch has consumed it. Resuming
-        // this MainActor test then observes the completed synchronous state update.
-        for await _ in handled { break }
-
-        guard case .loaded(let document) = model.dictionaryState else {
-            Issue.record("Expected the newer dictionary entry to remain loaded")
-            return
-        }
-        #expect(document.term == "new")
-    }
-
     @Test @MainActor
-    func retryUsesTheCurrentDictionaryEntry() async {
-        let flashDict = FlashDictServiceSpy(failOnceFor: "linked")
-        let model = TextLookupSessionModel(flashDict: flashDict)
-        model.beginLookup(
-            with: capture(id: UUID(), term: "original"),
-            targetLanguageIdentifier: "zh-Hans"
-        )
-        await waitUntilLoaded(term: "original", in: model)
-
-        model.handle(.entryRequested(term: "linked", anchor: nil))
-        await waitUntilDictionaryFails(in: model)
-        model.retryDictionaryLookup()
-        await waitUntilLoaded(term: "linked", in: model)
-
-        #expect(await flashDict.lookupTerms == ["original", "linked", "linked"])
-    }
-
-    @Test(.timeLimit(.minutes(1)), arguments: [false, true]) @MainActor
-    func cancelledCardFailureDoesNotRestoreOldState(replaceSameSelection: Bool) async throws {
-        let (started, start) = AsyncStream<Void>.makeStream()
-        let (handled, completion) = AsyncStream<Void>.makeStream()
-        let service = DelayedCardService(start: start, completion: completion)
-        let model = TextLookupSessionModel(flashDict: service)
-        model.beginLookup(with: capture(id: UUID(), term: "swift"), targetLanguageIdentifier: "zh-Hans")
-        let seed = FlashcardSeed(
-            dictionaryStableID: "primary",
-            dictionaryName: "Main",
-            term: "swift",
-            headerHTML: nil,
-            subHeaderHTML: nil,
-            phraseHeaderHTML: nil,
-            senseHTML: "<p>moving quickly</p>",
-            senseIndex: 0,
-            subsenseSelector: nil,
-            resourceTagsVersion: 2,
-            cssTagsHTML: nil,
-            scriptTagsHTML: nil
-        )
-        model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
-        var starts = started.makeAsyncIterator()
-        _ = await starts.next()
-        if replaceSameSelection {
-            model.handle(.senseSelected(SenseSelection(selectionID: "sense-1", cardSeed: seed)))
-            _ = await starts.next()
-        } else {
-            model.handle(.entryRequested(term: "new", anchor: nil))
+    func translationLanguagesAndDownloadConsentBelongToCurrentRequest() throws {
+        let model = TextLookupSessionModel()
+        let capture = TextLookupCapture(id: UUID(), term: "desktop",
+            sentence: "[example/project] GPUI desktop workflow run", sourceURL: nil, anchorRect: nil)
+        model.beginLookup(with: capture, targetLanguageIdentifier: "zh-Hans", sourceLanguageIdentifier: "en")
+        let first = try #require(model.translationRequest)
+        #expect(first.sourceLanguage?.languageCode?.identifier == "en")
+        #expect(!first.allowsLanguageDownload)
+        model.requireLanguageDownload(requestID: first.id)
+        guard case .languageDownloadRequired = model.translationState else {
+            Issue.record("Missing languages should require explicit download consent"); return
         }
-        await service.fail()
-        for await _ in handled { break }
-        if replaceSameSelection {
-            #expect(model.selectionStates["sense-1"] == .adding)
-            model.clear()
-            await service.finish()
-        } else {
-            #expect(model.selectionStates.isEmpty)
+        model.retryTranslation(allowLanguageDownload: true)
+        let consented = try #require(model.translationRequest)
+        #expect(consented.id != first.id)
+        #expect(consented.sourceLanguage == first.sourceLanguage)
+        #expect(consented.targetLanguage == first.targetLanguage)
+        #expect(consented.allowsLanguageDownload)
+        model.requestTranslation(targetLanguageIdentifier: "ja", sourceLanguageIdentifier: "en")
+        let changed = try #require(model.translationRequest)
+        #expect(changed.targetLanguage.languageCode?.identifier == "ja")
+        #expect(!changed.allowsLanguageDownload)
+        model.requireLanguageDownload(requestID: consented.id)
+        model.completeTranslation(TranslationResult(requestID: consented.id, translatedText: "stale"))
+        guard case .loading = model.translationState else {
+            Issue.record("Old requests must not replace the newly selected languages"); return
         }
     }
 
-    @MainActor
-    private func waitUntilLoaded(term: String, in model: TextLookupSessionModel) async {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while ContinuousClock.now < deadline {
-            if case .loaded(let document) = model.dictionaryState, document.term == term { return }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        Issue.record("Expected dictionary entry \(term) to load")
-    }
-
-    @MainActor
-    private func waitUntilDictionaryFails(in model: TextLookupSessionModel) async {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while ContinuousClock.now < deadline {
-            if case .failed = model.dictionaryState { return }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        Issue.record("Expected dictionary lookup to fail")
-    }
-
-    @MainActor
-    private func capture(id: UUID, term: String) -> TextLookupCapture {
-        TextLookupCapture(
-            id: id,
-            term: term,
-            sentence: nil,
-            sourceURL: nil,
-            anchorRect: nil
-        )
-    }
-
-    private func waitForCreatedContext(
-        in flashDict: FlashDictServiceSpy
-    ) async throws -> FlashcardCreationContext {
-        for _ in 0..<20 {
-            if let context = await flashDict.createdContext { return context }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        Issue.record("Expected a FlashDict create-card request")
-        throw CancellationError()
-    }
-}
-
-private actor OutOfOrderFlashDictService: TextLookupFlashDictServicing {
-    private final class ExpectedFailure: Error {
-        let completion: AsyncStream<Void>.Continuation
-        init(completion: AsyncStream<Void>.Continuation) { self.completion = completion }
-        deinit { completion.yield(()); completion.finish() }
-    }
-    private let failureHandled: AsyncStream<Void>.Continuation
-    init(failureHandled: AsyncStream<Void>.Continuation) { self.failureHandled = failureHandled }
-    private var oldLookupStarted = false
-    private var oldLookupReleased = false
-    private var startWaiters: [CheckedContinuation<Void, Never>] = []
-    private var releaseWaiter: CheckedContinuation<Void, Never>?
-
-    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
-        if term == "old" {
-            oldLookupStarted = true
-            startWaiters.forEach { $0.resume() }
-            startWaiters = []
-            if !oldLookupReleased {
-                await withCheckedContinuation { releaseWaiter = $0 }
-            }
-            throw ExpectedFailure(completion: failureHandled)
-        }
-        return LookupDocument(
-            requestID: requestID,
-            dictionaryStableID: "primary",
-            dictionaryName: "Main",
-            term: term,
-            htmlDocument: "<html></html>"
-        )
-    }
-
-    func waitUntilOldLookupStarts() async {
-        guard !oldLookupStarted else { return }
-        await withCheckedContinuation { startWaiters.append($0) }
-    }
-
-    func releaseOldLookup() {
-        oldLookupReleased = true
-        releaseWaiter?.resume()
-        releaseWaiter = nil
-    }
-
-    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
-        LookupResource(data: Data(), mimeType: "application/octet-stream")
-    }
-
-    func createFlashcard(
-        seed: FlashcardSeed,
-        context: FlashcardCreationContext
-    ) async throws -> FlashcardCreationResult {
-        .added(cardID: UUID())
-    }
-}
-
-private actor FlashDictServiceSpy: TextLookupFlashDictServicing {
-    private(set) var createdContext: FlashcardCreationContext?
-    private(set) var createdSeed: FlashcardSeed?
-    private let creationResult: FlashcardCreationResult
-    private(set) var lookupTerms: [String] = []
-    private var termToFailOnce: String?
-
-    init(
-        failOnceFor term: String? = nil,
-        creationResult: FlashcardCreationResult = .added(cardID: UUID())
-    ) {
-        termToFailOnce = term
-        self.creationResult = creationResult
-    }
-
-    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
-        lookupTerms.append(term)
-        if termToFailOnce == term {
-            termToFailOnce = nil
-            throw FlashDictIntegrationError.requestFailed(message: nil)
-        }
-        return LookupDocument(
-            requestID: requestID,
-            dictionaryStableID: "primary",
-            dictionaryName: "Main",
-            term: term,
-            htmlDocument: "<html></html>"
-        )
-    }
-
-    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
-        LookupResource(data: Data(), mimeType: "application/octet-stream")
-    }
-
-    func createFlashcard(
-        seed: FlashcardSeed,
-        context: FlashcardCreationContext
-    ) async throws -> FlashcardCreationResult {
-        createdContext = context
-        createdSeed = seed
-        return creationResult
-    }
-}
-
-
-private actor DelayedCardService: TextLookupFlashDictServicing {
-    private final class Failure: Error {
-        let completion: AsyncStream<Void>.Continuation
-        init(_ completion: AsyncStream<Void>.Continuation) { self.completion = completion }
-        deinit { completion.yield(()); completion.finish() }
-    }
-    let start: AsyncStream<Void>.Continuation
-    let completion: AsyncStream<Void>.Continuation
-    private var continuations: [CheckedContinuation<FlashcardCreationResult, any Error>] = []
-    init(start: AsyncStream<Void>.Continuation, completion: AsyncStream<Void>.Continuation) {
-        self.start = start
-        self.completion = completion
-    }
-    func lookup(term: String, requestID: UUID) async throws -> LookupDocument {
-        LookupDocument(requestID: requestID, dictionaryStableID: "primary",
-                       dictionaryName: "Main", term: term, htmlDocument: "<html></html>")
-    }
-    func loadResource(dictionaryStableID: String, key: String) async throws -> LookupResource {
-        LookupResource(data: Data(), mimeType: "application/octet-stream")
-    }
-    func createFlashcard(seed: FlashcardSeed, context: FlashcardCreationContext) async throws -> FlashcardCreationResult {
-        try await withCheckedThrowingContinuation {
-            continuations.append($0)
-            start.yield(())
-        }
-    }
-    func finish() {
-        continuations.removeFirst().resume(returning: .added(cardID: UUID()))
-        start.finish()
-    }
-    func fail() {
-        continuations.removeFirst().resume(throwing: Failure(completion))
+    @MainActor private func capture(id: UUID, term: String) -> TextLookupCapture {
+        TextLookupCapture(id: id, term: term, sentence: nil, sourceURL: nil, anchorRect: nil)
     }
 }

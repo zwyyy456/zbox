@@ -179,7 +179,6 @@ final class AppEnvironment {
         let textLookupPlugin = TextLookupPlugin(
             settings: textLookupSettings,
             clipboardCoordinator: clipboardCoordinator,
-            hotkeyRegistrar: hotkeyRegistrar,
             isAccessibilityTrusted: { accessibilityAuthorization.isTrusted }
         )
 

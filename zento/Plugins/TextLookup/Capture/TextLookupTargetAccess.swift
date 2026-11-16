@@ -39,13 +39,15 @@ enum TextLookupTargetAccess {
         var canDoubleClick = false
         var actionable = false
         var windowBounds: CGRect?
-        for depth in 0..<24 {
-            guard let node = current else { break }
+        // Web content can have more than 24 ancestors. Walk to the application
+        // root so a readable, nonsecure target can reach OCR even in a deep tree.
+        while let node = current {
+            try Task.checkCancellation()
             guard !visited.contains(where: { CFEqual($0, node) }) else { throw TextCaptureError.secureText }
             visited.append(node)
             if value(node, "AXSubrole") as? String == "AXSecureTextField" { throw TextCaptureError.secureText }
             guard let role = value(node, "AXRole") as? String else { throw TextCaptureError.unsupportedElement }
-            if depth == 0 { canDoubleClick = ["AXStaticText", "AXTextField", "AXTextArea"].contains(role) }
+            if visited.count == 1 { canDoubleClick = ["AXStaticText", "AXTextField", "AXTextArea"].contains(role) }
             if ["AXLink", "AXButton", "AXMenuItem", "AXPopUpButton", "AXComboBox"].contains(role) { actionable = true }
             var actions: CFArray?
             if AXUIElementCopyActionNames(node, &actions) == .success,
