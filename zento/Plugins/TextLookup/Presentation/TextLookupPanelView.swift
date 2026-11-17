@@ -16,15 +16,21 @@ struct TextLookupPanelView: View {
         LookupPanelContent(title: model.activeDictionaryTerm ?? model.capture?.term ?? String(localized: "Text Lookup"),
                            state: model.windowState, onClose: onClose) {
             if let capture = model.capture {
-                if model.isLoadingContext { ProgressView("Reading nearby context…").controlSize(.small) }
-                if let message = model.contextMessage { Text(message).font(.caption).foregroundStyle(.secondary) }
-                if let sentence = capture.sentence {
-                    if capture.isContextFragment { Text("Context fragment").font(.caption).foregroundStyle(.secondary) }
-                    LookupSentenceView(sentence: sentence, selectedWord: model.activeDictionaryTerm, onSelectWord: model.selectWord)
-                }
-                Divider()
-                translationContent
-                Divider()
+                LookupContextCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if model.isLoadingContext { ProgressView("Reading nearby context…").controlSize(.small) }
+                        if let message = model.contextMessage { Text(message).font(.caption).foregroundStyle(.secondary) }
+                        if let sentence = capture.sentence, !capture.needsContext {
+                            LookupContextHeader(isIncomplete: capture.isContextFragment) {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(sentence, forType: .string)
+                            }
+                            LookupSentenceView(sentence: sentence, selectedWord: model.activeDictionaryTerm, onSelectWord: model.selectWord)
+                        } else if !model.isLoadingContext && model.contextMessage == nil {
+                            Text("No sentence was captured.").font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
+                } translation: { translationContent }
                 dictionaryContent
             } else if model.isRecognizingWord {
                 ProgressView("Recognizing nearby text…")
@@ -111,60 +117,76 @@ struct TextLookupPanelView: View {
     private var sourceLanguageName: String {
         if !settings.sourceLanguageIdentifier.isEmpty { return languageName(settings.sourceLanguageIdentifier) }
         if let detected = model.translationRequest?.sourceLanguage {
-            return String(localized: "Auto (\(languageName(detected.minimalIdentifier)))")
+            return String(localized: "\(languageName(detected.minimalIdentifier)) (Auto)")
         }
         return String(localized: "Detect Automatically")
     }
 
     @ViewBuilder
     private var translationContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Translation")
-                    .font(.headline)
-            }
+        VStack(alignment: .leading, spacing: 10) {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
-                    languageMenu(source: true)
-                    Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                    languageMenu(source: false)
+                    Text("Translation").font(.caption).foregroundStyle(.secondary)
+                    languagePair
+                    Spacer(minLength: 4)
+                    translationStatus
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    languageMenu(source: true)
-                    languageMenu(source: false)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack { Text("Translation").font(.caption).foregroundStyle(.secondary); Spacer(); translationStatus }
+                    languagePair
                 }
             }
-            switch model.translationState {
-            case .sentenceUnavailable:
-                Text("No sentence is available to translate.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            case .languageDownloadRequired:
-                Text("The selected languages need to be downloaded. Check the source and target languages before continuing.")
-                    .font(.callout).foregroundStyle(.secondary)
-                Button("Download Languages…") { model.retryTranslation(allowLanguageDownload: true) }
-            case .loading:
-                HStack(spacing: 10) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(model.usesAppleTranslation ? String(localized: "Translating with Apple Translation…") : String(localized: "Translating…"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            case .translated(let result):
-                Text(result.translatedText)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            case .failed(let failure):
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(failure.message)
+            .controlSize(.small)
+            if !isSameTranslation {
+                switch model.translationState {
+                case .sentenceUnavailable:
+                    Text("No sentence is available to translate.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                    Button("Retry Translation") {
-                        model.retryTranslation()
+                case .languageDownloadRequired:
+                    Text("The selected languages need to be downloaded. Check the source and target languages before continuing.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    Button("Download Languages…") { model.retryTranslation(allowLanguageDownload: true) }
+                case .loading:
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(model.usesAppleTranslation ? String(localized: "Translating with Apple Translation…") : String(localized: "Translating…"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                case .translated(let result):
+                    Text(result.translatedText).lineSpacing(3).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                case .failed(let failure):
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(failure.message)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Button("Retry Translation") {
+                            model.retryTranslation()
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private var isSameTranslation: Bool {
+        guard case .translated(let result) = model.translationState else { return false }
+        return result.translatedText.trimmingCharacters(in: .whitespacesAndNewlines)
+            == model.capture?.sentence?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var languagePair: some View {
+        LookupLanguagePair(source: { languageMenu(source: true) }, target: { languageMenu(source: false) })
+    }
+
+    private var translationStatus: some View {
+        HStack(spacing: 6) {
+            if isSameTranslation { LookupSameTranslationBadge() }
+            Text(settings.translation.provider.name).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
         }
     }
 

@@ -6,12 +6,84 @@ import Testing
 @testable import zento
 
 struct TextLookupFallbackTests {
-    @Test func compatibilityNeverContinuesAfterPrivacyOrPermissionErrors() {
+    @Test func ocrJoinsInlineTextFragmentsWithoutJoiningAnotherColumn() throws {
+        let before = TextLookupOCRLine(text: "The doctor is", bounds: CGRect(x: 100, y: 100, width: 90, height: 18), words: [])
+        let word = TextLookupOCRLine(text: "diagnosing", bounds: CGRect(x: 195, y: 100, width: 80, height: 18), words: [
+            TextLookupOCRWord(range: NSRange(location: 0, length: 10), bounds: CGRect(x: 195, y: 100, width: 80, height: 18))
+        ])
+        let after = TextLookupOCRLine(text: "the patient.", bounds: CGRect(x: 280, y: 100, width: 100, height: 18), words: [])
+        let sidebar = TextLookupOCRLine(text: "Another conversation", bounds: CGRect(x: 450, y: 100, width: 160, height: 18), words: [])
+        let result = try #require(TextLookupOCRText.match(lines: [word, sidebar, after, before],
+            anchor: CGRect(x: 230, y: 105, width: 1, height: 1), expectedTerm: "diagnosing"))
+        #expect(result.term == "diagnosing")
+        #expect(result.context == "The doctor is diagnosing the patient.")
+    }
+
+    @Test func aWordWithPunctuationStillNeedsContext() {
+        let capture = TextLookupCapture(id: UUID(), term: "diagnosing", sentence: "Diagnosing.", sourceURL: nil, anchorRect: nil)
+        #expect(capture.needsContext)
+    }
+
+    @Test func simulatedInputNeverContinuesAfterPrivacyOrPermissionErrors() {
         for error in [TextCaptureError.secureText, .excludedApplication, .permissionRequired, .selectionTooLong] {
             #expect(!error.allowsCompatibilityFallback)
         }
         #expect(TextCaptureError.unsupportedElement.allowsCompatibilityFallback)
         #expect(TextCaptureError.clipboardFallbackFailed.allowsCompatibilityFallback)
+    }
+
+    @Test func ocrWindowSelectionUsesWindowServerOrderAndCoordinates() {
+        let frame = CGRect(x: -1200, y: 100, width: 1000, height: 700)
+        let target: [String: Any] = [kCGWindowOwnerPID as String: 42, kCGWindowLayer as String: 0,
+            kCGWindowBounds as String: frame.dictionaryRepresentation]
+        let covering: [String: Any] = [kCGWindowOwnerPID as String: 99, kCGWindowLayer as String: 0,
+            kCGWindowBounds as String: frame.dictionaryRepresentation]
+        let point = CGPoint(x: -800, y: 400)
+        #expect(TextLookupOCRText.windowBounds(at: point, applicationPID: 42, primaryScreenMaxY: 1000,
+            windows: [target]) == CGRect(x: -1200, y: 200, width: 1000, height: 700))
+        #expect(TextLookupOCRText.windowBounds(at: point, applicationPID: 42, primaryScreenMaxY: 1000,
+            windows: [covering, target]) == nil)
+        #expect(TextLookupOCRText.windowBounds(at: .zero, applicationPID: 42, primaryScreenMaxY: 1000,
+            windows: [target]) == nil)
+    }
+
+    // Both runs temporarily register Escape for their popup in this process.
+    @MainActor @Test(.serialized, arguments: [TextCaptureError.noTextAtPointer, .secureText])
+    func pointerOCRDoesNotRequireAnAccessibleControl(axError: TextCaptureError) async throws {
+        let name = "TextLookupOCRFallback.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let settings = TextLookupSettingsStore(defaults: defaults)
+        settings.setDoubleClickFallbackEnabled(false)
+        let session = TextLookupSessionModel()
+        let snapshot = try sampleSnapshot()
+        var capturedScreen = false
+        var result: TextLookupCapture?
+        let plugin = TextLookupPlugin(settings: settings, clipboardCoordinator: ClipboardAccessCoordinator(),
+            capturer: UnreadableText(error: axError), captureScreen: { _, _ in
+                capturedScreen = true
+                return snapshot
+            }, session: session, isAccessibilityTrusted: { true })
+        defer { plugin.setShortcutRecordingActive(true) }
+        // No AX element exists here. The screenshot boundary supplies a known local image instead.
+        let point = CGPoint(x: -1_000_000, y: -1_000_000)
+        let pid = try #require(NSWorkspace.shared.frontmostApplication?.processIdentifier)
+        let request = TextCaptureRequest(id: UUID(), intent: .pointerLocation(point), targetApplicationPID: pid,
+            excludedApplicationPIDs: [], primaryScreenMaxY: 1000, triggerAnchorPoint: point)
+        plugin.beginCapture(request, reportFailure: true) { result = $0 }
+        let deadline = ContinuousClock.now + .seconds(5)
+        while result == nil && session.captureError == nil && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(capturedScreen)
+        #expect(session.captureError == nil)
+        #expect(result?.term == "word")
+        #expect(result?.sentence == "Read this word.")
+    }
+
+    private struct UnreadableText: TextCapturing {
+        let error: TextCaptureError
+        func capture(_ request: TextCaptureRequest) async throws -> TextLookupCapture { throw error }
     }
 
     @Test func doubleClickRejectsOldSelectionsAndSelectionsAwayFromPointer() {
@@ -89,19 +161,7 @@ struct TextLookupFallbackTests {
     }
 
     @MainActor @Test func visionReadsWordFromLocalImageAtScreenCoordinate() async throws {
-        let context = try #require(CGContext(data: nil, width: 600, height: 160, bitsPerComponent: 8,
-            bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        context.setFillColor(CGColor(gray: 1, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: 600, height: 160))
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 36), .foregroundColor: NSColor.black]
-        ("Read this word." as NSString).draw(at: CGPoint(x: 30, y: 40), withAttributes: attributes)
-        NSGraphicsContext.restoreGraphicsState()
-        let prefixWidth = ("Read this " as NSString).size(withAttributes: attributes).width
-        let image = try #require(context.makeImage())
-        let snapshot = TextLookupOCRSnapshot(image: image, bounds: CGRect(x: -600, y: 300, width: 600, height: 160),
-            anchor: CGRect(x: -600 + 30 + prefixWidth + 20, y: 360, width: 1, height: 1))
+        let snapshot = try sampleSnapshot()
         let recognizer = TextLookupOCR()
         let clock = ContinuousClock()
         let start = clock.now
@@ -113,6 +173,22 @@ struct TextLookupFallbackTests {
         #expect(result.term == "word")
         #expect(result.context == "Read this word.")
         #expect(result.isFragment)
+    }
+
+    @MainActor private func sampleSnapshot() throws -> TextLookupOCRSnapshot {
+        let context = try #require(CGContext(data: nil, width: 600, height: 160, bitsPerComponent: 8,
+            bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 600, height: 160))
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 36), .foregroundColor: NSColor.black]
+        ("Read this word." as NSString).draw(at: CGPoint(x: 30, y: 40), withAttributes: attributes)
+        NSGraphicsContext.restoreGraphicsState()
+        let prefixWidth = ("Read this " as NSString).size(withAttributes: attributes).width
+        let image = try #require(context.makeImage())
+        return TextLookupOCRSnapshot(image: image, bounds: CGRect(x: -600, y: 300, width: 600, height: 160),
+            anchor: CGRect(x: -600 + 30 + prefixWidth + 20, y: 360, width: 1, height: 1))
     }
 
     @MainActor @Test func contextSupplementPreservesTermAndRejectsStaleSession() throws {

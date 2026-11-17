@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import Carbon
 
-/// Revalidates the source before a compatibility action or a screen read.
+/// Source checks are independent of AX; simulated input additionally validates its text control.
 @MainActor
 enum TextLookupTargetAccess {
     static let syntheticEventTag: Int64 = 0x5A544C4F4F4B
@@ -10,20 +10,23 @@ enum TextLookupTargetAccess {
     struct Target {
         let element: AXUIElement
         let canDoubleClick: Bool
-        let windowBounds: CGRect?
     }
 
-    static func validate(_ request: TextCaptureRequest, at point: CGPoint? = nil) throws -> Target {
+    static func validateSource(_ request: TextCaptureRequest) throws {
         try Task.checkCancellation()
-        guard AXIsProcessTrusted() else { throw TextCaptureError.permissionRequired }
-        guard !IsSecureEventInputEnabled() else { throw TextCaptureError.secureText }
         guard !request.excludedApplicationPIDs.contains(request.targetApplicationPID) else {
             throw TextCaptureError.excludedApplication
         }
         guard NSWorkspace.shared.frontmostApplication?.processIdentifier == request.targetApplicationPID else {
             throw CancellationError()
         }
-        let point = point ?? request.triggerAnchorPoint
+    }
+
+    static func validate(_ request: TextCaptureRequest) throws -> Target {
+        try validateSource(request)
+        guard AXIsProcessTrusted() else { throw TextCaptureError.permissionRequired }
+        guard !IsSecureEventInputEnabled() else { throw TextCaptureError.secureText }
+        let point = request.triggerAnchorPoint
         let axPoint = CGPoint(x: point.x, y: request.primaryScreenMaxY - point.y)
         let system = AXUIElementCreateSystemWide()
         AXUIElementSetMessagingTimeout(system, 0.3)
@@ -32,15 +35,13 @@ enum TextLookupTargetAccess {
               let hit else { throw TextCaptureError.noTextAtPointer }
         var pid: pid_t = 0
         guard AXUIElementGetPid(hit, &pid) == .success, pid == request.targetApplicationPID else {
-            throw CancellationError()
+            throw TextCaptureError.unsupportedElement
         }
         var current: AXUIElement? = hit
         var visited: [AXUIElement] = []
         var canDoubleClick = false
         var actionable = false
-        var windowBounds: CGRect?
-        // Web content can have more than 24 ancestors. Walk to the application
-        // root so a readable, nonsecure target can reach OCR even in a deep tree.
+        // Simulated input must identify a text control rather than an actionable ancestor.
         while let node = current {
             try Task.checkCancellation()
             guard !visited.contains(where: { CFEqual($0, node) }) else { throw TextCaptureError.secureText }
@@ -52,9 +53,8 @@ enum TextLookupTargetAccess {
             var actions: CFArray?
             if AXUIElementCopyActionNames(node, &actions) == .success,
                (actions as? [String])?.contains("AXPress") == true { actionable = true }
-            if role == "AXWindow" { windowBounds = frame(node, primaryMaxY: request.primaryScreenMaxY) }
             if role == "AXApplication" {
-                return Target(element: hit, canDoubleClick: canDoubleClick && !actionable, windowBounds: windowBounds)
+                return Target(element: hit, canDoubleClick: canDoubleClick && !actionable)
             }
             current = element(value(node, "AXParent"))
         }
@@ -92,18 +92,6 @@ enum TextLookupTargetAccess {
         var rect = CGRect.zero
         guard AXValueGetType(ax) == .cgRect, AXValueGetValue(ax, .cgRect, &rect) else { return nil }
         return rect
-    }
-
-    private static func frame(_ element: AXUIElement, primaryMaxY: CGFloat) -> CGRect? {
-        guard let position = value(element, "AXPosition"), let size = value(element, "AXSize"),
-              CFGetTypeID(position) == AXValueGetTypeID(), CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
-        let axPosition = unsafeDowncast(position, to: AXValue.self)
-        let axSize = unsafeDowncast(size, to: AXValue.self)
-        var origin = CGPoint.zero
-        var extent = CGSize.zero
-        guard AXValueGetType(axPosition) == .cgPoint, AXValueGetType(axSize) == .cgSize,
-              AXValueGetValue(axPosition, .cgPoint, &origin), AXValueGetValue(axSize, .cgSize, &extent) else { return nil }
-        return CGRect(x: origin.x, y: primaryMaxY - origin.y - extent.height, width: extent.width, height: extent.height)
     }
 }
 

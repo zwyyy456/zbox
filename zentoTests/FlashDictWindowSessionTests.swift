@@ -1,9 +1,27 @@
 import Foundation
+import CoreGraphics
 import Testing
 import FlashDictIntegrationContracts
 @testable import zento
 
 @MainActor struct FlashDictWindowSessionTests {
+    @Test func recognitionResultUpdatesThePreparedWindowInsteadOfPresentingAnother() async throws {
+        let (_, continuation) = AsyncStream<Void>.makeStream()
+        let client = WindowClient(started: continuation)
+        let session = FlashDictWindowSession(client: client)
+        let id = UUID()
+        try await session.beginRecognition(id: id, anchor: .zero)
+        let capture = TextLookupCapture(id: id, term: "word", sentence: "A word in context.", sourceURL: nil, anchorRect: .zero)
+        session.present(capture)
+        await session.waitForStop()
+        #expect(await client.events == ["prepare:\(id)", "update:word"])
+        #expect(session.presentationID == id)
+        session.dismiss()
+        await session.waitForStop()
+        session.supplement(capture, sentence: "Late context.", isFragment: false)
+        #expect(await client.events == ["prepare:\(id)", "update:word", "dismiss:\(id)"])
+    }
+
     @Test(.timeLimit(.minutes(1))) func delayedPresentIsDismissedBeforeTheNextWindowOpens() async throws {
         let (started, continuation) = AsyncStream<Void>.makeStream()
         let client = WindowClient(started: continuation)
@@ -29,6 +47,7 @@ import FlashDictIntegrationContracts
     }
 
     private actor WindowClient: FlashDictWindowPresenting {
+        func prepareContextualLookup(presentationID: UUID, anchor: CGRect?) async throws { events.append("prepare:\(presentationID)") }
         let started: AsyncStream<Void>.Continuation
         var events: [String] = []
         var sentSentences: [String] = []

@@ -7,6 +7,7 @@ import Observation
 final class TextLookupPlugin {
     let settings: TextLookupSettingsStore
     private let capturer: any TextCapturing
+    private let captureScreen: @MainActor (TextCaptureRequest, CGRect?) async throws -> TextLookupOCRSnapshot
     private let isAccessibilityTrusted: @MainActor () -> Bool
     private let clipboardCapturer: ClipboardSelectionCapturer
     private let ocr = TextLookupOCR()
@@ -33,12 +34,16 @@ final class TextLookupPlugin {
         settings: TextLookupSettingsStore,
         clipboardCoordinator: ClipboardAccessCoordinator,
         capturer: any TextCapturing = AccessibilityTextCapturer(),
+        captureScreen: @escaping @MainActor (TextCaptureRequest, CGRect?) async throws -> TextLookupOCRSnapshot = {
+            try await TextLookupScreenCapture.snapshot($0, anchor: $1)
+        },
         session: TextLookupSessionModel? = nil,
         isAccessibilityTrusted: @escaping @MainActor () -> Bool
     ) {
         clipboardCapturer = ClipboardSelectionCapturer(coordinator: clipboardCoordinator)
         self.settings = settings
         self.capturer = capturer
+        self.captureScreen = captureScreen
         self.isAccessibilityTrusted = isAccessibilityTrusted
         self.session = session ?? TextLookupSessionModel()
         self.session.translationSettings = settings.translation
@@ -209,10 +214,10 @@ final class TextLookupPlugin {
                 var contextMessage: String?
                 if capture.needsContext && !capture.isContextFragment && settings.isLocalOCREnabled {
                     do {
-                        contextSnapshot = try await TextLookupScreenCapture.snapshot(request, anchor: capture.anchorRect)
+                        contextSnapshot = try await captureScreen(request, capture.anchorRect)
                     } catch is CancellationError { throw CancellationError() }
                     catch let error as TextCaptureError {
-                        if error == .secureText || error == .excludedApplication || error == .permissionRequired { throw error }
+                        if error == .excludedApplication { throw error }
                         contextMessage = error == .screenCapturePermissionRequired ? error.localizedDescription
                             : String(localized: "No matching context was found near this word.")
                     } catch {
@@ -251,6 +256,7 @@ final class TextLookupPlugin {
                 }
             } catch is CancellationError {
                 if self.captureAttemptID == request.id {
+                    self.flashDictWindow.dismiss()
                     self.session.clear()
                     self.panelController.dismissForOutsideClick()
                 }
@@ -262,9 +268,25 @@ final class TextLookupPlugin {
                     return
                 }
                 guard reportFailure else { return }
+                self.flashDictWindow.dismiss()
+                await self.flashDictWindow.waitForStop()
+                guard self.captureAttemptID == request.id else { return }
                 self.present(error, anchorPoint: request.triggerAnchorPoint)
+            } catch let error as FlashDictIntegrationError {
+                guard self.captureAttemptID == request.id, reportFailure else { return }
+                self.flashDictWindow.dismiss()
+                await self.flashDictWindow.waitForStop()
+                guard self.captureAttemptID == request.id else { return }
+                self.session.clear()
+                self.session.integrationMessage = FlashDictWindowSession.message(error)
+                self.session.retryIntegration = { [weak self] in self?.lookupPointer(at: request.triggerAnchorPoint) }
+                do { try self.panelController.show(anchor: request.triggerAnchorRect) }
+                catch { self.statusMessage = error.localizedDescription }
             } catch {
                 guard self.captureAttemptID == request.id, reportFailure else { return }
+                self.flashDictWindow.dismiss()
+                await self.flashDictWindow.waitForStop()
+                guard self.captureAttemptID == request.id else { return }
                 self.present(.unableToReadText, anchorPoint: request.triggerAnchorPoint)
             }
         }
@@ -274,10 +296,11 @@ final class TextLookupPlugin {
         do {
             return try await capturer.capture(request)
         } catch let error as TextCaptureError {
-            guard error.allowsCompatibilityFallback else { throw error }
-            _ = try TextLookupTargetAccess.validate(request)
+            try TextLookupTargetAccess.validateSource(request)
             if request.intent.allowsClipboardFallback {
+                guard error.allowsCompatibilityFallback else { throw error }
                 if settings.isClipboardFallbackEnabled && error.allowsClipboardFallback {
+                    _ = try TextLookupTargetAccess.validate(request)
                     do { return try await clipboardCapturer.capture(request) }
                     catch let copyError as TextCaptureError {
                         guard copyError.allowsCompatibilityFallback else { throw copyError }
@@ -286,23 +309,26 @@ final class TextLookupPlugin {
                 // A selection failure must not silently look up a different word under the mouse.
                 throw error
             }
-            if settings.isDoubleClickFallbackEnabled {
+            guard error.allowsCompatibilityFallback || error == .secureText else { throw error }
+            if error.allowsCompatibilityFallback && settings.isDoubleClickFallbackEnabled {
                 do {
                     if let capture = try await DoubleClickTextCapturer().capture(request, capturer: capturer,
                         clipboard: clipboardCapturer, allowClipboard: settings.isClipboardFallbackEnabled) {
                         return capture
                     }
                 } catch let doubleClickError as TextCaptureError {
-                    guard doubleClickError.allowsCompatibilityFallback else { throw doubleClickError }
+                    guard doubleClickError.allowsCompatibilityFallback || doubleClickError == .secureText else { throw doubleClickError }
                 }
             }
             guard settings.isLocalOCREnabled else { throw error }
-            let snapshot = try await TextLookupScreenCapture.snapshot(request, anchor: nil)
+            let snapshot = try await captureScreen(request, nil)
             session.beginOCR()
-            try panelController.show(anchor: request.triggerAnchorRect)
+            if settings.dictionarySource == .flashDict {
+                try await flashDictWindow.beginRecognition(id: request.id, anchor: request.triggerAnchorRect)
+            } else { try panelController.show(anchor: request.triggerAnchorRect) }
             let result = try await ocr.recognize(snapshot)
             try Task.checkCancellation()
-            _ = try TextLookupTargetAccess.validate(request)
+            try TextLookupTargetAccess.validateSource(request)
             return TextLookupCapture(id: request.id, term: result.term, sentence: result.context,
                 sourceURL: nil, anchorRect: result.bounds, isContextFragment: result.isFragment)
         }
@@ -346,6 +372,7 @@ final class TextLookupPlugin {
         captureTask = nil
         captureAttemptID = nil
         if session.isRecognizingWord {
+            flashDictWindow.dismiss()
             session.clear()
             panelController.dismissForOutsideClick()
         } else if let id = session.capture?.id {

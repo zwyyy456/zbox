@@ -11,7 +11,9 @@ nonisolated struct TextLookupCapture: Sendable {
 
     var needsContext: Bool {
         guard let sentence else { return true }
-        return sentence.trimmingCharacters(in: .whitespacesAndNewlines) == term
+        guard !sentence.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return true }
+        guard let cleaned = try? TextLookupTextProcessor.cleanSelection(sentence) else { return false }
+        return cleaned.term.compare(term, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
     }
 }
 
@@ -52,6 +54,7 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
     case unableToReadText
     case clipboardFallbackFailed
     case screenCapturePermissionRequired
+    case sourceWindowUnavailable
 
     var allowsCompatibilityFallback: Bool {
         switch self {
@@ -71,6 +74,8 @@ nonisolated enum TextCaptureError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         switch self {
+        case .sourceWindowUnavailable:
+            String(localized: "Unable to locate the source window for OCR. Move the pointer inside the source app's window and try again.")
         case .screenCapturePermissionRequired:
             String(localized: "Local OCR requires Screen Recording permission. Enable it in Text Lookup settings.")
         case .permissionRequired:

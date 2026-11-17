@@ -14,19 +14,22 @@ enum TextLookupScreenCapture {
     static func snapshot(_ request: TextCaptureRequest, anchor: CGRect?) async throws -> TextLookupOCRSnapshot {
         let anchor = anchor ?? request.triggerAnchorRect
         let point = CGPoint(x: anchor.midX, y: anchor.midY)
-        let target = try TextLookupTargetAccess.validate(request, at: point)
+        try TextLookupTargetAccess.validateSource(request)
         guard CGPreflightScreenCaptureAccess() else { throw TextCaptureError.screenCapturePermissionRequired }
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }),
               let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
             throw TextCaptureError.noTextAtPointer
         }
         let screenFrame = screen.frame
-        guard let crop = TextLookupOCRText.captureRect(point: point, window: target.windowBounds, screen: screenFrame) else {
-            throw TextCaptureError.noTextAtPointer
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        let window = TextLookupOCRText.windowBounds(at: point, applicationPID: request.targetApplicationPID,
+            primaryScreenMaxY: request.primaryScreenMaxY, windows: windows)
+        guard let crop = TextLookupOCRText.captureRect(point: point, window: window, screen: screenFrame) else {
+            throw TextCaptureError.sourceWindowUnavailable
         }
         let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         try Task.checkCancellation()
-        _ = try TextLookupTargetAccess.validate(request, at: point)
+        try TextLookupTargetAccess.validateSource(request)
         guard let display = content.displays.first(where: { $0.displayID == number.uint32Value }) else {
             throw TextCaptureError.noTextAtPointer
         }
@@ -42,7 +45,7 @@ enum TextLookupScreenCapture {
         config.height = max(1, Int((crop.height * CGFloat(filter.pointPixelScale)).rounded()))
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
         try Task.checkCancellation()
-        _ = try TextLookupTargetAccess.validate(request, at: point)
+        try TextLookupTargetAccess.validateSource(request)
         return TextLookupOCRSnapshot(image: image, bounds: crop, anchor: anchor)
     }
 }
@@ -67,6 +70,23 @@ nonisolated struct TextLookupOCRMatch: Sendable {
 
 /// Values are in Cocoa screen points, independently of the display's pixel scale.
 nonisolated enum TextLookupOCRText {
+    /// Window Server supplies front-to-back order and top-left-origin frames, without AX text access.
+    static func windowBounds(at point: CGPoint, applicationPID: pid_t, primaryScreenMaxY: CGFloat,
+                             windows: [[String: Any]]) -> CGRect? {
+        for window in windows {
+            guard let layer = window[kCGWindowLayer as String] as? Int, layer == 0,
+                  (window[kCGWindowAlpha as String] as? Double ?? 1) > 0,
+                  let bounds = window[kCGWindowBounds as String] as? NSDictionary,
+                  let frame = CGRect(dictionaryRepresentation: bounds) else { continue }
+            let cocoaFrame = CGRect(x: frame.minX, y: primaryScreenMaxY - frame.maxY,
+                                    width: frame.width, height: frame.height)
+            guard cocoaFrame.contains(point) else { continue }
+            // Do not choose a covered source window behind a different application's window.
+            return (window[kCGWindowOwnerPID as String] as? Int) == Int(applicationPID) ? cocoaFrame : nil
+        }
+        return nil
+    }
+
     static func captureRect(point: CGPoint, window: CGRect?, screen: CGRect) -> CGRect? {
         guard let window else { return nil }
         let visible = window.intersection(screen)
@@ -84,7 +104,7 @@ nonisolated enum TextLookupOCRText {
 
     static func match(lines: [TextLookupOCRLine], anchor: CGRect, expectedTerm: String?, cropBounds: CGRect? = nil) -> TextLookupOCRMatch? {
         let point = CGPoint(x: anchor.midX, y: anchor.midY)
-        let ordered = lines.sorted { $0.bounds.midY > $1.bounds.midY }
+        let ordered = joiningInlineFragments(lines).sorted { $0.bounds.midY > $1.bounds.midY }
         for line in ordered {
             for word in line.words where word.bounds.contains(point) {
                 let text = line.text as NSString
@@ -122,6 +142,31 @@ nonisolated enum TextLookupOCRText {
             }
         }
         return nil
+    }
+
+    /// Vision can split one visual line at a font/style change. Rejoin nearby fragments
+    /// before looking for a paragraph, keeping each word's original screen bounds.
+    private static func joiningInlineFragments(_ lines: [TextLookupOCRLine]) -> [TextLookupOCRLine] {
+        var joined: [TextLookupOCRLine] = []
+        for line in lines.sorted(by: { $0.bounds.minX < $1.bounds.minX }) {
+            guard let index = joined.firstIndex(where: { previous in
+                let height = min(previous.bounds.height, line.bounds.height)
+                let overlap = min(previous.bounds.maxY, line.bounds.maxY) - max(previous.bounds.minY, line.bounds.minY)
+                let gap = line.bounds.minX - previous.bounds.maxX
+                return overlap >= height * 0.65 && abs(previous.bounds.minY - line.bounds.minY) <= height * 0.35
+                    && gap >= -1 && gap <= height * 0.75
+            }) else {
+                joined.append(line)
+                continue
+            }
+            let previous = joined[index]
+            let offset = previous.text.utf16.count + 1
+            joined[index] = TextLookupOCRLine(text: previous.text + " " + line.text,
+                bounds: previous.bounds.union(line.bounds), words: previous.words + line.words.map {
+                    TextLookupOCRWord(range: NSRange(location: $0.range.location + offset, length: $0.range.length), bounds: $0.bounds)
+                })
+        }
+        return joined
     }
 
     private static func sameColumn(_ lhs: TextLookupOCRLine, _ rhs: TextLookupOCRLine) -> Bool {
