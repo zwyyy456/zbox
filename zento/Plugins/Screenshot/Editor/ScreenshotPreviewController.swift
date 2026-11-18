@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
 
-@MainActor
+@MainActor @Observable
 final class ScreenshotPreviewController: NSObject, NSWindowDelegate {
-    private var onClose: (() -> Void)?
-    private var panel: NSPanel?
-    private(set) var screen: NSScreen?
+    @ObservationIgnored private var onClose: (() -> Void)?
+    @ObservationIgnored private var panel: NSPanel?
+    @ObservationIgnored private(set) var screen: NSScreen?
+    private var savePanel: NSSavePanel?
+    var isChoosingSaveURL: Bool { savePanel != nil }
 
     func show(plugin: ScreenshotPlugin, image: CGImage, on screen: NSScreen) {
         close()
@@ -31,8 +33,32 @@ final class ScreenshotPreviewController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) { onClose?() }
 
+    func chooseSaveURL(using savePanel: NSSavePanel, onSave: @escaping @MainActor (URL) -> Void) {
+        guard let panel, self.savePanel == nil else { return }
+        self.savePanel = savePanel
+        savePanel.collectionBehavior = panel.collectionBehavior
+        savePanel.level = panel.level
+        savePanel.isMovable = true
+        savePanel.begin { [weak self, weak savePanel] response in
+            guard let self, let savePanel, self.savePanel === savePanel else { return }
+            self.savePanel = nil
+            guard response == .OK, let url = savePanel.url else { return }
+            onSave(url)
+        }
+        guard self.savePanel === savePanel else { return }
+        if let screen = panel.screen, savePanel.screen != screen {
+            let frame = screen.visibleFrame
+            let size = savePanel.frame.size
+            savePanel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2))
+        }
+        WindowPresentation.present(savePanel)
+    }
+
     func close() {
         onClose = nil
+        let pendingSavePanel = savePanel
+        savePanel = nil
+        pendingSavePanel?.cancel(nil)
         panel?.orderOut(nil)
         panel?.contentView = nil
         panel = nil
@@ -86,7 +112,9 @@ private struct ScreenshotPreviewView: View {
                     }
                 }.padding(8).background(.regularMaterial)
             }
-        }.onExitCommand(perform: plugin.dismissPreview)
+        }
+        .disabled(plugin.isChoosingPreviewSaveURL)
+        .onExitCommand(perform: plugin.dismissPreview)
     }
 
     private func action(_ title: LocalizedStringKey, symbol: String, perform: @escaping () -> Void) -> some View {

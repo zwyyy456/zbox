@@ -46,6 +46,7 @@ final class ScreenshotPlugin {
     let clipboardCoordinator: ClipboardAccessCoordinator
     private let selection = ScreenshotSelection()
     private let preview = ScreenshotPreviewController()
+    var isChoosingPreviewSaveURL: Bool { preview.isChoosingSaveURL }
     private var captureTask: Task<Void, Never>?
     private var captureID: UUID?
     @ObservationIgnored private var window: ScreenshotWindow?
@@ -310,12 +311,19 @@ final class ScreenshotPlugin {
         let panel = NSSavePanel()
         panel.directoryURL = saveDirectory
         panel.allowedContentTypes = [selectedFormat.type]
-        panel.nameFieldStringValue = "Screenshot-\(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(UUID().uuidString.prefix(8)).\(format.rawValue)"
-        guard panel.runModal() == .OK, let url = panel.url, self.document === document else { return }
-        export(format: selectedFormat) { [weak self] data in
-            try data.write(to: url, options: .atomic)
-            if closesEditor { self?.closeEditor() }
-            else { self?.showExportFeedback(String(localized: "Image saved.")) }
+        panel.nameFieldStringValue = "Screenshot-\(Date.now.formatted(.iso8601.year().month().day().dateSeparator(.dash)))-\(UUID().uuidString.prefix(8)).\(selectedFormat.rawValue)"
+        let save: @MainActor (URL) -> Void = { [weak self, weak document] url in
+            guard let self, let document, self.document === document else { return }
+            export(format: selectedFormat) { [weak self] data in
+                try data.write(to: url, options: .atomic)
+                if closesEditor { self?.closeEditor() }
+                else { self?.showExportFeedback(String(localized: "Image saved.")) }
+            }
+        }
+        if closesEditor {
+            preview.chooseSaveURL(using: panel, onSave: save)
+        } else if panel.runModal() == .OK, let url = panel.url {
+            save(url)
         }
     }
 
