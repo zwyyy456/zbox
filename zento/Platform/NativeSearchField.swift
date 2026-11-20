@@ -39,7 +39,15 @@ struct NativeSearchField: NSViewRepresentable {
         init(_ parent: NativeSearchField) { self.parent = parent }
 
         @objc func searchChanged(_ field: NSSearchField) {
-            parent.text = field.stringValue
+            let editor = field.currentEditor() as? NSTextView
+            guard editor?.hasMarkedText() != true else { return }
+            let text = editor?.string ?? field.stringValue
+            if text != parent.text { parent.text = text }
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let field = notification.object as? NSSearchField else { return }
+            searchChanged(field)
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy command: Selector) -> Bool {

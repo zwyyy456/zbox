@@ -24,9 +24,9 @@ final class ClipboardHistoryPlugin {
     private(set) var hasMoreEntries = false
     private(set) var storedBytes = 0
     private(set) var storageLimitMiB: Int
-    var query = "" { didSet { reloadSearch() } }
+    var query = "" { didSet { if query != oldValue { reloadSearch() } } }
     var selectedID: UUID? { didSet { updatePreview() } }
-    var filter = ClipboardHistoryFilter.all { didSet { reloadSearch() } }
+    var filter = ClipboardHistoryFilter.all { didSet { if filter != oldValue { reloadSearch() } } }
     private(set) var isPresented = false
     private(set) var isLoadingPreview = false
     private(set) var previewImage: NSImage?
@@ -40,6 +40,7 @@ final class ClipboardHistoryPlugin {
     }
     private(set) var excludedApplications: Set<String>
     @ObservationIgnored private var panel: ClipboardHistoryPanel?
+    @ObservationIgnored private var isResettingSearch = false
 
     init(defaults: UserDefaults = .standard, coordinator: ClipboardAccessCoordinator,
          authorization: AccessibilityAuthorization) {
@@ -76,7 +77,8 @@ final class ClipboardHistoryPlugin {
     }
 
     private func reloadSearch() {
-        do { try refresh(limit: 100) }
+        guard !isResettingSearch else { return }
+        do { try reloadEntries(limit: 100) }
         catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
@@ -253,7 +255,7 @@ final class ClipboardHistoryPlugin {
         catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
     }
 
-    private func prepareStore() throws {
+    private func prepareStore(limit: Int? = nil) throws {
         if store == nil {
             let directory = try FileManager.default.url(for: .applicationSupportDirectory,
                 in: .userDomainMask, appropriateFor: nil, create: true)
@@ -261,11 +263,15 @@ final class ClipboardHistoryPlugin {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             store = try ClipboardHistoryStore(url: directory.appendingPathComponent("history.store"))
         }
-        try refresh()
+        try refresh(limit: limit)
     }
 
     private func refresh(limit: Int? = nil) throws {
         try store?.prune(days: retentionDays)
+        try reloadEntries(limit: limit)
+    }
+
+    private func reloadEntries(limit: Int?) throws {
         let count = limit ?? max(100, entries.count)
         let page = try store?.entries(query: query, filter: filter, limit: count + 1) ?? []
         hasMoreEntries = page.count > count
@@ -383,11 +389,16 @@ final class ClipboardHistoryPlugin {
     private func show(targetPID: pid_t?) {
         pasteTask?.cancel()
         targetApplication = targetPID.flatMap(NSRunningApplication.init(processIdentifier:))
-        do { try prepareStore() }
-        catch { statusMessage = String(localized: "Clipboard history could not be opened or saved.") }
+        isResettingSearch = true
         query = ""
         filter = .all
-        selectedID = entries.first?.id
+        isResettingSearch = false
+        selectedID = nil
+        do { try prepareStore(limit: 100) }
+        catch {
+            statusMessage = String(localized: "Clipboard history could not be opened or saved.")
+            selectedID = entries.first?.id
+        }
         if panel == nil {
             let panel = ClipboardHistoryPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 480),
                                 styleMask: [.borderless, .resizable, .nonactivatingPanel],

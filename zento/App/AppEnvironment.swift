@@ -147,6 +147,8 @@ final class AppEnvironment {
     )
     @ObservationIgnored
     private var launchTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var searchPrewarmTask: Task<Void, Never>?
     private var commandExecutionID: UUID?
     private var hasStarted = false
 
@@ -251,9 +253,16 @@ final class AppEnvironment {
         if textLookupPlugin.settings.isEnabled, isAccessibilityTrusted {
             textLookupPlugin.start()
         }
+        searchPrewarmTask = Task(priority: .utility) { @MainActor [weak self] in
+            guard !Task.isCancelled, let self else { return }
+            searchPanelController.prewarm()
+            searchPrewarmTask = nil
+        }
     }
 
     func stop() {
+        searchPrewarmTask?.cancel()
+        searchPrewarmTask = nil
         launchTask?.cancel()
         commandExecutionID = nil
         rootSearch.end()

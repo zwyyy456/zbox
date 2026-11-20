@@ -63,6 +63,11 @@ final class SearchPanelController: NSObject {
         panel.hasShadow = true
     }
 
+    func prewarm() {
+        guard !panel.isVisible else { return }
+        panel.contentView?.layoutSubtreeIfNeeded()
+    }
+
     func show() {
         positionOnCurrentScreen()
         panel.presentTransient()

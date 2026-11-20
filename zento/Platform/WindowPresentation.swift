@@ -26,10 +26,18 @@ class TransientPanel: NSPanel {
         hidesOnDeactivate = false
         level = .floating
         if isMiniaturized { deminiaturize(nil) }
+        contentView?.layoutSubtreeIfNeeded()
+        let field = editableField(in: contentView)
+        if let field {
+            initialFirstResponder = field
+            makeFirstResponder(field)
+        }
         makeKeyAndOrderFront(nil)
         orderFrontRegardless()
-        contentView?.layoutSubtreeIfNeeded()
-        if let field = editableField(in: contentView) { makeFirstResponder(field) }
+        if field == nil { contentView?.layoutSubtreeIfNeeded() }
+        if let field = field ?? editableField(in: contentView), field.currentEditor() == nil {
+            makeFirstResponder(field)
+        }
     }
 
     private func editableField(in view: NSView?) -> NSTextField? {
