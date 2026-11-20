@@ -1,6 +1,46 @@
 import AppKit
+import OSLog
 import ScreenCaptureKit
 import Vision
+
+nonisolated enum TextLookupOCRDiagnostics {
+    static let logger = Logger(subsystem: "tech.hyperseek.zento", category: "TextLookupOCR")
+
+    struct Line {
+        let bounds: NormalizedRect
+        let confidence: Float?
+        let accepted: Bool
+        let candidateRanges: Int
+        let wordBoxes: Int
+    }
+
+    static func logNearbyLines(_ lines: [Line], snapshot: TextLookupOCRSnapshot, id: String) {
+        let crop = snapshot.bounds
+        let point = CGPoint(x: snapshot.anchor.midX - crop.minX, y: snapshot.anchor.midY - crop.minY)
+        let imageSize = CGSize(width: snapshot.image.width, height: snapshot.image.height)
+        let projected = lines.enumerated().map { index, line in
+            (index: index, line: line, bounds: line.bounds.toImageCoordinates(crop.size, origin: .lowerLeft))
+        }
+        let covering = projected.count { $0.bounds.contains(point) }
+        let rowAtAnchor = projected.count { point.y >= $0.bounds.minY && point.y <= $0.bounds.maxY }
+        logger.notice("capture=\(id, privacy: .public) stage=miss-lines anchorImageX=\(Double(point.x * imageSize.width / crop.width)) anchorImageYFromTop=\(Double((crop.height - point.y) * imageSize.height / crop.height)) rawLinesCoveringAnchor=\(covering) rawRowsAtAnchorY=\(rowAtAnchor)")
+        let nearby = projected.map { item in
+            (item: item, delta: offset(from: point, to: item.bounds))
+        }.sorted { hypot($0.delta.x, $0.delta.y) < hypot($1.delta.x, $1.delta.y) }
+        for (item, delta) in nearby.prefix(6) {
+            let line = item.line
+            let raw = line.bounds.cgRect
+            let image = line.bounds.toImageCoordinates(imageSize, origin: .upperLeft)
+            let mapped = TextLookupOCRText.screenRect(raw, crop: crop)
+            logger.notice("capture=\(id, privacy: .public) stage=nearby-line index=\(item.index) hasCandidate=\(line.confidence != nil) confidence=\(Double(line.confidence ?? 0)) accepted=\(line.accepted) candidateRanges=\(line.candidateRanges) wordBoxes=\(line.wordBoxes) containsAnchor=\(item.bounds.contains(point)) dx=\(Double(delta.x)) dy=\(Double(delta.y)) rawX=\(Double(raw.minX)) rawY=\(Double(raw.minY)) rawWidth=\(Double(raw.width)) rawHeight=\(Double(raw.height)) imageX=\(Double(image.minX)) imageYFromTop=\(Double(image.minY)) imageWidth=\(Double(image.width)) imageHeight=\(Double(image.height)) projectionDeltaX=\(Double(mapped.minX - crop.minX - item.bounds.minX)) projectionDeltaY=\(Double(mapped.minY - crop.minY - item.bounds.minY))")
+        }
+    }
+
+    static func offset(from point: CGPoint, to box: CGRect) -> CGPoint {
+        CGPoint(x: min(max(point.x, box.minX), box.maxX) - point.x,
+                y: min(max(point.y, box.minY), box.maxY) - point.y)
+    }
+}
 
 nonisolated struct TextLookupOCRSnapshot: Sendable {
     let image: CGImage
@@ -12,24 +52,47 @@ nonisolated struct TextLookupOCRSnapshot: Sendable {
 @MainActor
 enum TextLookupScreenCapture {
     static func snapshot(_ request: TextCaptureRequest, anchor: CGRect?) async throws -> TextLookupOCRSnapshot {
+        let logger = TextLookupOCRDiagnostics.logger
+        let id = request.id.uuidString
+        logger.notice("capture=\(id, privacy: .public) stage=snapshot-start context=\(anchor != nil)")
+        var stage = "source-validation"
+        do {
+            let result = try await captureSnapshot(request, anchor: anchor, stage: &stage)
+            let crop = result.bounds
+            logger.notice("capture=\(id, privacy: .public) stage=snapshot-ready cropWidth=\(Double(crop.width)) cropHeight=\(Double(crop.height)) imageWidth=\(result.image.width) imageHeight=\(result.image.height) anchorX=\(Double(result.anchor.midX - crop.minX)) anchorY=\(Double(result.anchor.midY - crop.minY))")
+            return result
+        } catch {
+            logger.notice("capture=\(id, privacy: .public) stage=snapshot-failed step=\(stage, privacy: .public) cancelled=\(error is CancellationError) code=\((error as NSError).code)")
+            throw error
+        }
+    }
+
+    private static func captureSnapshot(_ request: TextCaptureRequest, anchor: CGRect?,
+                                        stage: inout String) async throws -> TextLookupOCRSnapshot {
         let anchor = anchor ?? request.triggerAnchorRect
         let point = CGPoint(x: anchor.midX, y: anchor.midY)
         try TextLookupTargetAccess.validateSource(request)
+        stage = "screen-permission"
         guard CGPreflightScreenCaptureAccess() else { throw TextCaptureError.screenCapturePermissionRequired }
+        stage = "anchor-screen"
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }),
               let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
             throw TextCaptureError.noTextAtPointer
         }
         let screenFrame = screen.frame
+        stage = "source-window"
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let window = TextLookupOCRText.windowBounds(at: point, applicationPID: request.targetApplicationPID,
             primaryScreenMaxY: request.primaryScreenMaxY, windows: windows)
         guard let crop = TextLookupOCRText.captureRect(point: point, window: window, screen: screenFrame) else {
             throw TextCaptureError.sourceWindowUnavailable
         }
+        stage = "shareable-content"
         let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+        stage = "source-revalidation"
         try Task.checkCancellation()
         try TextLookupTargetAccess.validateSource(request)
+        stage = "shareable-display"
         guard let display = content.displays.first(where: { $0.displayID == number.uint32Value }) else {
             throw TextCaptureError.noTextAtPointer
         }
@@ -43,7 +106,19 @@ enum TextLookupScreenCapture {
                                    width: crop.width, height: crop.height)
         config.width = max(1, Int((crop.width * CGFloat(filter.pointPixelScale)).rounded()))
         config.height = max(1, Int((crop.height * CGFloat(filter.pointPixelScale)).rounded()))
+        let source = config.sourceRect
+        let quartzDisplay = CGDisplayBounds(number.uint32Value)
+        let quartzAnchor = CGPoint(x: point.x - quartzDisplay.minX - source.minX,
+                                   y: request.primaryScreenMaxY - point.y - quartzDisplay.minY - source.minY)
+        let sourceAnchor = CGPoint(x: point.x - crop.minX, y: crop.maxY - point.y)
+        let pointer = NSEvent.mouseLocation
+        let logger = TextLookupOCRDiagnostics.logger
+        let id = request.id.uuidString
+        logger.notice("capture=\(id, privacy: .public) stage=snapshot-geometry sourceX=\(Double(source.minX)) sourceYFromTop=\(Double(source.minY)) sourceWidth=\(Double(source.width)) sourceHeight=\(Double(source.height)) screenWidth=\(Double(screenFrame.width)) screenHeight=\(Double(screenFrame.height)) quartzWidth=\(Double(quartzDisplay.width)) quartzHeight=\(Double(quartzDisplay.height)) pixelScale=\(Double(filter.pointPixelScale)) requestedWidth=\(config.width) requestedHeight=\(config.height)")
+        logger.notice("capture=\(id, privacy: .public) stage=snapshot-anchor sourceX=\(Double(sourceAnchor.x)) sourceYFromTop=\(Double(sourceAnchor.y)) quartzX=\(Double(quartzAnchor.x)) quartzYFromTop=\(Double(quartzAnchor.y)) quartzDeltaX=\(Double(quartzAnchor.x - sourceAnchor.x)) quartzDeltaY=\(Double(quartzAnchor.y - sourceAnchor.y)) pointerDriftX=\(Double(pointer.x - request.triggerAnchorPoint.x)) pointerDriftY=\(Double(pointer.y - request.triggerAnchorPoint.y))")
+        stage = "screenshot"
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+        stage = "source-revalidation"
         try Task.checkCancellation()
         try TextLookupTargetAccess.validateSource(request)
         return TextLookupOCRSnapshot(image: image, bounds: crop, anchor: anchor)
@@ -184,16 +259,34 @@ nonisolated enum TextLookupOCRText {
 }
 
 actor TextLookupOCR {
-    func recognize(_ snapshot: TextLookupOCRSnapshot, expectedTerm: String? = nil) async throws -> TextLookupOCRMatch {
+    func recognize(_ snapshot: TextLookupOCRSnapshot, requestID: UUID,
+                   expectedTerm: String? = nil) async throws -> TextLookupOCRMatch {
         try Task.checkCancellation()
+        let logger = TextLookupOCRDiagnostics.logger
+        let id = requestID.uuidString
+        logger.notice("capture=\(id, privacy: .public) stage=recognition-start context=\(expectedTerm != nil)")
         var request = RecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false
         request.automaticallyDetectsLanguage = true
-        let observations = try await request.perform(on: snapshot.image)
-        try Task.checkCancellation()
+        let observations: [RecognizedTextObservation]
+        do {
+            observations = try await request.perform(on: snapshot.image)
+            try Task.checkCancellation()
+        } catch {
+            logger.notice("capture=\(id, privacy: .public) stage=recognition-failed cancelled=\(error is CancellationError) code=\((error as NSError).code)")
+            throw error
+        }
+        var candidateRanges = 0
+        var rawLines: [TextLookupOCRDiagnostics.Line] = []
+        var boxes: [(raw: NormalizedRect, mapped: CGRect)] = []
         let lines = observations.compactMap { observation -> TextLookupOCRLine? in
-            guard let candidate = observation.topCandidates(1).first, candidate.confidence >= 0.4 else { return nil }
+            let best = observation.topCandidates(1).first
+            guard let candidate = best, candidate.confidence >= 0.4 else {
+                rawLines.append(.init(bounds: observation.boundingBox, confidence: best?.confidence, accepted: false,
+                                      candidateRanges: 0, wordBoxes: 0))
+                return nil
+            }
             let text = candidate.string
             // For an existing phrase, match the phrase itself rather than replacing it with one token.
             let ranges: [NSRange]
@@ -214,17 +307,36 @@ actor TextLookupOCR {
                 }
                 ranges = found
             } else { ranges = TextLookupTextProcessor.wordRanges(in: text) }
+            candidateRanges += ranges.count
             let words = ranges.compactMap { range -> TextLookupOCRWord? in
                 guard let stringRange = Range(range, in: text),
                       let box = candidate.boundingBox(for: stringRange) else { return nil }
-                return TextLookupOCRWord(range: range, bounds: TextLookupOCRText.screenRect(box.boundingBox.cgRect, crop: snapshot.bounds))
+                let raw = box.boundingBox
+                let mapped = TextLookupOCRText.screenRect(raw.cgRect, crop: snapshot.bounds)
+                boxes.append((raw, mapped))
+                return TextLookupOCRWord(range: range, bounds: mapped)
             }
+            rawLines.append(.init(bounds: observation.boundingBox, confidence: candidate.confidence, accepted: true,
+                                  candidateRanges: ranges.count, wordBoxes: words.count))
             return TextLookupOCRLine(text: text,
                 bounds: TextLookupOCRText.screenRect(observation.boundingBox.cgRect, crop: snapshot.bounds), words: words)
         }
+        let point = CGPoint(x: snapshot.anchor.midX, y: snapshot.anchor.midY)
+        let coveringBoxes = boxes.count(where: { $0.mapped.contains(point) })
+        logger.notice("capture=\(id, privacy: .public) stage=recognition-ready observations=\(observations.count) acceptedLines=\(lines.count) candidateRanges=\(candidateRanges) wordBoxes=\(boxes.count) coveringBoxes=\(coveringBoxes)")
         guard let match = TextLookupOCRText.match(lines: lines, anchor: snapshot.anchor, expectedTerm: expectedTerm, cropBounds: snapshot.bounds) else {
+            TextLookupOCRDiagnostics.logNearbyLines(rawLines, snapshot: snapshot, id: id)
+            let nearest = boxes.lazy.map {
+                (raw: $0.raw.cgRect, delta: TextLookupOCRDiagnostics.offset(from: point, to: $0.mapped))
+            }.min { hypot($0.delta.x, $0.delta.y) < hypot($1.delta.x, $1.delta.y) }
+            if let (raw, delta) = nearest {
+                logger.notice("capture=\(id, privacy: .public) stage=match-miss nearestDX=\(Double(delta.x)) nearestDY=\(Double(delta.y)) rawWordX=\(Double(raw.minX)) rawWordY=\(Double(raw.minY)) rawWordWidth=\(Double(raw.width)) rawWordHeight=\(Double(raw.height))")
+            } else {
+                logger.notice("capture=\(id, privacy: .public) stage=match-miss noWordBoxes=true")
+            }
             throw TextCaptureError.noTextAtPointer
         }
+        logger.notice("capture=\(id, privacy: .public) stage=match-hit")
         return match
     }
 }

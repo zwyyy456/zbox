@@ -165,14 +165,20 @@ struct TextLookupFallbackTests {
         let recognizer = TextLookupOCR()
         let clock = ContinuousClock()
         let start = clock.now
-        let result = try await recognizer.recognize(snapshot)
+        let result = try await recognizer.recognize(snapshot, requestID: UUID())
         let secondStart = clock.now
-        let repeated = try await recognizer.recognize(snapshot, expectedTerm: "word")
+        let repeated = try await recognizer.recognize(snapshot, requestID: UUID(), expectedTerm: "word")
         print("Synthetic local OCR durations: first=\(start.duration(to: secondStart)), repeat=\(secondStart.duration(to: clock.now))")
         #expect(repeated.term == "word")
         #expect(result.term == "word")
         #expect(result.context == "Read this word.")
         #expect(result.isFragment)
+
+        let miss = TextLookupOCRSnapshot(image: snapshot.image, bounds: snapshot.bounds,
+            anchor: CGRect(x: snapshot.anchor.minX, y: snapshot.bounds.minY + 4, width: 1, height: 1))
+        await #expect(throws: TextCaptureError.noTextAtPointer) {
+            try await recognizer.recognize(miss, requestID: UUID())
+        }
     }
 
     @MainActor private func sampleSnapshot() throws -> TextLookupOCRSnapshot {

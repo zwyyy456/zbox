@@ -1,6 +1,7 @@
 import AppKit
 import FlashDictIntegrationKit
 import Observation
+import OSLog
 
 @MainActor
 @Observable
@@ -233,7 +234,7 @@ final class TextLookupPlugin {
                 session.setContextStatus(id: capture.id, loading: contextSnapshot != nil, message: contextMessage)
                 if let contextSnapshot {
                     do {
-                        let result = try await ocr.recognize(contextSnapshot, expectedTerm: capture.term)
+                        let result = try await ocr.recognize(contextSnapshot, requestID: request.id, expectedTerm: capture.term)
                         try Task.checkCancellation()
                         guard self.captureAttemptID == request.id else { return }
                         guard settings.isLocalOCREnabled else {
@@ -320,13 +321,16 @@ final class TextLookupPlugin {
                     guard doubleClickError.allowsCompatibilityFallback || doubleClickError == .secureText else { throw doubleClickError }
                 }
             }
-            guard settings.isLocalOCREnabled else { throw error }
+            guard settings.isLocalOCREnabled else {
+                TextLookupOCRDiagnostics.logger.notice("capture=\(request.id.uuidString, privacy: .public) stage=skipped-disabled")
+                throw error
+            }
             let snapshot = try await captureScreen(request, nil)
             session.beginOCR()
             if settings.dictionarySource == .flashDict {
                 try await flashDictWindow.beginRecognition(id: request.id, anchor: request.triggerAnchorRect)
             } else { try panelController.show(anchor: request.triggerAnchorRect) }
-            let result = try await ocr.recognize(snapshot)
+            let result = try await ocr.recognize(snapshot, requestID: request.id)
             try Task.checkCancellation()
             try TextLookupTargetAccess.validateSource(request)
             return TextLookupCapture(id: request.id, term: result.term, sentence: result.context,
